@@ -1,0 +1,674 @@
+
+\Christelle Cayton
+\Pilot DS and NS Devaluation training. STAGE 1.
+\Rats will be trained with a DS task then run on a devaluation test.
+\In this code, the DS will trigger a white noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
+\Last Edited 1.21.19... basis for siren noise DS code*
+
+\CONSTANTS
+\^leftLever = 1
+\^rightLever = 2
+\^leftStimLight = 4
+\^rightStimLight = 5
+^DSTone = 6
+^DSTone2 = 23
+^NSwhiteNoise = 8
+^Boxlight = 28
+^Pump = 9
+^Houselight = 7
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\Sound stuff from Jocelyn's old code\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\Sound frequencies and other parameters
+DIM R=8
+     ^ToneDur=10000         \R(0) Length of tone's on time, in ms
+     ^ToneFreq=2600         \R(1) freq of tone
+     ^SirenBaseFreq=6000    \R(2) starting (low) freq of the siren (Hz)
+     ^SirenMaxFreq=8000     \R(3) ending (high) freq of the siren (Hz)
+     ^SirenStepFreq=200     \R(4) Amount by which to increase or decrease the frequency every 10 ms
+     ^RFTime=1              \R(5) rise time in ms
+     ^Amplitude=85          \R(6) amplitude (dB) of tones (note this is not actual amplitude;
+                            \95 dB corresponds to ~85 dB @ 4 kHz on the box floor)
+                            \R(7) is the current freq of siren
+     ^SirenAmp=93           \R(8) is siren amplitude
+
+
+
+
+\INPUTS
+^PortEntry = 6
+^Lick = 7
+\^leftLeverPress = 1
+\^rightLeverPress = 3
+
+\OUTPUTS
+^nsTTL = 35 \sends signal to TTL, Plexon, etc.
+^dsTTL=34 \sends signal to TTL, Plexon, etc.
+^portTTL=36    \sends signal to TTL, Plexon, etc.
+^lickTTL=37 \sends signal to TTL, Plexon, etc.
+
+
+\ Inter-trial intervals in seconds
+LIST X = 10, 20, 30, 40, 50,
+         10, 20, 30, 40, 50  \ Inter-trial intervals in seconds - average ITI is 30 seconds
+
+
+\ Choose DS
+LIST Y = 0,0,0,0,0,1,1,1,1,1
+
+
+
+Var_Alias Startup Delay (Sec)                 = A(0)
+Var_Alias Number of trials                    = A(1)
+Var_Alias DS duration                         = A(2)
+Var_Alias Pump Delay (Sec)                    = A(3)  \ Not used in this program
+Var_Alias Pump duration (Sec)                 = A(4)
+Var_Alias Paired (0), or Unpaired (1) DS-US   = A(5)
+
+
+
+
+DIM A=9 \ User-editable values
+    \A(0)=Delay before 1st ITI in seconds (default 120 sec)
+    \A(1)=Number of DS trials (default 60)
+    \A(2)=Duration of DS phase in seconds (default 10 sec)
+    \A(3)=Delay between CS+ ON and US ON for paired
+    \A(4)=Pump duration in sec (default 5 sec)
+    \A(5)=0 if paired DS-US, 1 if unpaired
+
+
+
+
+\WORKING VARIABLES
+DIM B=81
+    \B(0) = 1" in MED time units, used for time input calculations
+    \B(1) = Current trial #
+    \B(2) = Current ITI length in seconds
+    \B(3) = Current phase of trial, where 1=preDS 2=DS 3=postDSPlus 0=ITI 4=NS 5=postNS
+    \B(4) = Box number of control box
+    \B(5) = Reward count
+
+    \B(6) = Total PEs
+    \B(7) = PEs in ITI
+    \B(8) = PEs in preDS
+    \B(9) = PEs in DS
+    \B(10)= PEs in postDS
+    \B(11)= PEs in NS
+    \B(12)= PEs in postNS
+
+    \B(13)= Event timer in .01" units
+    \B(14)= Current trial DS (1) versus NS (0)
+    \B(15)= Program version number
+    \B(16)= Elapsed seconds in current context
+    \B(17)= Number of DS
+    \B(18)= Number of NS
+    \B(19)= Onset time of most recent cue
+    \B(20)= Onset time of most recent cue-induced port entry & licking
+
+    \B(21)= Number of DS trials with a port entry
+    \B(22)= Number of NS trials with a port entry
+    \B(23)= DS with PE to Number of DS Ratio
+    \B(24)= NS with PE to Number of NS Ratio
+    \B(25)= DS PE Mean Latency
+    \B(26)= NS PE Mean Latency
+    \B(27)= Not in use in this program
+    \B(28)= Not in use in this program
+    \B(29)= Total Time in Port
+    \B(30)= Port Time in ITI
+    \B(31)= Port Time in Pre DS/NS
+    \B(32)= Port Time in DS
+    \B(33)= Port Time in Post DS
+    \B(34)= Port Time in NS
+    \B(35)= Port Time in Post NS
+
+    \B(36)= Total Licks
+    \B(37)= Licks in ITI
+    \B(38)= Licks in Pre DS/NS
+    \B(39)= Licks in DS
+    \B(40)= Licks in Post DS
+    \B(41)= Licks in NS
+    \B(42)= Licks in Post NS
+    \B(43)= Number of DS trials with licks
+    \B(44)= Number of NS trials with licks
+    \B(45)= DS with Licks to Number of DS Ratio
+    \B(46)= NS with Licks to Number of NS Ratio
+    \B(47)= Licks in 5 sec post DS port entry
+    \B(48)= Licks in 5 sec post NS port entry
+
+
+
+\DATA ARRAYS
+DIM H=60   \ DS onset time per trial
+DIM I=60   \ NS onset time per trial
+DIM J=60   \ US onset time per trial
+
+DIM K=9999 \ PE timestamps in sec
+DIM L=9999 \ PE durations in sec
+DIM M=30   \ Latency to PE following DS per trial
+DIM N=30   \ Latency to PE following NS per trial
+DIM O=30   \ Time of first PE following DS
+DIM P=30   \ Time of first PE following NS
+DIM S=9999 \ Lick timestamps in sec
+DIM V=30   \ 5-sec Licks after first PE following DS
+DIM U=30   \ 5-sec Licks after first PE following NS
+
+
+\Z signals (within box):
+    \Z1 = Start initial delay
+    \Z2 = Start DS
+    \Z3 = Start US (possibly with delay)
+    \Z4 = Start new trial (pre-DS)
+    \Z5 = Start delay before session
+    \Z6 = Start NS
+    \Z9 = End of last trial
+    \Z10 = Test Complete
+    \Z11 = Signal that 5" has passed since first PE after DS
+    \Z12 = Siren on
+    \Z13 = Siren off
+
+
+
+\K signals (across all boxes):
+\K1-K16= Used to report loaded boxes and choose lowest-numbered one as control
+\K21 = Start 1st half of ITI
+\K22 = Start 2nd half of ITI
+\K23 = Start pre-DS period
+\K24 = Start DS period
+\K25 = Start post-DS period
+\K26 = Start NS period
+\K27 = Start post-NS period
+
+
+
+S.S.1, \ Session clock in .01" units
+S1,
+  #K21:--->S2 \ K21= Start first half of ITI
+
+S2,
+  .01": ADD B(13)--->SX \ B(13)= Event timer in .01" units; milliseconds
+
+
+
+S.S.2, \ Test the boxes
+S1,
+   .1": SHOW 1, Test, A(1);
+       SET R(0)= ^ToneDur;
+       SET R(1)= ^ToneFreq;
+       SET R(2)= ^SirenBaseFreq;
+       SET R(3)= ^SirenMaxFreq;
+       SET R(4)= ^SirenStepFreq;
+       SET R(5)= ^RFTime;
+       SET R(6)= ^Amplitude;
+       SET R(7)= 0;
+       SET R(8)= ^SirenAmp;
+       ~SetRack(MG,3);~; \Set Rack to 3
+       ~InitANL926RP(MG,3,790);~; \ Reset ANL-926
+       ~SetRF(MG, BOX, R[5]);~;
+       ON ^HouseLight--->S2
+S2, \changed to make siren play while testing
+  #R^PortEntry: Z12; on ^Pump ;~setFreq(MG,BOX,R[1]);~; ~setDur(MG,BOX,R[0]);~; ~onAmp(MG, BOX, R[6]);~; --->S3
+S3,
+   2": Z13; on ^NSWhiteNoise ---> S4
+S4,
+   2": OFF ^HouseLight, ^NSWhiteNoise, ^Pump--->S5
+S5,
+  .1": SHOW 1, Ready,A(1); Z10--->S6
+S6,
+   5':--->SX
+
+
+
+S.S.3, \ Initialization and trial control for all boxes. DS duration is 60 seconds.
+S1, \Initialize variables
+  .01": SET A(5)=0;   \This value specifies the protocol: 0 for paired DS-US or 1 for unpaired
+        SET A(0)=10, A(1)=60, A(2)=10, A(3)=10, A(4)=2;
+        SET B(0)=1";
+        SET H(1)=-987.987, I(1)=-987.987, J(1)=-987.987, K(1)=-987.987, L(1)=-987.987--->SX
+  #Z10:--->S2
+
+S2, \Let all boxes know this box is loaded, to select unique control box in S.S.3
+  #START: KBOX--->S3   \ie, send K1 if this is box 1, K2 if box 2, etc.
+  #Z5:--->S3
+
+S3, \Begin initial ITI
+  #K21: ON ^Houselight--->S6
+
+S4, \Begin 1st half of regular ITI
+  #K21: SET B(3)=0--->S5
+
+S5, \Begin 2nd half of regular ITI, and US if unpaired
+  #K22: IF A(5)=1 [@T2,@F2] \A(5)=0 from S.S.2
+          @T2: Z3--->S6
+          @F2:--->S6
+
+S6, \Begin Pre-DS, unless all trials have run and session is over
+  #K23: SET B(3)=1;
+        IF B(1) < A(1) [@T3,@F3]
+          @T3: ADD B(1); SET I(B(1))=0, I(B(1)+1)=-987.987;
+               SET J(B(1))=0, J(B(1)+1)=-987.987; Z4--->S7
+          @F3: OFF ^Houselight; Z9--->S9
+
+          \Is the current trial # is < the set number of trials?
+          \If false, then end the session ---> S9
+
+S7, \Begin DS, and also US (after delay) if paired
+  #K24: SET B(3)=2; Z2;
+        IF A(5)=0 [@T4,@F4]
+          @T4: Z3--->S8
+          @F4:--->S8
+  #K26: SET B(3)=4; Z6 ---> S8
+
+S8, \Begin Post-DS
+  #K25: ---> S4
+  #K27: ---> S4
+
+S9, \A couple of extra seconds to update display, then quit
+  2":--->STOPABORTFLUSH
+
+
+
+S.S.4, \ Trial and ITI timing, mainly for the control box
+S1, \Let the lowest-numbered running box (starting with 1) assume control
+  #K1:  Z5; SET B(4)= 1--->S2
+  #K2:  Z5; SET B(4)= 2--->S2
+  #K3:  Z5; SET B(4)= 3--->S2
+  #K4:  Z5; SET B(4)= 4--->S2
+  #K5:  Z5; SET B(4)= 5--->S2
+  #K6:  Z5; SET B(4)= 6--->S2
+  #K7:  Z5; SET B(4)= 7--->S2
+  #K8:  Z5; SET B(4)= 8--->S2
+  #K9:  Z5; SET B(4)= 9--->S2
+  #K10: Z5; SET B(4)=10--->S2
+  #K11: Z5; SET B(4)=11--->S2
+  #K12: Z5; SET B(4)=12--->S2
+
+S2, \Pre-session delay, then check if this is the control box
+  A(0)*B(0)#T: IF B(4)=BOX [@T1,@F1]  \If control, choose 1st ITI and proceed
+                 @T1: K21; RANDD B(2)=X--->S3
+                 @F1:--->S16           \Non-control: Go into passive state
+
+S3, \Signal end of 1st half of ITI to all boxes, in case this is unpaired protocol
+  (B(2)/2-A(3))*B(0)#T: K22--->S4   \Take into account pump delay for mid-ITI delivery
+
+S4, \Signal end of 2nd half of ITI to all boxes
+  (B(2)/2+A(3))*B(0)#T: K23--->S5
+
+S5, \Pick NS or DS
+   .1": RANDD B(14)=Y--->S6
+
+S6, \Trigger NS or DS
+   .1": IF B(14)=0 [@T3,@F3]
+          @T3: --->S10    \NS trigger
+          @F3: --->S7    \DS Trigger
+
+S7, \Signal end of Pre-DS interval to all boxes
+  10": K24--->S8
+
+S8, \Signal end of DS interval to all boxes
+  A(2)*B(0)#T: K25--->S9
+
+S9, \Signal end of post-DS interval to all boxes, choose next ITI
+  10": K21; RANDD B(2)=X--->S3
+
+S10, \Signal end of Pre-NS interval to all boxes
+  10": K26--->S11
+
+S11, \Signal end of NS interval to all boxes
+  10": K27--->S12
+
+S12, \Signal end of post-NS interval to all boxes, choose next ITI
+  A(2)*B(0)#T: K21; RANDD B(2)=X--->S3
+
+S13, \Passive state for non-control boxes
+  60':--->SX
+
+
+
+S.S.5, \ Siren control
+
+S1,
+  #Z12: set R(7) = R(2); ~setFreq(MG,BOX,R[2]);~; ~onAmp(MG, BOX, R[8]);~; SET H(B(49))=B(13)/100--->S2  \Currently, Tone one is substituted.
+S2,
+ .01":set R(7) = R(7) + ^SirenStepFreq; ~setFreq(MG,BOX,R[7]);~; ~onAmp(MG, BOX, R[8]);~; if R(7)>=^SirenMaxFreq [@GoDown, @Continue]
+    @GoDown: --->s3
+    @Continue: ---> s2
+ #Z13: ~toneOff(MG, BOX);~ ---> S1
+s3,
+ .01":set R(7) = R(7) - ^SirenStepFreq; ~setFreq(MG,BOX,R[7]);~; ~onAmp(MG, BOX, R[8]);~; if R(7)<=^SirenBaseFreq [@GoUp, @Contin]
+    @GoUp: --->s2
+    @Contin: ---> s3
+ #Z13: ~toneOff(MG, BOX);~; ---> S1
+
+
+
+S.S.6, \ DS control
+S1,
+  \#Z2: Z12; SET H(B(17))=B(13)/100--->S2
+ #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100--->S2
+
+S2,
+  \A(2)*B(0)#T: Z13 ---> S1
+A(2)*B(0)#T: OFF^NSwhiteNoise ---> S1
+  \#R^PortEntry: Z13 --->S1
+ #R^PortEntry: OFF^NSwhiteNoise--->S1
+
+
+S.S.7, \ DS US control
+S1,
+  #Z3:--->S2
+
+S2,
+  A(2)*B(0)#T: --->S1
+  #R^PortEntry: ON ^Pump; SET J(B(1))=B(13)/100; ADD B(5)--->S3
+
+S3,
+  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3--->S1
+
+
+
+S.S.8, \ NS control
+S1,
+ \ #Z6: ON ^NSwhiteNoise; SET I(B(18))=B(13)/100--->S2
+#Z6: Z12; SET I(B(18))=B(13)/100--->S2
+
+S2,
+ \ A(2)*B(0)#T: OFF ^NSwhiteNoise--->S1
+ A(2)*B(0)#T: Z13--->S1
+
+
+
+S.S.9, \ Record PE times and durations
+S1,
+  #K21:--->S2
+
+S2,
+  #R^PortEntry: ADD B(6), B(7+B(3));
+                SET K(B(6))=B(13)/100, L(B(6))=0, K(B(6)+1)=-987.987, L(B(6)+1)=-987.987--->S3
+  #Z9:--->S1
+
+S3, \In this state, PE has occurred and duration is being recorded
+  #R^PortEntry:--->S3
+  #Z9 ! .01": SET L(B(6))=(B(13)-1)/100-K(B(6))--->S2
+
+
+
+S.S.10, \ Latency to enter port after DS
+S1,
+  #Z2: --->S2
+
+S2,
+  A(2)*B(0)#T: SET M(B(17))=A(2), O(B(17))=0, B(3)=3; ADD B(17) --->S1
+  #R^PortEntry: ADD B(21); SET O(B(17))=B(13)/100, B(3)=3  --->S3
+
+S3,
+  5": SET M(B(17))=O(B(17))-H(B(17)); ADD B(17); SET O(B(17)+1)=-987.987--->S1
+
+
+
+S.S.11,  \ Latency to enter port after NS
+S1,
+  #Z6: --->S2
+
+S2,
+  A(2)*B(0)#T: SET N(B(18))=A(2); SET P(B(18))=0; ADD B(18)--->S1
+  #R^PortEntry: ADD B(22); SET P(B(18))=B(13)/100--->S3
+
+S3,
+  5": SET N(B(18))=P(B(18))-I(B(18)); ADD B(18); SET B(3)=5, P(B(18)+1)=-987.987--->S1
+
+
+
+S.S.12,  \ Calculates average latency for DS and NS port entries
+S1,
+   #K21: ARITHMETICMEAN B(25) = M,0,B(17); SHOW 11, DS PE Latency, B(25);
+         ARITHMETICMEAN B(26) = N,0,B(18); SHOW 12, NS PE Latency, B(26)--->SX
+
+
+
+S.S.13, \ Records time spent in port in each window
+S1,
+    #K21:--->S2
+
+S2, \ Begin ITI period count of PE time
+    #R^PortEntry: ADD B(29); ADD B(30+B(3))--->S2
+
+
+
+S.S.14,  \ DS Ratio
+S1,
+   #z2: --->S2
+
+S2,
+  A(2)*B(0)#T: --->S3
+  #R^PortEntry: --->S3
+
+S3,
+  A(2)*B(0)#T: SET B(23)=B(21)/B(17)--->S1
+
+
+
+S.S.15,  \ NS Ratio
+S1,
+   #z6:--->S2
+
+S2,
+  A(2)*B(0)#T: --->S3
+  #R^PortEntry: --->S3
+
+S3,
+  10": SET B(24)=B(22)/B(18)--->S1
+
+
+
+S.S.16, \ Counts the 5 seconds after the first post-DS port entry
+s1,
+  #Z2: ---> s2
+
+s2,
+  #R^PortEntry:--->s3
+
+s3,
+  5": z11 ---> s1
+
+
+
+S.S.17, \ Counts the 5 seconds after the first post-NS port entry
+s1,
+  #Z6: ---> s2
+
+s2,
+  #R^PortEntry:--->s3
+
+s3,
+  5": z11 ---> s1
+
+
+
+S.S.18, \ Record licks & lick timestamps
+S1,
+  #K21:--->S2
+
+S2,
+  #R^Lick: ADD B(36); ADD B(37+B(3));
+           SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> S2
+           \ITI, PreCue, Cue, and PostCue
+  #Z9:--->S1
+  #Z2:--->S3
+  #Z6:--->S5
+
+S3, \Waits for post-DS port entry
+  #R^PortEntry: ---> s4
+  A(2)*B(0)#T: ---> s2
+
+S4, \Counts licks for 5 sec post DS port entry
+  #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(47); ADD V(B(17)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> s4
+  #z11: ---> s2
+
+S5, \Waits for post-NS port entry
+  #R^PortEntry: ---> s6
+  A(2)*B(0)#T: ---> s2
+
+S6, \Counts licks for 5 sec post NS port entry
+  #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(48); ADD U(B(18)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> s4
+  #z11: ---> s2
+
+
+
+S.S.19, \ DS Lick Ratio
+S1,
+   #z2: --->S2
+
+S2,
+  A(2)*B(0)#T: --->S3
+  #R^Lick: ADD B(43)--->S3
+
+S3,
+  A(2)*B(0)#T: SET B(45)=B(43)/B(17)--->S1
+
+
+
+S.S.20, \ NS Lick Ratio
+S1,
+   #z6:--->S2
+
+S2,
+  A(2)*B(0)#T: --->S3
+  #R^Lick: ADD B(44)--->S3
+
+S3,
+  A(2)*B(0)#T: SET B(46)=B(44)/B(18)--->S1
+
+
+
+S.S.21, \ Display of trial number, current state, and elapsed secs in current state
+S1,
+  #Z5: SHOW 1,Delay,B(16)--->S2
+
+S2,
+  #K21: SET B(16)=0;
+        IF BOX=B(4) [@T1,@F1]
+          @T1:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1)+' ('+IntToStr(Round(B[2]))+')',B[12]);~--->S3
+          @F1:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1),B[12]);~--->S3
+  1":   ADD B(16);
+        SHOW 1,Delay,B(16)--->SX
+  #Z9:--->S9
+
+S3,
+  #Z4: SET B(16)=0;
+       ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' PRE',B[12]);~--->S4
+  1":  ADD B(16);
+       IF BOX=B(4) [@T2,@F2]
+         @T2:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1)+' ('+IntToStr(Round(B[2]))+')',B[12]);~--->SX
+         @F2:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1),B[12]);~--->SX
+  #Z9:--->S9
+
+S4,
+  #K24: SET B(16)=0;
+        ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' DS',B[12]);~--->S5
+  #K26: SET B(16)=0;
+        ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' NS',B[12]);~--->S5
+ 1":   ADD B(16);
+        ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' PRE',B[12]);~--->SX
+  #Z9:--->S9
+
+S5,
+  #K25: SET B(16)=0;
+        ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' POSTDS',B[12]);~--->S6
+  #K27: SET B(16)=0;
+        ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' POSTNS',B[12]);~--->S6
+   1":   ADD B(16);
+        ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' DS',B[12]);~--->SX
+  #Z9:--->S9
+
+S6,
+  #K21: SET B(16)=0;
+       IF BOX=B(4) [@T3,@F3]
+         @T3:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1)+' ('+IntToStr(Round(B[2]))+')',B[12]);~--->S3
+         @F3:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1),B[12]);~--->S3
+  1":   ADD B(16);
+        ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' POST',B[12]);~--->SX
+  #Z9:--->S9
+
+S9,
+  60':--->SX
+
+
+S.S.22, \ Summary display of PE and Lick data
+S1,
+  #K21: SHOW 2,Total PE,B(6),
+    3, Total Licks,B(36),
+    4, DS PE Licks, B(47),
+    5, DS PE Ratio, B(23),
+    6, NS Licks,B(41),
+    7, NS PE Ratio, B(24),
+    8, DS PE Latency, B(25),
+    9, NS PE Latency, B(26),
+    10,Total PT,B(29),
+    11,ITI PE, B(7),
+    12,ITI PT,B(30),
+    13,PreCue PE,B(8),
+    14,PreCue PT,B(31),
+    15,DS PE,B(9),
+    16,DS PT,B(32),
+    17,PostDS PE,B(10),
+    18,PostDS PT,B(33),
+    19,NS PT,B(34),
+    20,NS PE,B(11),
+    21,PostNS PT,B(35),
+    22,PostNS PE,B(12)--->S2
+
+S2,
+  1": SHOW 2,Total PE,B(6),
+    3, Total Licks,B(36),
+    4, DS PE Licks, B(47),
+    5, DS PE Ratio, B(23),
+    6, NS Licks,B(41),
+    7, NS PE Ratio, B(24),
+    8, DS PE Latency, B(25),
+    9, NS PE Latency, B(26),
+    10,Total PT,B(29),
+    11,ITI PE, B(7),
+    12,ITI PT,B(30),
+    13,PreCue PE,B(8),
+    14,PreCue PT,B(31),
+    15,DS PE,B(9),
+    16,DS PT,B(32),
+    17,PostDS PE,B(10),
+    18,PostDS PT,B(33),
+    19,NS PT,B(34),
+    20,NS PE,B(11),
+    21,PostNS PT,B(35),
+    22,PostNS PE,B(12)--->SX
+
+S.S.23, \NS TTL Signal
+S1,
+    #start:--->S2
+S2,
+    #Z6: ON ^nsTTL--->S3
+S3,
+    0.01": OFF ^nsTTL--->S2
+
+
+S.S.24, \DS TTL Signal
+S1,
+    #start: --->S2
+S2,
+    #Z2: ON ^dsTTL ---> S3
+S3,
+    .1": OFF ^dsTTL---> S2
+
+
+S.S.25, \PE TTL Signal
+S1,
+    #R^PortEntry: ON ^PortTTL ---> S2
+S2,
+    #R^PortEntry: ---> S2 \done like this b/c sustained PE is being used
+    .01": OFF ^PortTTL ---> S1
+
+S.S.26, \Lick TTL Signal **TEST
+S1,
+    #R^Lick: ON ^LickTTL ---> S2
+S2,
+    .1": OFF ^LickTTL--->S1
