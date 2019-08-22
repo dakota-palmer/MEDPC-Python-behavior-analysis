@@ -1,0 +1,12 @@
+# Hardware setup
+
+TTL OUTPUTS/Hardware configuration (our photometry processor currently only has 8 (0-7)? Digital I/O ports)
+DS= 2 -> 0
+NS= 3 -> 1
+Port Entry Box A= 4-> 2
+Port Exit Box A= 5 -> 3
+Lick Box A= 6-> 4
+Port Entry Box B= 12 -> 5 
+Port Exit Box B= 13-> 6
+Lick Box B= 14-> 7
+
