@@ -137,7 +137,7 @@ DIM B=81
 
 
 \DATA ARRAYS
-DIM =60   \ DS onset time per trial
+DIM H=60   \ DS onset time per trial
 DIM I=60   \ NS onset time per trial
 DIM J=60   \ US onset time per trial
 
