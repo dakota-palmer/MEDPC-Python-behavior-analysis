@@ -47,7 +47,7 @@ DIM R=8
 ^nsTTL = 35 \sends signal to TTL, Plexon, etc.
 ^dsTTL=34 \sends signal to TTL, Plexon, etc.
 ^portTTL=36    \sends signal to TTL, Plexon, etc.
-^lickTTL=37 \not yet implemented
+^lickTTL=37 \sends signal to TTL, Plexon, etc.
 
 
 \ Inter-trial intervals in seconds
