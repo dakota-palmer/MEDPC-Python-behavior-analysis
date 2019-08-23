@@ -1,9 +1,6 @@
-
-\Christelle Cayton
-\Pilot DS and NS Devaluation training. STAGE 1.
-\Rats will be trained with a DS task then run on a devaluation test.
-\In this code, the DS will trigger a white noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
-\Last Edited 1.21.19... basis for siren noise DS code*
+\STAGE 4 White Noise DS
+\In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
+\basis for siren noise DS code*
 
 \CONSTANTS
 \^leftLever = 1
@@ -46,9 +43,9 @@ DIM R=8
 \OUTPUTS
 ^nsTTL = 35 \sends signal to TTL, Plexon, etc.
 ^dsTTL=34 \sends signal to TTL, Plexon, etc.
-^portTTL=36    \sends signal to TTL, Plexon, etc.
-^lickTTL=37 \sends signal to TTL, Plexon, etc.
-
+^portInTTL=36    \sends signal to TTL, Plexon, etc.
+^portOutTTL=37    \sends signal to TTL, Plexon, etc.
+^lickTTL=38 \sends signal to TTL, Plexon, etc.
 
 \ Inter-trial intervals in seconds
 LIST X = 70, 80, 90, 100, 110,
@@ -390,9 +387,12 @@ S2,
 
 S3, \In this state, PE has occurred and duration is being recorded
   #R^PortEntry:--->S3
-  #Z9 ! .01": SET L(B(6))=(B(13)-1)/100-K(B(6))--->S2
+   #Z9 ! .01": SET L(B(6))=(B(13)-1)/100-K(B(6));
+               SHOW 6, PeDuration, L(B(6));\dp added trying to debug
+               ON ^portOutTTL--->S4 \TTL PULSE FOR PORT EXIT \This is only recording Pexits after the program starts (should be fine)
 
-
+S4, \ turn off the TTL Pulse after small delay
+   .01": OFF ^portOutTTL--->S2
 
 S.S.10, \ Latency to enter port after DS
 S1,
@@ -432,9 +432,11 @@ S1,
     #K21:--->S2
 
 S2, \ Begin ITI period count of PE time
-    #R^PortEntry: ADD B(29); ADD B(30+B(3))--->S2
-
-
+       #R^PortEntry: ADD B(29); ADD B(30+B(3));
+                  SHOW 2, PEtime, B(29);
+                  SHOW 3, PEtime2, B(30+B(3));
+                  SHOW 4, PEtime3, B(30);
+                  SHOW 5, PEtime4, B(3)--->S2 \dp added trying to debug
 
 S.S.14,  \ DS Ratio
 S1,
@@ -657,20 +659,20 @@ S1,
 S2,
     #Z2: ON ^dsTTL ---> S3
 S3,
-    .1": OFF ^dsTTL---> S2
+    .01": OFF ^dsTTL---> S2
 
 
-S.S.25, \PE TTL Signal
+S.S.25, \Port Entry TTL Signal     (Port exit TTL signal is higher up in code, where PE and PE duration are recorded)
 S1,
-    #R^PortEntry: ON ^PortTTL ---> S2
+    #R^PortEntry: ON ^PortInTTL ---> S2
 S2,
-    #R^PortEntry: ---> S2 \done like this b/c sustained PE is being used
-    .01": OFF ^PortTTL ---> S1
+     #R^PortEntry: ---> S2 \done like this b/c sustained PE sensor is being used (must turn the TTL off after entering or it will stay active)
+    .01": OFF ^PortInTTL ---> S1
 
-S.S.26, \Lick TTL Signal **TEST
+S.S.26, \Lick TTL Signal
 S1,
     #start: ---> S2
 S2,
     #R^Lick: ON ^LickTTL ---> S3
 S3,
-    .1": OFF ^LickTTL--->S2
+    .01": OFF ^LickTTL--->S1
