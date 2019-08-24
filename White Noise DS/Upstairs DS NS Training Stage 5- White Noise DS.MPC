@@ -1,3 +1,4 @@
+STAGE 5 White Noise DS
 \In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
 \basis for siren noise DS code*
 
@@ -45,7 +46,6 @@ DIM R=8
 ^portInTTL=36    \sends signal to TTL, Plexon, etc.
 ^portOutTTL=37    \sends signal to TTL, Plexon, etc.
 ^lickTTL=38 \sends signal to TTL, Plexon, etc.
-
 
 \ Inter-trial intervals in seconds
 LIST X = 10, 20, 30, 40, 50,
@@ -394,7 +394,6 @@ S3, \In this state, PE has occurred and duration is being recorded
 S4, \ turn off the TTL Pulse after small delay
    .01": OFF ^portOutTTL--->S2
 
-
 S.S.10, \ Latency to enter port after DS
 S1,
   #Z2: --->S2
@@ -438,8 +437,6 @@ S2, \ Begin ITI period count of PE time
                   SHOW 3, PEtime2, B(30+B(3));
                   SHOW 4, PEtime3, B(30);
                   SHOW 5, PEtime4, B(3)--->S2 \dp added trying to debug
-
-
 
 S.S.14,  \ DS Ratio
 S1,
@@ -666,7 +663,6 @@ S3,
 
 
 S.S.25, \Port Entry TTL Signal     (Port exit TTL signal is higher up in code, where PE and PE duration are recorded)
-
 S1,
     #R^PortEntry: ON ^PortInTTL ---> S2
 S2,
@@ -675,6 +671,9 @@ S2,
 
 S.S.26, \Lick TTL Signal
 S1,
-    #R^Lick: ON ^LickTTL ---> S2
+    #start: ---> S2
 S2,
+    #R^Lick: ON ^LickTTL ---> S3
+S3,
     .01": OFF ^LickTTL--->S1
+    
