@@ -6,7 +6,7 @@
 \Constants
 ^delay=1
 ^postdelay=2
-^port=9
+^port=7
 
 \INPUTS
 ^PortEntry = 6
