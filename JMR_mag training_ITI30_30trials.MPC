@@ -34,7 +34,7 @@
 list A=15", 20", 25", 30", 35", 40", 45"
 
 dim b=2000    \total port entry time
-dim k=2000	\total lick time
+dim k=2000    \total lick time
 
 \z1 = End of session
 
@@ -57,9 +57,15 @@ S.S.3,  \PE counter
     s1,
         #start:--->s2
     s2,
-        #R^port:add c;set b(c)=t--->s2 \This seems to be continuously adding, consider making discrete PE counter
+        #R^port:add c;set b(c)=t--->s2
 
-S.S.4   \non-contingent SUCROSE delivery
+S.S.4,  \PE TTL
+    s1,
+        #start:--->s2
+    s2,
+        #R^port:add c;set b(c)=t--->s2
+
+S.S.5   \non-contingent SUCROSE delivery
     s1,
         #start: SET f=30 --->s2
     s2,
@@ -74,39 +80,39 @@ S.S.4   \non-contingent SUCROSE delivery
             @F1: --->S2
 
 
-S.S.5,  \display progress
+S.S.6,  \display progress
     s1,
         0.01": show 1, TotPort, c; show 2, Trial,d --->sx
 
 
-S.S.6,  \session ended at 20 minutes
+S.S.7,  \session ended at 20 minutes
     s1,
         #start:--->s2
     s2,
         #z1: off^houselight; set b(c+1) = -987.987--->stopabortflush
 
-S.S.7, \Lick counter
+S.S.8, \Lick counter
   s1,
         #start:--->s2
 \When a lick is detected, add 1 to the total lick count L and create a timestamp in the array K equal to current time
     s2,
-        #R^lick:add l;set k(l)=t--->s2 
+        #R^lick:add l;set k(l)=t--->s2
 
-S.S.8, \Port Entry TTL Signal     (Port exit TTL signal is currently absent)
+
+S.S.9, \Port Entry TTL Signal     (Port exit TTL signal is higher up in code, where PE and PE duration are recorded)
 S1,
     #R^PortEntry: ON ^PortInTTL ---> S2
 S2,
      #R^PortEntry: ---> S2 \done like this b/c sustained PE sensor is being used (must turn the TTL off after entering or it will stay active)
     .01": OFF ^PortInTTL ---> S1
 
-S.S.9, \Lick TTL Signal
+S.S.10, \Lick TTL Signal
 S1,
     #start: ---> S2
 S2,
-    #R^Lick: ON ^LickTTL ---> S3
+    #R^Lick: ON ^lickTTL ---> S3
 S3,
-    .01": OFF ^LickTTL--->S2 
-
+    .01": OFF ^lickTTL--->S2
 
 
 
