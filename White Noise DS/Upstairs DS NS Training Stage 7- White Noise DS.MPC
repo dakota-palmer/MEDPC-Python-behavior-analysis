@@ -1,6 +1,6 @@
-\STAGE 5 White Noise DS
+\STAGE 7 White Noise DS
 \In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
-\basis for siren noise DS code*
+\basis for siren noise DS code* , *Stage 7 introduces variable reward delivery (variable pump duration) *Stage 6 introduces delay between PE and reward delivery
 
 \CONSTANTS
 \^leftLever = 1
@@ -54,6 +54,9 @@ LIST X = 10, 20, 30, 40, 50,
 
 \ Choose DS
 LIST Y = 0,0,0,0,0,1,1,1,1,1
+
+\Vary reward amount (pump duration in s)
+LIST W= .2", 1", 2", 3", 5" \(the animal trained on 2" duration- this should happen most of the time?)
 
 
 
@@ -133,6 +136,9 @@ DIM B=81
     \B(46)= NS with Licks to Number of NS Ratio
     \B(47)= Licks in 5 sec post DS port entry
     \B(48)= Licks in 5 sec post NS port entry
+
+    \VARIABLE REWARD DELIVERY
+    \B(49) = Current reward delivery (pump duration in seconds)
 
 
 
@@ -220,7 +226,7 @@ S6,
 S.S.3, \ Initialization and trial control for all boxes. DS duration is 60 seconds.
 S1, \Initialize variables
   .01": SET A(5)=0;   \This value specifies the protocol: 0 for paired DS-US or 1 for unpaired
-        SET A(0)=10, A(1)=60, A(2)=10, A(3)=10, A(4)=2;
+        SET A(0)=10, A(1)=60, A(2)=10, A(3)=10, A(4)=2; \A(4) is pump duration in s?
         SET B(0)=1";
         SET H(1)=-987.987, I(1)=-987.987, J(1)=-987.987, K(1)=-987.987, L(1)=-987.987--->SX
   #Z10:--->S2
@@ -283,7 +289,8 @@ S1, \Let the lowest-numbered running box (starting with 1) assume control
 
 S2, \Pre-session delay, then check if this is the control box
   A(0)*B(0)#T: IF B(4)=BOX [@T1,@F1]  \If control, choose 1st ITI and proceed
-                 @T1: K21; RANDD B(2)=X--->S3
+                 @T1: K21; RANDD B(2)=X;
+                           RANDD B(49)=W --->S3 \CHOOSE FIRST REWARD DELIVERY AS WELL?
                  @F1:--->S16           \Non-control: Go into passive state
 
 S3, \Signal end of 1st half of ITI to all boxes, in case this is unpaired protocol
@@ -306,8 +313,9 @@ S7, \Signal end of Pre-DS interval to all boxes
 S8, \Signal end of DS interval to all boxes
   A(2)*B(0)#T: K25--->S9
 
-S9, \Signal end of post-DS interval to all boxes, choose next ITI
-  10": K21; RANDD B(2)=X--->S3
+S9, \Signal end of post-DS interval to all boxes, choose next ITI \Choose next Reward delivery amount as well?
+  10": K21; RANDD B(2)=X;
+            RANDD B(49)=W --->S3
 
 S10, \Signal end of Pre-NS interval to all boxes
   10": K26--->S11
@@ -315,8 +323,10 @@ S10, \Signal end of Pre-NS interval to all boxes
 S11, \Signal end of NS interval to all boxes
   10": K27--->S12
 
-S12, \Signal end of post-NS interval to all boxes, choose next ITI
-  A(2)*B(0)#T: K21; RANDD B(2)=X--->S3
+S12, \Signal end of post-NS interval to all boxes, choose next ITI \Choose next Reward delivery amount as well?
+  A(2)*B(0)#T: K21;
+               RANDD B(2)=X;
+               RANDD B(49)=W --->S3
 
 S13, \Passive state for non-control boxes
   60':--->SX
@@ -358,11 +368,15 @@ S1,
 
 S2,
   A(2)*B(0)#T: --->S1
-  #R^PortEntry: ON ^Pump; SET J(B(1))=B(13)/100; ADD B(5)--->S3
+  #R^PortEntry---> S3
 
 S3,
-  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3--->S1
+  2": ON ^Pump; \Delay before pump comes on
+      SET J(B(1))=B(13)/100;
+      ADD B(5)--->S4
 
+S4,
+  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3--->S1
 
 
 S.S.8, \ NS control

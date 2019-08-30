@@ -1,6 +1,6 @@
-\STAGE 5 White Noise DS
+\STAGE 6 White Noise DS
 \In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
-\basis for siren noise DS code*
+\basis for siren noise DS code* , *Stage 6 introduces delay between PE and reward delivery
 
 \CONSTANTS
 \^leftLever = 1
@@ -358,9 +358,14 @@ S1,
 
 S2,
   A(2)*B(0)#T: --->S1
-  #R^PortEntry: ON ^Pump; SET J(B(1))=B(13)/100; ADD B(5)--->S3
+  #R^PortEntry---> S3
 
 S3,
+  2": ON ^Pump; \Delay before pump comes on
+      SET J(B(1))=B(13)/100;
+      ADD B(5)--->S4
+
+S4,
   A(4)*B(0)#T: OFF ^Pump; SET B(3)=3--->S1
 
 
