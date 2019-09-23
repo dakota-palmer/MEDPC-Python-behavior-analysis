@@ -2,6 +2,8 @@
 \In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
 \basis for siren noise DS code* , *Stage 7 introduces variable reward delivery (variable reward identity from 3 different pumps) *Stage 6 introduces delay between PE and reward delivery
 
+adding quinine stuff
+
 \CONSTANTS
 \^leftLever = 1
 \^rightLever = 2
