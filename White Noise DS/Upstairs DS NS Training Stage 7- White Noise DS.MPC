@@ -162,7 +162,7 @@ DIM U=30   \ 5-sec Licks after first PE following NS
 
 \\dp added 12.16
 DIM Q= 9999 \Port exit timestamps in sec
-DIM C= 30 \Reward identity for DS trials (pump 1, 2, or 3)
+DIM C= 60 \Reward identity for DS trials (pump 1, 2, or 3)
 
 
 \Z signals (within box):
@@ -189,7 +189,10 @@ DIM C= 30 \Reward identity for DS trials (pump 1, 2, or 3)
 \K25 = Start post-DS period
 \K26 = Start NS period
 \K27 = Start post-NS period
-
+\K28-30= Variable Reward Identity (tells other boxes which pump to turn on by setting B(51))
+    \K28= Pump1
+    \K29= Pump2
+    \K30= Pump3
 
 
 S.S.1, \ Session clock in .01" units
@@ -382,35 +385,43 @@ S2,
 
 S3,
  .1": IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
-          @True: --->S6    \Turn on pump 1
+          @True: K28;
+                 SET C(B(17))=1--->S7    \Turn on pump 1 \send K pulse to let other boxes know which pump was chosen
           @False: --->S4    \Check if another pump was chosen
 S4,
  .1": IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
-          @True: --->S7    \Turn on pump 2
+          @True: K29;
+                 SET C(B(17))=2--->S8    \Turn on pump 2
           @False: --->S5    \Check if another pump was chosen
 S5,
  .1": IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
-          @True: ---> S8   \Turn on pump 3
+          @True: K30;
+                 SET C(B(17))=B(51)--->S9   \Turn on pump 3
           @False: --->S3    \Check if another pump was chosen \This means 9 10 or 11 MUST be chosen or else you may get trapped in a loop here
 
-S6,
-2": ON ^Pump1; \Turn on pump 1 Delay before pump comes on
-      SET J(B(1))=B(13)/100;
-      ADD B(5)--->S9
+S6, \listen for variable reward identity k pulses
+      #K28: SET B(51) =1--->S7 \ tell other boxes which pump to turn on by setting B(51)
+      #K29: SET B(51)= 2--->S8
+      #K30: SET B(51) = 3--->S9
+
 S7,
-2": ON ^Pump2; \Turn on pump 2 Delay before pump comes on
+      2": ON ^Pump1; \Turn on pump 1 Delay before pump comes on
       SET J(B(1))=B(13)/100;
       ADD B(5)--->S10
 S8,
-2": ON ^Pump3; \Turn on pump 3 Delay before pump comes on
+      2": ON ^Pump2; \Turn on pump 2 Delay before pump comes on
       SET J(B(1))=B(13)/100;
       ADD B(5)--->S11
-
 S9,
-  A(4)*B(0)#T: OFF ^Pump1; SET B(3)=3--->S1 \Turn off pump 1 ; this is where variable pump duration could be implemented
+      2": ON ^Pump3; \Turn on pump 3 Delay before pump comes on
+      SET J(B(1))=B(13)/100;
+      ADD B(5)--->S12
+
 S10,
-  A(4)*B(0)#T: OFF ^Pump2; SET B(3)=3--->S1 \Turn off pump 2 ; this is where variable pump duration could be implemented
+  A(4)*B(0)#T: OFF ^Pump1; SET B(3)=3--->S1 \Turn off pump 1 ; this is where variable pump duration could be implemented
 S11,
+  A(4)*B(0)#T: OFF ^Pump2; SET B(3)=3--->S1 \Turn off pump 2 ; this is where variable pump duration could be implemented
+S12,
   A(4)*B(0)#T: OFF ^Pump3; SET B(3)=3--->S1 \Turn off pump 3 ; this is where variable pump duration could be implemented
 
 
@@ -437,7 +448,8 @@ S2,
 S3, \In this state, PE has occurred and duration is being recorded
   #R^PortEntry:--->S3
    #Z9 ! .01": SET L(B(6))=(B(13)-1)/100-K(B(6));
-               SHOW 6, PeDuration, L(B(6));\dp added trying to debug
+               \SHOW 6, PeDuration, L(B(6));\dp added trying to debug
+               SET Q(B(6))=B(13)/100; \ Save current timestamp (B(13)/100) as a Port Exit to array Q
                ON ^portOutTTL--->S4 \TTL PULSE FOR PORT EXIT \This is only recording Pexits after the program starts (should be fine)
 
 S4, \ turn off the TTL Pulse after small delay
@@ -719,31 +731,31 @@ S4,
           @False: --->S2    \Check if another pump was chosen \note- this could trigger an infinite loop if B(51) isn't = 1,2,3
 \\\\\\\\\\\\\\\\\DS TTL pulses
 S5, \1 pulse
-    0.10": ON ^dsTTL--->S6 \lots of state sets dedicated to this bc there needs to be a delay between on/off \The delay should be longer than 0.01" to be noticable
+    .01": ON ^dsTTL--->S6 \lots of state sets dedicated to this bc there needs to be a delay between on/off \The delay should be longer than 0.01" to be noticable
 S6,
-    0.10": OFF ^dsTTL--->S2
+    .01": OFF ^dsTTL--->S2
 
 S7, \2 pulses
-    0.10": ON ^dsTTL---> S8
+    .01": ON ^dsTTL---> S8
 S8,
-    0.10": OFF ^dsTTL---> S9
+    .01": OFF ^dsTTL---> S9
 S9,
-    0.10": ON ^dsTTL---> S10
+    1.10": ON ^dsTTL---> S10
 S10,
-    0.10": OFF^dsTTL---> S2
+    .01": OFF^dsTTL---> S2
 
 S11, \3 pulses
-    0.10": ON ^dsTTL---> S13
+    .01": ON ^dsTTL---> S13
 S12,
-    0.10": OFF ^dsTTL---> S14
+    .01": OFF ^dsTTL---> S14
 S13,
-    0.10": ON^dsTTL---> S15
+    1.10": ON^dsTTL---> S15
 S14,
-    0.10": OFF ^dsTTL---> S16
+    .01": OFF ^dsTTL---> S16
 S15,
-    0.10": ON ^dsTTL---> S17
+    1.10": ON ^dsTTL---> S17
 S16,
-    0.10": OFF ^dsTTL--->S2
+    .01": OFF ^dsTTL--->S2
 
 
 S.S.25, \Port Entry TTL Signal     (Port exit TTL signal is higher up in code, where PE and PE duration are recorded)
