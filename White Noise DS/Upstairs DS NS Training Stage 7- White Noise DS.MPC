@@ -50,7 +50,7 @@ DIM R=8
 ^lickTTL=38 \sends signal to TTL, Plexon, etc.
 
 \ Inter-trial intervals in seconds
-LIST X = 10, 20, 30, 40, 50,
+LIST X =  10, 20, 30, 40, 50,
          10, 20, 30, 40, 50  \ Inter-trial intervals in seconds - average ITI is 30 seconds
 
 
@@ -301,7 +301,7 @@ S2, \Pre-session delay, then check if this is the control box
   A(0)*B(0)#T: IF B(4)=BOX [@T1,@F1]  \If control, choose 1st ITI and proceed
                  @T1: K21; RANDD B(2)=X;
                            \RANDD B(50)=W; \CHOOSE FIRST REWARD DELIVERY AS WELL? This is an artifact of trying to do pump  duration
-                           RANDD B(51)=F --->S3 \Variable reward delivery- Randomly pick a pump to activate (probability of pump being activated is determined by list F)
+                           RANDD B(51)=F ---> S17 \Variable reward delivery- Randomly pick a pump to activate for the first trial(probability of pump being activated is determined by list F)
                  @F1:--->S16           \Non-control: Go into passive state
 
 S3, \Signal end of 1st half of ITI to all boxes, in case this is unpaired protocol
@@ -315,7 +315,7 @@ S5, \Pick NS or DS
 
 S6, \Trigger NS or DS
    .1": IF B(14)=0 [@T3,@F3]
-          @T3: --->S10    \NS trigger
+          @T3: --->S13    \NS trigger
           @F3: --->S7    \DS Trigger
 
 S7, \Signal end of Pre-DS interval to all boxes
@@ -327,23 +327,48 @@ S8, \Signal end of DS interval to all boxes
 S9, \Signal end of post-DS interval to all boxes, choose next ITI \Choose next Reward delivery amount as well?
   10": K21; RANDD B(2)=X;
             \RANDD B(50)=W;
-            RANDD B(51)=F --->S3 \variable reward delivery: choose which pump to activate next
+            RANDD B(51)=F --->S10 \VARIABLE REWARD DELIVERY: choose which pump to activate next
 
-S10, \Signal end of Pre-NS interval to all boxes
-  10": K26--->S11
+S10, \In S10-S13, send a K signal at the start of the DS trial letting boxes know which pump to activate (which reward should be delivered)
+ .01": IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K28 ---> S3
+          @False: --->S11
+S11,
+ .01": IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K29 ---> S3
+          @False: --->S12
+S12,
+ .01": IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K30 ---> S3
+          @False: --->S10 \This could trigger an infinite loop if B(51) isnt == 1,2, or 3
 
-S11, \Signal end of NS interval to all boxes
-  10": K27--->S12
+S13, \Signal end of Pre-NS interval to all boxes
+  10": K26--->S14
 
-S12, \Signal end of post-NS interval to all boxes, choose next ITI \Choose next Reward delivery amount as well?
+S14, \Signal end of NS interval to all boxes
+  10": K27--->S15
+
+S15, \Signal end of post-NS interval to all boxes, choose next ITI \Choose next Reward delivery amount as well?
   A(2)*B(0)#T: K21;
-               RANDD B(2)=X;
+               RANDD B(2)=X ---> S3
                \RANDD B(50)=W;
-               RANDD B(51)=F --->S3
+               \RANDD B(51)=F --->S3
 
-S13, \Passive state for non-control boxes
+S16, \Passive state for non-control boxes
   60':--->SX
 
+S17, \In S17-19, send a K signal at the start of the DS trial letting boxes know which pump to activate (which reward should be delivered) * FOR FIRST TRIAL (these were being skipped over on trial 1)
+ .01": IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K28 ---> S3
+          @False: --->S18
+S18,
+ .01": IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K29 ---> S3
+          @False: --->S19
+S19,
+ .01": IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K30 ---> S3
+          @False: --->S17 \This could trigger an infinite loop if B(51) isnt == 1,2, or 3
 
 
 S.S.5, \ Siren control
@@ -366,7 +391,8 @@ s3,
 S.S.6, \ DS control
 S1,
   \#Z2: Z12; SET H(B(17))=B(13)/100--->S2
- #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100--->S2
+ #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100---> S2
+
 
 S2,
   \A(2)*B(0)#T: Z13 ---> S1
@@ -385,35 +411,27 @@ S2,
 
 S3,
  .1": IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
-          @True: K28;
-                 SET C(B(17))=1--->S7    \Turn on pump 1 \send K pulse to let other boxes know which pump was chosen
+          @True:  --->S7    \Turn on pump 1
           @False: --->S4    \Check if another pump was chosen
 S4,
  .1": IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
-          @True: K29;
-                 SET C(B(17))=2--->S8    \Turn on pump 2
+          @True: --->S8    \Turn on pump 2
           @False: --->S5    \Check if another pump was chosen
 S5,
  .1": IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
-          @True: K30;
-                 SET C(B(17))=B(51)--->S9   \Turn on pump 3
+          @True: --->S9   \Turn on pump 3
           @False: --->S3    \Check if another pump was chosen \This means 9 10 or 11 MUST be chosen or else you may get trapped in a loop here
 
-S6, \listen for variable reward identity k pulses
-      #K28: SET B(51) =1--->S7 \ tell other boxes which pump to turn on by setting B(51)
-      #K29: SET B(51)= 2--->S8
-      #K30: SET B(51) = 3--->S9
-
 S7,
-      2": ON ^Pump1; \Turn on pump 1 Delay before pump comes on
+      2": ON ^Pump1; \Turn on pump 1 DELAY before pump comes on
       SET J(B(1))=B(13)/100;
       ADD B(5)--->S10
 S8,
-      2": ON ^Pump2; \Turn on pump 2 Delay before pump comes on
+      2": ON ^Pump2; \Turn on pump 2 DELAY before pump comes on
       SET J(B(1))=B(13)/100;
       ADD B(5)--->S11
 S9,
-      2": ON ^Pump3; \Turn on pump 3 Delay before pump comes on
+      2": ON ^Pump3; \Turn on pump 3 DELAY before pump comes on
       SET J(B(1))=B(13)/100;
       ADD B(5)--->S12
 
@@ -684,7 +702,7 @@ S1,
 
 S2,
   1": SHOW 2,Total PE,B(6),
-    3, Total Licks,B(36),
+    3, Pump , B(51),\ 3, Total Licks,B(36),
     4, DS PE Licks, B(47),
     5, DS PE Ratio, B(23),
     6, NS Licks,B(41),
@@ -740,20 +758,20 @@ S7, \2 pulses
 S8,
     .01": OFF ^dsTTL---> S9
 S9,
-    1.10": ON ^dsTTL---> S10
+    0.50": ON ^dsTTL---> S10
 S10,
     .01": OFF^dsTTL---> S2
 
 S11, \3 pulses
-    .01": ON ^dsTTL---> S13
+    .01": ON ^dsTTL---> S12
 S12,
-    .01": OFF ^dsTTL---> S14
+    .01": OFF ^dsTTL---> S13
 S13,
-    1.10": ON^dsTTL---> S15
+    0.50": ON^dsTTL---> S14
 S14,
-    .01": OFF ^dsTTL---> S16
+    .01": OFF ^dsTTL---> S15
 S15,
-    1.10": ON ^dsTTL---> S17
+    0.50": ON ^dsTTL---> S16
 S16,
     .01": OFF ^dsTTL--->S2
 
@@ -774,4 +792,12 @@ S2,
     #R^Lick: ON ^LickTTL ---> S3
 S3,
     .01": OFF ^LickTTL--->S2
+
+S.S.27, \VARIABLE REWARD DELIVERY ; listen for K Pulse containing pump ID to turn on (B(51) = 1, 2, or 3)
+    S1,
+     #K28: SET (B(51))= 1--->S2
+     #K29: SET(B(51))= 2--->S2
+     #K30: SET(B(51))= 3--->S2
+     S2,
+     .1": SET C(B(17))=B(51) ---> S1 \save reward for this trial to array C
 
