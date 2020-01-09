@@ -1,6 +1,6 @@
-\STAGE 7 White Noise DS
+\STAGE 8 White Noise DS
 \In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
-\basis for siren noise DS code* , *Stage 6 introduces delay between PE and reward delivery
+\basis for siren noise DS code* , *Stage 8 introduces variable reward delivery (variable reward identity from 3 different pumps) *Stage 6 introduces delay between PE and reward delivery
 
 \CONSTANTS
 \^leftLever = 1
@@ -11,7 +11,9 @@
 ^DSTone2 = 23
 ^NSwhiteNoise = 8
 ^Boxlight = 28
-^Pump = 9
+^Pump1 = 9
+^Pump2 = 10
+^Pump3 = 11
 ^Houselight = 7
 
 
@@ -48,19 +50,22 @@ DIM R=8
 ^lickTTL=38 \sends signal to TTL, Plexon, etc.
 
 \ Inter-trial intervals in seconds
-LIST X = 10, 20, 30, 40, 50,
+LIST X =  10, 20, 30, 40, 50,
          10, 20, 30, 40, 50  \ Inter-trial intervals in seconds - average ITI is 30 seconds
 
 
 \ Choose DS
 LIST Y = 0,0,0,0,0,1,1,1,1,1
 
+\Vary reward amount (pump duration in s) - clean this up
+\LIST W= .2, 1, 2, 3, 5 \(the animal trained on 2" duration- this should happen most of the time?)
 
-
+\Vary reward identity (which pump is activated)
+LIST F= 1,2,3 \equal likelyhood of pump 1, 2, or 3 being activated (should result in 10 trials of each)
 Var_Alias Startup Delay (Sec)                 = A(0)
 Var_Alias Number of trials                    = A(1)
 Var_Alias DS duration                         = A(2)
-Var_Alias Pump Delay (Sec)                    = A(3)  \ Not used in this program?
+Var_Alias Pump Delay (Sec)                    = A(3)  \ Not used in this program
 Var_Alias Pump duration (Sec)                 = A(4)
 Var_Alias Paired (0), or Unpaired (1) DS-US   = A(5)
 
@@ -134,6 +139,9 @@ DIM B=81
     \B(47)= Licks in 5 sec post DS port entry
     \B(48)= Licks in 5 sec post NS port entry
 
+    \VARIABLE REWARD DELIVERY
+    \B(50) = Current reward delivery (pump duration in seconds) \B(49) is referenced but undefined... not sure what it's for \maybe pump duration stuff should be removed (e.g. B(50) and list W)!!!
+    \B(51) = Current reward delivery (which pump will be activated)
 
 
 \DATA ARRAYS
@@ -150,6 +158,10 @@ DIM P=30   \ Time of first PE following NS
 DIM S=9999 \ Lick timestamps in sec
 DIM V=30   \ 5-sec Licks after first PE following DS
 DIM U=30   \ 5-sec Licks after first PE following NS
+
+\\dp added 12.16
+DIM Q= 9999 \Port exit timestamps in sec
+DIM C= 60 \Reward identity for DS trials (pump 1, 2, or 3)
 
 
 \Z signals (within box):
@@ -176,7 +188,10 @@ DIM U=30   \ 5-sec Licks after first PE following NS
 \K25 = Start post-DS period
 \K26 = Start NS period
 \K27 = Start post-NS period
-
+\K28-30= Variable Reward Identity (tells other boxes which pump to turn on by setting B(51))
+    \K28= Pump1
+    \K29= Pump2
+    \K30= Pump3
 
 
 S.S.1, \ Session clock in .01" units
@@ -205,11 +220,11 @@ S1,
        ~SetRF(MG, BOX, R[5]);~;
        ON ^HouseLight--->S2
 S2, \changed to make siren play while testing
-  #R^PortEntry: Z12; on ^Pump ;~setFreq(MG,BOX,R[1]);~; ~setDur(MG,BOX,R[0]);~; ~onAmp(MG, BOX, R[6]);~; --->S3
+  #R^PortEntry: Z12; on ^Pump1 ;~setFreq(MG,BOX,R[1]);~; ~setDur(MG,BOX,R[0]);~; ~onAmp(MG, BOX, R[6]);~; --->S3
 S3,
    2": Z13; on ^NSWhiteNoise ---> S4
 S4,
-   2": OFF ^HouseLight, ^NSWhiteNoise, ^Pump--->S5
+   2": OFF ^HouseLight, ^NSWhiteNoise, ^Pump1--->S5
 S5,
   .1": SHOW 1, Ready,A(1); Z10--->S6
 S6,
@@ -220,7 +235,7 @@ S6,
 S.S.3, \ Initialization and trial control for all boxes. DS duration is 60 seconds.
 S1, \Initialize variables
   .01": SET A(5)=0;   \This value specifies the protocol: 0 for paired DS-US or 1 for unpaired
-        SET A(0)=10, A(1)=60, A(2)=10, A(3)=10, A(4)=2;
+        SET A(0)=10, A(1)=60, A(2)=10, A(3)=10, A(4)=2; \A(4) is pump duration in s?
         SET B(0)=1";
         SET H(1)=-987.987, I(1)=-987.987, J(1)=-987.987, K(1)=-987.987, L(1)=-987.987--->SX
   #Z10:--->S2
@@ -283,7 +298,9 @@ S1, \Let the lowest-numbered running box (starting with 1) assume control
 
 S2, \Pre-session delay, then check if this is the control box
   A(0)*B(0)#T: IF B(4)=BOX [@T1,@F1]  \If control, choose 1st ITI and proceed
-                 @T1: K21; RANDD B(2)=X--->S3
+                 @T1: K21; RANDD B(2)=X;
+                           \RANDD B(50)=W; \CHOOSE FIRST REWARD DELIVERY AS WELL? This is an artifact of trying to do pump  duration
+                           RANDD B(51)=F ---> S17 \Variable reward delivery- Randomly pick a pump to activate for the first trial(probability of pump being activated is determined by list F)
                  @F1:--->S16           \Non-control: Go into passive state
 
 S3, \Signal end of 1st half of ITI to all boxes, in case this is unpaired protocol
@@ -297,7 +314,7 @@ S5, \Pick NS or DS
 
 S6, \Trigger NS or DS
    .1": IF B(14)=0 [@T3,@F3]
-          @T3: --->S10    \NS trigger
+          @T3: --->S13    \NS trigger
           @F3: --->S7    \DS Trigger
 
 S7, \Signal end of Pre-DS interval to all boxes
@@ -306,21 +323,51 @@ S7, \Signal end of Pre-DS interval to all boxes
 S8, \Signal end of DS interval to all boxes
   A(2)*B(0)#T: K25--->S9
 
-S9, \Signal end of post-DS interval to all boxes, choose next ITI
-  10": K21; RANDD B(2)=X--->S3
+S9, \Signal end of post-DS interval to all boxes, choose next ITI \Choose next Reward delivery amount as well?
+  10": K21; RANDD B(2)=X;
+            \RANDD B(50)=W;
+            RANDD B(51)=F --->S10 \VARIABLE REWARD DELIVERY: choose which pump to activate next
 
-S10, \Signal end of Pre-NS interval to all boxes
-  10": K26--->S11
+S10, \In S10-S13, send a K signal at the start of the DS trial letting boxes know which pump to activate (which reward should be delivered)
+ .01": IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K28 ---> S3
+          @False: --->S11
+S11,
+ .01": IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K29 ---> S3
+          @False: --->S12
+S12,
+ .01": IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K30 ---> S3
+          @False: --->S10 \This could trigger an infinite loop if B(51) isnt == 1,2, or 3
 
-S11, \Signal end of NS interval to all boxes
-  10": K27--->S12
+S13, \Signal end of Pre-NS interval to all boxes
+  10": K26--->S14
 
-S12, \Signal end of post-NS interval to all boxes, choose next ITI
-  A(2)*B(0)#T: K21; RANDD B(2)=X--->S3
+S14, \Signal end of NS interval to all boxes
+  10": K27--->S15
 
-S13, \Passive state for non-control boxes
+S15, \Signal end of post-NS interval to all boxes, choose next ITI \Choose next Reward delivery amount as well?
+  A(2)*B(0)#T: K21;
+               RANDD B(2)=X ---> S3
+               \RANDD B(50)=W;
+               \RANDD B(51)=F --->S3
+
+S16, \Passive state for non-control boxes
   60':--->SX
 
+S17, \In S17-19, send a K signal at the start of the DS trial letting boxes know which pump to activate (which reward should be delivered) * FOR FIRST TRIAL (these were being skipped over on trial 1)
+ .01": IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K28 ---> S3
+          @False: --->S18
+S18,
+ .01": IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K29 ---> S3
+          @False: --->S19
+S19,
+ .01": IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: K30 ---> S3
+          @False: --->S17 \This could trigger an infinite loop if B(51) isnt == 1,2, or 3
 
 
 S.S.5, \ Siren control
@@ -343,7 +390,8 @@ s3,
 S.S.6, \ DS control
 S1,
   \#Z2: Z12; SET H(B(17))=B(13)/100--->S2
- #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100--->S2
+ #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100---> S2
+
 
 S2,
   \A(2)*B(0)#T: Z13 ---> S1
@@ -352,7 +400,7 @@ A(2)*B(0)#T: OFF^NSwhiteNoise ---> S1
  #R^PortEntry: OFF^NSwhiteNoise--->S1
 
 
-S.S.7, \ DS US control
+S.S.7, \ DS US control \Variable reward delivery control
 S1,
   #Z3:--->S2
 
@@ -361,13 +409,37 @@ S2,
   #R^PortEntry---> S3
 
 S3,
-  1.0": ON ^Pump; \DELAY before pump comes on
-      SET J(B(1))=B(13)/100;
-      ADD B(5)--->S4
-
+ .1": IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True:  --->S7    \Turn on pump 1
+          @False: --->S4    \Check if another pump was chosen
 S4,
-  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3--->S1
+ .1": IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: --->S8    \Turn on pump 2
+          @False: --->S5    \Check if another pump was chosen
+S5,
+ .1": IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: --->S9   \Turn on pump 3
+          @False: --->S3    \Check if another pump was chosen \This means 9 10 or 11 MUST be chosen or else you may get trapped in a loop here
 
+S7,
+      1.0": ON ^Pump1; \Turn on pump 1 DELAY before pump comes on
+      SET J(B(1))=B(13)/100;
+      ADD B(5)--->S10
+S8,
+      1.0": ON ^Pump2; \Turn on pump 2 DELAY before pump comes on
+      SET J(B(1))=B(13)/100;
+      ADD B(5)--->S11
+S9,
+      1.0": ON ^Pump3; \Turn on pump 3 DELAY before pump comes on
+      SET J(B(1))=B(13)/100;
+      ADD B(5)--->S12
+
+S10,
+  A(4)*B(0)#T: OFF ^Pump1; SET B(3)=3--->S1 \Turn off pump 1 ; this is where variable pump duration could be implemented
+S11,
+  A(4)*B(0)#T: OFF ^Pump2; SET B(3)=3--->S1 \Turn off pump 2 ; this is where variable pump duration could be implemented
+S12,
+  A(4)*B(0)#T: OFF ^Pump3; SET B(3)=3--->S1 \Turn off pump 3 ; this is where variable pump duration could be implemented
 
 
 S.S.8, \ NS control
@@ -393,7 +465,8 @@ S2,
 S3, \In this state, PE has occurred and duration is being recorded
   #R^PortEntry:--->S3
    #Z9 ! .01": SET L(B(6))=(B(13)-1)/100-K(B(6));
-               SHOW 6, PeDuration, L(B(6));\dp added trying to debug
+               \SHOW 6, PeDuration, L(B(6));\dp added trying to debug
+               SET Q(B(6))=B(13)/100; \ Save current timestamp (B(13)/100) as a Port Exit to array Q
                ON ^portOutTTL--->S4 \TTL PULSE FOR PORT EXIT \This is only recording Pexits after the program starts (should be fine)
 
 S4, \ turn off the TTL Pulse after small delay
@@ -628,7 +701,7 @@ S1,
 
 S2,
   1": SHOW 2,Total PE,B(6),
-    3, Total Licks,B(36),
+    3, Pump , B(51),\ 3, Total Licks,B(36),
     4, DS PE Licks, B(47),
     5, DS PE Ratio, B(23),
     6, NS Licks,B(41),
@@ -658,13 +731,48 @@ S3,
     0.01": OFF ^nsTTL--->S2
 
 
-S.S.24, \DS TTL Signal
+S.S.24, \DS TTL Signal \Add variable TTL pulse to know which pump will be turned on (upcoming reward identity)
 S1,
     #K21: --->S2
 S2,
-    #Z2: ON ^dsTTL ---> S3
+     #Z2: IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: --->S5   \If pump 1, send a single DS TTL pulse
+          @False: --->S3    \Check if another pump was chosen
 S3,
-    .01": OFF ^dsTTL---> S2
+    .01":IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: --->S7    \If pump 2, send 2 DS TTL pulses
+          @False: --->S4    \Check if another pump was chosen
+S4,
+    .01":IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+          @True: --->S11    \If pump 3, send 3 DS TTL pulses
+          @False: --->S2    \Check if another pump was chosen \note- this could trigger an infinite loop if B(51) isn't = 1,2,3
+\\\\\\\\\\\\\\\\\DS TTL pulses
+S5, \1 pulse
+    .01": ON ^dsTTL--->S6 \lots of state sets dedicated to this bc there needs to be a delay between on/off \The delay should be longer than 0.01" to be noticable
+S6,
+    .01": OFF ^dsTTL--->S2
+
+S7, \2 pulses
+    .01": ON ^dsTTL---> S8
+S8,
+    .01": OFF ^dsTTL---> S9
+S9,
+    0.50": ON ^dsTTL---> S10
+S10,
+    .01": OFF^dsTTL---> S2
+
+S11, \3 pulses
+    .01": ON ^dsTTL---> S12
+S12,
+    .01": OFF ^dsTTL---> S13
+S13,
+    0.50": ON^dsTTL---> S14
+S14,
+    .01": OFF ^dsTTL---> S15
+S15,
+    0.50": ON ^dsTTL---> S16
+S16,
+    .01": OFF ^dsTTL--->S2
 
 
 S.S.25, \Port Entry TTL Signal     (Port exit TTL signal is higher up in code, where PE and PE duration are recorded)
@@ -683,4 +791,12 @@ S2,
     #R^Lick: ON ^LickTTL ---> S3
 S3,
     .01": OFF ^LickTTL--->S2
+
+S.S.27, \VARIABLE REWARD DELIVERY ; listen for K Pulse containing pump ID to turn on (B(51) = 1, 2, or 3)
+    S1,
+     #K28: SET (B(51))= 1--->S2
+     #K29: SET(B(51))= 2--->S2
+     #K30: SET(B(51))= 3--->S2
+     S2,
+     .1": SET C(B(17))=B(51) ---> S1 \save reward for this trial to array C
 

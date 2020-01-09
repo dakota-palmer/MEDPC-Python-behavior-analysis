@@ -60,7 +60,7 @@ LIST Y = 0,0,0,0,0,1,1,1,1,1
 Var_Alias Startup Delay (Sec)                 = A(0)
 Var_Alias Number of trials                    = A(1)
 Var_Alias DS duration                         = A(2)
-Var_Alias Pump Delay (Sec)                    = A(3)  \ Not used in this program
+Var_Alias Pump Delay (Sec)                    = A(3)  \ Not used in this program?
 Var_Alias Pump duration (Sec)                 = A(4)
 Var_Alias Paired (0), or Unpaired (1) DS-US   = A(5)
 
@@ -361,7 +361,7 @@ S2,
   #R^PortEntry---> S3
 
 S3,
-  0.5": ON ^Pump; \Delay before pump comes on
+  0.5": ON ^Pump; \DELAY before pump comes on
       SET J(B(1))=B(13)/100;
       ADD B(5)--->S4
 
