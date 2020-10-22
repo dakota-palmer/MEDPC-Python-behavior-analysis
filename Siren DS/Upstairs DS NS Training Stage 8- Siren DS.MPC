@@ -405,16 +405,16 @@ S2,
   A(2)*B(0)#T: --->S1
   #R^PortEntry---> S3
 
-S3,
- .1": IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+S3, \Why are the delays here .1" ? I think it's probably because of the sequential conditionals in SS4/SS7... a .01" delay wouldn't be enough time to allow the K pulses to arrive in the other boxes?
+ .1": IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11) \**Sequential IF statements here add compounding delay to Pump On . Delay for pump1 = .1"
           @True:  --->S7    \Turn on pump 1
           @False: --->S4    \Check if another pump was chosen
 S4,
- .1": IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+ .1": IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11) \Compounding delay for pump2 = .2"
           @True: --->S8    \Turn on pump 2
           @False: --->S5    \Check if another pump was chosen
 S5,
- .1": IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+ .1": IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11) \Coumpounding dleay for pump3 = .3"
           @True: --->S9   \Turn on pump 3
           @False: --->S3    \Check if another pump was chosen \This means 9 10 or 11 MUST be chosen or else you may get trapped in a loop here
 
@@ -726,22 +726,22 @@ S3,
     0.01": OFF ^nsTTL--->S2
 
 
-S.S.24, \DS TTL Signal \Add variable TTL pulse to know which pump will be turned on (upcoming reward identity)
+S.S.24, \DS TTL Signal \Add variable TTL pulse to know which pump will be turned on (upcoming reward identity) 
 S1,
     #K21: --->S2
 S2,
-     #Z2: IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+     #Z2: IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11) \** Sequential IF statements here add compounding delay to DS TTL on ; conditional delay = 0 BUT new state set after this with .01" delay (previous stages simply triggered DS TTL on #Z2)
           @True: --->S5   \If pump 1, send a single DS TTL pulse
           @False: --->S3    \Check if another pump was chosen
 S3,
-    .01":IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+    .01":IF B(51)=2 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11) \Pump2 DS TTL compounding delay = .01" + new state with .01" delay after this = .02"
           @True: --->S7    \If pump 2, send 2 DS TTL pulses
           @False: --->S4    \Check if another pump was chosen
 S4,
-    .01":IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11)
+    .01":IF B(51)=3 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9, 10, or 11) \Pump3 DS TTL compounding delay = .02" + new state with .01" delay after this = .03"
           @True: --->S11    \If pump 3, send 3 DS TTL pulses
           @False: --->S2    \Check if another pump was chosen \note- this could trigger an infinite loop if B(51) isn't = 1,2,3
-\\\\\\\\\\\\\\\\\DS TTL pulses
+\\\\\\\\\\\\\\\\\DS TTL pulses \VARIABLE REWARD DELIVERY 
 S5, \1 pulse
     .01": ON ^dsTTL--->S6 \lots of state sets dedicated to this bc there needs to be a delay between on/off \The delay should be longer than 0.01" to be noticable
 S6,
