@@ -328,7 +328,7 @@ S13, \Passive state for non-control boxes
 S.S.5, \ Siren control
 
 S1,
-  #Z12: set R(7) = R(2); ~setFreq(MG,BOX,R[2]);~; ~onAmp(MG, BOX, R[8]);~; SET H(B(49))=B(13)/100--->S2  \Currently, Tone one is substituted.
+  #Z12: set R(7) = R(2); ~setFreq(MG,BOX,R[2]);~; ~onAmp(MG, BOX, R[8]);~; SET H(B(17))=B(13)/100--->S2  \Currently, Tone one is substituted.
 S2,
  .01":set R(7) = R(7) + ^SirenStepFreq; ~setFreq(MG,BOX,R[7]);~; ~onAmp(MG, BOX, R[8]);~; if R(7)>=^SirenMaxFreq [@GoDown, @Continue]
     @GoDown: --->s3
