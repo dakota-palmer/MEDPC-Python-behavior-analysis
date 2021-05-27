@@ -392,7 +392,8 @@ S1,
   #Z3:--->S2
 
 S2,
-  A(2)*B(0)#T: IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9 or 10)
+  A(2)*B(0)#T--->S1
+  #R^PortEntry: IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9 or 10)
           @True: ON ^Pump1; ON ^Reward1TTL; SET J(B(1))=B(13)/100; ADD B(5) --->S3    \Turn on pump 1
           @False: ON ^Pump2; ON ^Reward2TTL; SET J(B(1))=B(13)/100; ADD B(5)--->S4    \Turn on pump 2
 S3,
