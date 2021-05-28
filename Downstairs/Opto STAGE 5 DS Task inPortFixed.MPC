@@ -135,19 +135,19 @@ DIM B=81
 
 
 \DATA ARRAYS
-DIM H=60   \ DS onset time per trial
-DIM I=60   \ NS onset time per trial
-DIM J=60   \ US onset time per trial
+DIM H=61   \ DS onset time per trial
+DIM I=61   \ NS onset time per trial
+DIM J=61   \ US onset time per trial
 
 DIM K=9999 \ PE timestamps in sec
 DIM L=9999 \ PE durations in sec
-DIM M=30   \ Latency to PE following DS per trial
-DIM N=30   \ Latency to PE following NS per trial
+DIM M=31   \ Latency to PE following DS per trial
+DIM N=31   \ Latency to PE following NS per trial
 DIM O=31   \ Time of first PE following DS
-DIM P=30   \ Time of first PE following NS
+DIM P=31   \ Time of first PE following NS
 DIM S=9999 \ Lick timestamps in sec
-DIM V=30   \ 5-sec Licks after first PE following DS
-DIM U=30   \ 5-sec Licks after first PE following NS
+DIM V=31   \ 5-sec Licks after first PE following DS
+DIM U=31   \ 5-sec Licks after first PE following NS
 
 
 \Z signals (within box):
@@ -547,7 +547,7 @@ S2,
   #Z9:--->S9
 
 S3,
-  #Z4: SET B(16)=0;
+  #Z4: SET B(16)=0; \if start new pre DS trial? \Doesnt seem to be an NS version of this so maybe that's just why the SHOW() is wrong at times
        ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' PRE',B[12]);~--->S4
   1":  ADD B(16);
        IF BOX=B(4) [@T2,@F2]
@@ -556,20 +556,20 @@ S3,
   #Z9:--->S9
 
 S4,
-  #K24: SET B(16)=0;
+  #K24: SET B(16)=0; \if DS period start
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' DS',B[12]);~--->S5
-  #K26: SET B(16)=0;
+  #K26: SET B(16)=0; \if NS period start
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' NS',B[12]);~--->S5
  1":   ADD B(16);
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' PRE',B[12]);~--->SX
   #Z9:--->S9
 
 S5,
-  #K25: SET B(16)=0;
+  #K25: SET B(16)=0; \if DS period end
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' POSTDS',B[12]);~--->S6
-  #K27: SET B(16)=0;
+  #K27: SET B(16)=0; \if NS period end
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' POSTNS',B[12]);~--->S6
-   1":   ADD B(16);
+   1":   ADD B(16); \should this say NS?
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' DS',B[12]);~--->SX
   #Z9:--->S9
 
