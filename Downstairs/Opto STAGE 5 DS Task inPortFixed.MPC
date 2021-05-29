@@ -121,7 +121,7 @@ DIM B=81
     \B(36)= Total Licks
     \B(37)= Licks in ITI
     \B(38)= Licks in Pre DS/NS
-    \B(39)= Licks in DS
+    \B(39)= Licks in DS \todo: not implemented?
     \B(40)= Licks in Post DS
     \B(41)= Licks in NS
     \B(42)= Licks in Post NS
@@ -249,14 +249,14 @@ S6, \Begin Pre-DS, unless all trials have run and session is over
           \If false, then end the session ---> S9
 
 S7, \Begin DS, and also US (after delay) if paired
-  #K24: SET B(3)=2; Z2;
+  #K24: SET B(3)=2; Z2; \Z2 starts the DS trial epoch within-box?
         IF A(5)=0 [@T4,@F4]
-          @T4: Z3--->S8
+          @T4: Z3--->S8 \if unpaired DS-US protocol (A(5)=0), trigger Z3 signal to initiate US 
           @F4:--->S8
-  #K26: SET B(3)=4; Z6 ---> S8
+  #K26: SET B(3)=4; Z6 ---> S8 \Z6 starts the NS trial epoch within box
 
 S8, \Begin Post-DS
-  #K25: ---> S4
+  #K25: ---> S4 \go back to state 4 and wait for a new DS or NS trial start signal
   #K27: ---> S4
 
 S9, \A couple of extra seconds to update display, then quit
@@ -282,7 +282,7 @@ S1, \Let the lowest-numbered running box (starting with 1) assume control
 S2, \Pre-session delay, then check if this is the control box
   A(0)*B(0)#T: IF B(4)=BOX [@T1,@F1]  \If control, choose 1st ITI and proceed
                  @T1: K21; RANDD B(2)=X--->S3
-                 @F1:--->S13           \Non-control: Go into passive state
+                 @F1:--->S13        \Non-control: Go into passive state
 
 S3, \Signal end of 1st half of ITI to all boxes, in case this is unpaired protocol
   (B(2)/2-A(3))*B(0)#T: K22--->S4   \Take into account pump delay for mid-ITI delivery
@@ -340,24 +340,24 @@ s3,
 
 S.S.6, \ DS control
 S1,
-  #Z2: Z12; SET H(B(17))=B(13)/100--->S2
+  #Z2: Z12; SET H(B(17))=B(13)/100--->S2 \once the DS period starts, Z12 turns on siren and logs the onset time
 
 S2,
-  A(2)*B(0)#T: Z13 ---> S1
-  #R^PortEntry: Z13 --->S1
+  A(2)*B(0)#T: Z13 ---> S1 \Z13 turns off siren once cue duration ends
+  #R^PortEntry: Z13 --->S1 \Z13 turns off siren if a PE is made
 
 
 
-S.S.7, \ DS US control
+S.S.7, \ DS US control (control of US paired with DS)
 S1,
-  #Z3:--->S2
+  #Z3:--->S2 \wait for Z3 signal that US should be made available  
 
 S2,
-  A(2)*B(0)#T: --->S1
-  #R^PortEntry: ON ^Pump; SET J(B(1))=B(13)/100; ADD B(5)--->S3
+  A(2)*B(0)#T: --->S1 \if the full cue duration passes, go back to S1 and wait for the next Z3
+  #R^PortEntry: ON ^Pump; SET J(B(1))=B(13)/100; ADD B(5)--->S3 \if PE, turn pump on, record onset time, iterate reward count, then move to S3
 
 S3,
-  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3--->S1
+  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3--->S1 \following pump duration A(4), turn pump off, update B(3) and return to S1 waiting for next Z3 signal
 
 
 
@@ -387,14 +387,14 @@ S3, \In this state, PE has occurred and duration is being recorded
 
 S.S.10, \ Latency to enter port after DS
 S1,
-  #Z2: --->S2
+  #Z2: --->S2 \waiting for a Z2 signal saying a DS trial has started
 
-S2,
+S2, \if the full cue duration (A2) time passes, save placeholder values for this trial, iterate DS trial counter, and go back to state 1 \if a PE is made before this, save PE timestamp, add to # trials with PE, and go to S3  
   A(2)*B(0)#T: SET M(B(17))=A(2), O(B(17))=0, B(3)=3; ADD B(17) --->S1
   #R^PortEntry: ADD B(21); SET O(B(17))=B(13)/100, B(3)=3  --->S3
 
-S3,
-  5": SET M(B(17))=O(B(17))-H(B(17)); ADD B(17); SET O(B(17)+1)=-987.987--->S1
+S3, \calculate PE latency for this trial, then iterate DS trial counter \ ?Why 5"? I feel like this should be as short as possible to gurantee the PE ratio calculation in S.S.14 is correct
+  5": SET M(B(17))=O(B(17))-H(B(17)); ADD B(17); SET O(B(17)+1)=-987.987--->S1 
 
 
 
@@ -429,14 +429,14 @@ S2, \ Begin ITI period count of PE time
 
 S.S.14,  \ DS Ratio
 S1,
-   #z2: --->S2
+   #z2: --->S2 \wait for a Z2 signal saying start DS trial 
 
 S2,
-  A(2)*B(0)#T: --->S3
-  #R^PortEntry: --->S3
+  A(2)*B(0)#T: --->S3 \if the cue plays for the whole duration, go to S3
+  #R^PortEntry: --->S3 \if a PE is made, go to S3
 
-S3,
-  A(2)*B(0)#T: SET B(23)=B(21)/B(17)--->S1
+S3, \calculate DS PE ratio ?not sure why this delay chosen? To be accurate, this would have to be done only after B(21) has a chance to interate in S.S.10
+  A(2)*B(0)#T: SET B(23)=B(21)/B(17)--->S1 
 
 
 
@@ -461,7 +461,7 @@ s2,
   #R^PortEntry:--->s3
 
 s3,
-  5": z11 ---> s1
+  5": z11 ---> s1 \Z11 signals that 5" has passed since first PE after DS
 
 
 
@@ -479,23 +479,23 @@ s3,
 
 S.S.18, \ Record licks & lick timestamps
 S1,
-  #K21:--->S2
+  #K21:--->S2 \wait for K21 signal that the ITI has started?
 
-S2,
-  #R^Lick: ADD B(36); ADD B(37+B(3));
-           SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> S2
+S2, 
+  #R^Lick: ADD B(36); ADD B(37+B(3)); \?not sure of syntax but this seems wrong? why is b(3) used
+           SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> S2 \save timestamp of lick into array S, set next lick to highly negative number
            \ITI, PreCue, Cue, and PostCue
-  #Z9:--->S1
-  #Z2:--->S3
-  #Z6:--->S5
+  #Z9:--->S1 \if Z9 signals trial end, go back to S1 and wait for next ITI
+  #Z2:--->S3 \if Z2 signals DS start, go to S3 and track licks during DS
+  #Z6:--->S5 \if Z6 signals NS start, go to S5 and track licks during NS
 
 S3, \Waits for post-DS port entry
-  #R^PortEntry: ---> s4
-  A(2)*B(0)#T: ---> s2
+  #R^PortEntry: ---> s4 \only count licks if a PE is registered
+  A(2)*B(0)#T: ---> s2 \if full cue duration passes, treat as if in ITI? 
 
 S4, \Counts licks for 5 sec post DS port entry
   #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(47); ADD V(B(17)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> s4
-  #z11: ---> s2
+  #z11: ---> s2 \if a Z11 signals 5" has passed since first PE during DS, go back to treat as if ITI state
 
 S5, \Waits for post-NS port entry
   #R^PortEntry: ---> s6
@@ -509,14 +509,14 @@ S6, \Counts licks for 5 sec post NS port entry
 
 S.S.19, \ DS Lick Ratio
 S1,
-   #z2: --->S2
+   #z2: --->S2 \wait for Z2 to signal DS trial start
 
-S2,
-  A(2)*B(0)#T: --->S3
-  #R^Lick: ADD B(43)--->S3
+S2, \TODO: Shouldn't a #R^PortEntry "gate" be used to prevent lick counting here?
+  A(2)*B(0)#T: --->S3 \if the full cue duration passes
+  #R^Lick: ADD B(43)--->S3 \if there's a lick add to the DS with lick trial count and go to S3
 
 S3,
-  A(2)*B(0)#T: SET B(45)=B(43)/B(17)--->S1
+  A(2)*B(0)#T: SET B(45)=B(43)/B(17)--->S1 %calculate DS lick ratio
 
 
 

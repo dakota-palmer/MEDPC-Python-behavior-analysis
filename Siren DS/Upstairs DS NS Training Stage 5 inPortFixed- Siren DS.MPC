@@ -286,7 +286,7 @@ S1, \Let the lowest-numbered running box (starting with 1) assume control
 S2, \Pre-session delay, then check if this is the control box
   A(0)*B(0)#T: IF B(4)=BOX [@T1,@F1]  \If control, choose 1st ITI and proceed
                  @T1: K21; RANDD B(2)=X--->S3
-                 @F1:--->S16           \Non-control: Go into passive state
+                 @F1:--->S16  \?shouldn't this be S13?         \Non-control: Go into passive state
 
 S3, \Signal end of 1st half of ITI to all boxes, in case this is unpaired protocol
   (B(2)/2-A(3))*B(0)#T: K22--->S4   \Take into account pump delay for mid-ITI delivery
