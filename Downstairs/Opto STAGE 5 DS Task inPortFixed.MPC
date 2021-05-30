@@ -150,7 +150,6 @@ DIM V=31   \ 5-sec Licks after first PE following DS
 DIM U=31   \ 5-sec Licks after first PE following NS
 
 DIM W=61 \record of trial states B(3) dp added 5/30/21
-DIM X=61 \
 
 
 \Z signals (within box):
@@ -218,7 +217,7 @@ S6,
 
 
 
-S.S.3, \ Initialization and trial control for all boxes. DS duration is 60 seconds.
+S.S.3, \ Initialization and trial control for all boxes. DS duration is A(2) seconds.
 S1, \Initialize variables
   .01": SET A(5)=0;   \This value specifies the protocol: 0 for paired DS-US or 1 for unpaired
         SET A(0)=10, A(1)=60, A(2)=10, A(3)=10, A(4)=2;
@@ -226,7 +225,7 @@ S1, \Initialize variables
         SET H(1)=-987.987, I(1)=-987.987, J(1)=-987.987, K(1)=-987.987, L(1)=-987.987--->SX
   #Z10:--->S2
 
-S2, \Let all boxes know this box is loaded, to select unique control box in S.S.3
+S2, \Let all boxes know this box is loaded, to select unique control box in S.S.4
   #START: KBOX--->S3   \ie, send K1 if this is box 1, K2 if box 2, etc.
   #Z5:--->S3
 
@@ -237,7 +236,7 @@ S4, \Begin 1st half of regular ITI
   #K21: SET B(3)=0--->S5
 
 S5, \Begin 2nd half of regular ITI, and US if unpaired
-  #K22: IF A(5)=1 [@T2,@F2] \A(5)=0 from S.S.2 \only if unpaired protocol (A(5))=1
+  #K22: IF A(5)=1 [@T2,@F2] \A(5)=0 from S.S.2 \true only if unpaired protocol (A(5))=1
           @T2: Z3--->S6
           @F2:--->S6
 
@@ -314,10 +313,10 @@ S10, \Signal end of Pre-NS interval to all boxes
   10": K26--->S11
 
 S11, \Signal end of NS interval to all boxes after full cue duration
-   A(2)*B(0)#T: K27--->S12 \shouldn't this be A(2)*B(0)??
+   A(2)*B(0)#T: K27--->S12 
 
 S12, \Signal end of post-NS interval to all boxes, choose next ITI
-   10" : K21; RANDD B(2)=X--->S3 \and this should be 10" 
+   10" : K21; RANDD B(2)=X--->S3  
 
 S13, \Passive state for non-control boxes
   60':--->SX \TODO: if the non-control boxes actually aren't going into this state they could be sending their own k pulses, right?
@@ -378,7 +377,7 @@ S1,
   #K21:--->S2
 
 S2,
-  #R^PortEntry: ADD B(6), B(7+B(3));
+  #R^PortEntry: ADD B(6), B(7+B(3)); \same indexing scheme as DS & NS licks here
                 SET K(B(6))=B(13)/100, L(B(6))=0, K(B(6)+1)=-987.987, L(B(6)+1)=-987.987--->S3
   #Z9:--->S1
 
@@ -456,7 +455,7 @@ S3,
 
 
 
-S.S.16, \ Counts the 5 seconds after the first post-cue port entry
+S.S.16, \ Counts the 5 seconds after the first post-DS port entry
 s1,
   #Z2: ---> s2
 
@@ -545,12 +544,12 @@ S2,
         IF BOX=B(4) [@T1,@F1]
           @T1:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1)+' ('+IntToStr(Round(B[2]))+')',B[12]);~--->S3
           @F1:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1),B[12]);~--->S3
-  1":   ADD B(16);
+  1":   ADD B(16); \as each second passes, iterate and display second counter B(16)
         SHOW 1,Delay,B(16)--->SX
   #Z9:--->S9
 
 S3,
-  #Z4: SET B(16)=0; \if start new pre DS trial? \Doesnt seem to be an NS version of this so maybe that's just why the SHOW() is wrong at times
+  #Z4: SET B(16)=0; \ITI display?
        ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' PRE',B[12]);~--->S4
   1":  ADD B(16);
        IF BOX=B(4) [@T2,@F2]
@@ -559,7 +558,7 @@ S3,
   #Z9:--->S9
 
 S4,
-  #K24: SET B(16)=0; \if DS period start
+  #K24: SET B(16)=0; \if DS or NS trial start
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' DS',B[12]);~--->S5
   #K26: SET B(16)=0; \if NS period start
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' NS',B[12]);~--->S5
@@ -568,7 +567,7 @@ S4,
   #Z9:--->S9
 
 S5,
-  #K25: SET B(16)=0; \if DS period end
+  #K25: SET B(16)=0; \if DS or NS period end
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' POSTDS',B[12]);~--->S6
   #K27: SET B(16)=0; \if NS period end
         ~ShowCommand(MG,Box,1,'TRL '+IntToStr(Round(B[1]))+' POSTNS',B[12]);~--->S6
@@ -577,7 +576,7 @@ S5,
   #Z9:--->S9
 
 S6,
-  #K21: SET B(16)=0;
+  #K21: SET B(16)=0; \ITI again?
        IF BOX=B(4) [@T3,@F3]
          @T3:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1)+' ('+IntToStr(Round(B[2]))+')',B[12]);~--->S3
          @F3:~ShowCommand(MG,Box,1,'ITI '+IntToStr(Round(B[1])+1),B[12]);~--->S3
@@ -611,7 +610,8 @@ S1,
     19,NS PT,B(34),
     20,NS PE,B(11),
     21,PostNS PT,B(35),
-    22,PostNS PE,B(12)--->S2
+    22,PostNS PE,B(12)
+    23, TrialState, B(3)--->S2 \dp added 5/30/21 trying to debug
 
 S2,
   1": SHOW 2,Total PE,B(6),
@@ -634,7 +634,8 @@ S2,
     19,NS PT,B(34),
     20,NS PE,B(11),
     21,PostNS PT,B(35),
-    22,PostNS PE,B(12)--->SX
+    22,PostNS PE,B(12),
+    23,TrialState, B(3)--->SX \dp added 5/30/21 trying to debug 
 
 
 S.S.23 \Cue Lights
@@ -644,7 +645,7 @@ S1,
   #Z6: ON ^redLight--->S2 \NS Cue
 
 S2,
-  3": OFF ^redLight --->S1
+  3": OFF ^redLight --->S1 \TODO: consider making this entire cue duration? Also add light for laser on
 
 S3,
   3": OFF ^greenLight--->S1
