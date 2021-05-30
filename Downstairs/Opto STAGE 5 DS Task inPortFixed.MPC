@@ -1,4 +1,4 @@
-\Christelle Cayton 
+\Christelle Cayton
 \Opto DS and NS Training. FINAL STAGE.
 \In this code, the DS will trigger a siren. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
 \Last Edited 11.3.2020--Added cue light indicators
@@ -118,8 +118,8 @@ DIM B=81
     \B(34)= Port Time in NS
     \B(35)= Port Time in Post NS
 
-    \B(36)= Total Licks 
-    \B(37)= Licks in ITI \These arrays are never explicitly referenced in the script, but what it does is use B(37)+B(3) as an index. Since B(3) 1=preDS 2=DS 3=postDSPlus 0=ITI 4=NS 5=postNS, B(37)=ITI B(38)=preDS B(39)=DS B(40)=postDS B(41)=NS B(42)= postNS... but only IF B(3) is correct 
+    \B(36)= Total Licks
+    \B(37)= Licks in ITI \These arrays are never explicitly referenced in the script, but what it does is use B(37)+B(3) as an index. Since B(3) 1=preDS 2=DS 3=postDSPlus 0=ITI 4=NS 5=postNS, B(37)=ITI B(38)=preDS B(39)=DS B(40)=postDS B(41)=NS B(42)= postNS... but only IF B(3) is correct
     \B(38)= Licks in Pre DS/NS \? so this coollapses all pre-cue licks? 1=preDS +37
     \B(39)= Licks in DS \ 2=DS +37
     \B(40)= Licks in Post DS \3=postDS +37
@@ -223,7 +223,7 @@ S1, \Initialize variables
   .01": SET A(5)=0;   \This value specifies the protocol: 0 for paired DS-US or 1 for unpaired
         SET A(0)=10, A(1)=60, A(2)=10, A(3)=10, A(4)=2;
         SET B(0)=1";
-        SET H(1)=-987.987, I(1)=-987.987, J(1)=-987.987, K(1)=-987.987, L(1)=-987.987--->SX
+        SET H(1)=-987.987, I(1)=-987.987, J(1)=-987.987, K(1)=-987.987, L(1)=-987.987, W(1)= -987.987--->SX
   #Z10:--->S2
 
 S2, \Let all boxes know this box is loaded, to select unique control box in S.S.4
@@ -234,7 +234,7 @@ S3, \Begin initial ITI
   #K21: ON ^Houselight--->S6
 
 S4, \Begin 1st half of regular ITI
-  #K21: SET B(3)=0; SET W(B6)=B(3); ADD(B6)--->S5
+  #K21: SET B(3)=0; SET W(B(6))=B(3); ADD B(6)--->S5
 
 S5, \Begin 2nd half of regular ITI, and US if unpaired
   #K22: IF A(5)=1 [@T2,@F2] \A(5)=0 from S.S.2 \true only if unpaired protocol (A(5))=1
@@ -242,7 +242,7 @@ S5, \Begin 2nd half of regular ITI, and US if unpaired
           @F2:--->S6
 
 S6, \Begin Pre-DS, unless all trials have run and session is over
-  #K23: SET B(3)=1; SET W(B6)=B(3); ADD(B6);
+  #K23: SET B(3)=1; SET W(B(6))=B(3); ADD B(6);
         IF B(1) < A(1) [@T3,@F3]
           @T3: ADD B(1); SET I(B(1))=0, I(B(1)+1)=-987.987;
                SET J(B(1))=0, J(B(1)+1)=-987.987; Z4--->S7
@@ -252,11 +252,11 @@ S6, \Begin Pre-DS, unless all trials have run and session is over
           \If false, then end the session ---> S9
 
 S7, \Begin DS, and also US (after delay) if paired
-  #K24: SET B(3)=2; SET W(B6)=B(3); ADD(B6); Z2; \Z2 starts the DS trial epoch within-box
+  #K24: SET B(3)=2; SET W(B(6))=B(3); ADD B(6); Z2; \Z2 starts the DS trial epoch within-box
         IF A(5)=0 [@T4,@F4]
-          @T4: Z3--->S8 \if unpaired DS-US protocol (A(5)=0), trigger Z3 signal to initiate US 
+          @T4: Z3--->S8 \if unpaired DS-US protocol (A(5)=0), trigger Z3 signal to initiate US
           @F4:--->S8
-  #K26: SET B(3)=4; SET W(B6)=B(3); ADD(B6); Z6 ---> S8 \Z6 starts the NS trial epoch within box
+  #K26: SET B(3)=4; SET W(B(6))=B(3); ADD B(6); Z6 ---> S8 \Z6 starts the NS trial epoch within box
 
 S8, \Begin Post-DS
   #K25: ---> S4 \go back to state 4 and wait for a new DS or NS trial start signal
@@ -304,20 +304,20 @@ S6, \Trigger NS or DS
 S7, \Signal end of Pre-DS interval to all boxes
   10": K24--->S8 \after pre-cue delay, send K24 pulse to initate DS trial in all boxes
 
-S8, \Signal end of DS interval to all boxes after full cue duration 
-  A(2)*B(0)#T: K25--->S9 
+S8, \Signal end of DS interval to all boxes after full cue duration
+  A(2)*B(0)#T: K25--->S9
 
 S9, \Signal end of post-DS interval to all boxes, choose next ITI
   10": K21; RANDD B(2)=X--->S3
 
-S10, \Signal end of Pre-NS interval to all boxes 
+S10, \Signal end of Pre-NS interval to all boxes
   10": K26--->S11
 
 S11, \Signal end of NS interval to all boxes after full cue duration
-   A(2)*B(0)#T: K27--->S12 
+   A(2)*B(0)#T: K27--->S12
 
 S12, \Signal end of post-NS interval to all boxes, choose next ITI
-   10" : K21; RANDD B(2)=X--->S3  
+   10" : K21; RANDD B(2)=X--->S3
 
 S13, \Passive state for non-control boxes
   60':--->SX \TODO: if the non-control boxes actually aren't going into this state they could be sending their own k pulses, right?
@@ -353,14 +353,14 @@ S2,
 
 S.S.7, \ DS US control (control of US paired with DS)
 S1,
-  #Z3:--->S2 \wait for Z3 signal that US should be made available  
+  #Z3:--->S2 \wait for Z3 signal that US should be made available
 
 S2,
   A(2)*B(0)#T: --->S1 \if the full cue duration passes, go back to S1 and wait for the next Z3
   #R^PortEntry: ON ^Pump; SET J(B(1))=B(13)/100; ADD B(5)--->S3 \if PE, turn pump on, record onset time, iterate reward count, then move to S3
 
 S3,
-  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3; SET W(B6)=B(3); ADD(B6)--->S1 \following pump duration A(4), turn pump off, update B(3) and return to S1 waiting for next Z3 signal
+  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3; SET W(B(6))=B(3); ADD B(6)--->S1 \following pump duration A(4), turn pump off, update B(3) and return to S1 waiting for next Z3 signal
 
 
 
@@ -392,12 +392,12 @@ S.S.10, \ Latency to enter port after DS
 S1,
   #Z2: --->S2 \waiting for a Z2 signal saying a DS trial has started
 
-S2, \if the full cue duration (A2) time passes, save placeholder values for this trial, iterate DS trial counter, and go back to state 1 \if a PE is made before this, save PE timestamp, add to # trials with PE, and go to S3  
-  A(2)*B(0)#T: SET M(B(17))=A(2), O(B(17))=0, B(3)=3; ADD B(17); SET W(B6)=B(3); ADD(B6) --->S1
-  #R^PortEntry: ADD B(21); SET O(B(17))=B(13)/100, B(3)=3; SET W(B6)=B(3); ADD(B6)  --->S3
+S2, \if the full cue duration (A2) time passes, save placeholder values for this trial, iterate DS trial counter, and go back to state 1 \if a PE is made before this, save PE timestamp, add to # trials with PE, and go to S3
+  A(2)*B(0)#T: SET M(B(17))=A(2), O(B(17))=0, B(3)=3; ADD B(17); SET W(B(6))=B(3); ADD B(6) --->S1
+  #R^PortEntry: ADD B(21); SET O(B(17))=B(13)/100, B(3)=3; SET W(B(6))=B(3); ADD B(6)  --->S3
 
 S3, \calculate PE latency for this trial, then iterate DS trial counter \ ?Why 5"? I feel like this should be as short as possible to gurantee the PE ratio calculation in S.S.14 is correct
-  5": SET M(B(17))=O(B(17))-H(B(17)); ADD B(17); SET O(B(17)+1)=-987.987--->S1 
+  5": SET M(B(17))=O(B(17))-H(B(17)); ADD B(17); SET O(B(17)+1)=-987.987--->S1
 
 
 
@@ -410,7 +410,7 @@ S2,
   #R^PortEntry: ADD B(22); SET P(B(18))=B(13)/100--->S3
 
 S3,
-  5": SET N(B(18))=P(B(18))-I(B(18)); ADD B(18); SET B(3)=5, P(B(18)+1)=-987.987; SET W(B6)=B(3); ADD(B6)--->S1
+  5": SET N(B(18))=P(B(18))-I(B(18)); ADD B(18); SET B(3)=5, P(B(18)+1)=-987.987; SET W(B(6))=B(3); ADD B(6)--->S1
 
 
 
@@ -432,14 +432,14 @@ S2, \ Begin ITI period count of PE time
 
 S.S.14,  \ DS Ratio
 S1,
-   #z2: --->S2 \wait for a Z2 signal saying start DS trial 
+   #z2: --->S2 \wait for a Z2 signal saying start DS trial
 
 S2,
   A(2)*B(0)#T: --->S3 \if the cue plays for the whole duration, go to S3
   #R^PortEntry: --->S3 \if a PE is made, go to S3
 
 S3, \calculate DS PE ratio ?not sure why this delay chosen? To be accurate, this would have to be done only after B(21) has a chance to interate in S.S.10
-  A(2)*B(0)#T: SET B(23)=B(21)/B(17)--->S1 
+  A(2)*B(0)#T: SET B(23)=B(21)/B(17)--->S1
 
 
 
@@ -484,7 +484,7 @@ S.S.18, \ Record licks & lick timestamps
 S1,
   #K21:--->S2 \wait for K21 signal that the ITI has started?
 
-S2, 
+S2,
   #R^Lick: ADD B(36); ADD B(37+B(3)); \TODO: ?there's some kind of ERROR here, potentially with B(3). I have seen NS licks count as DS licks so something is off.
            SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> S2 \save timestamp of lick into array S, set next lick to highly negative number
            \ITI, PreCue, Cue, and PostCue
@@ -494,7 +494,7 @@ S2,
 
 S3, \Waits for post-DS port entry
   #R^PortEntry: ---> s4 \only count licks if a PE is registered
-  A(2)*B(0)#T: ---> s2 \if full cue duration passes, treat as if in ITI? 
+  A(2)*B(0)#T: ---> s2 \if full cue duration passes, treat as if in ITI?
 
 S4, \Counts licks for 5 sec post DS port entry
   #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(47); ADD V(B(17)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> s4
@@ -506,7 +506,7 @@ S5, \Waits for post-NS port entry
 
 S6, \Counts licks for 5 sec post NS port entry
   #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(48); ADD U(B(18)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> s4
-  #z11: ---> s2 
+  #z11: ---> s2
 
 
 
@@ -519,7 +519,7 @@ S2, \TODO: Shouldn't a #R^PortEntry "gate" be used to prevent lick counting here
   #R^Lick: ADD B(43)--->S3 \if there's a lick add to the DS with lick trial count and go to S3
 
 S3,
-  A(2)*B(0)#T: SET B(45)=B(43)/B(17)--->S1 %calculate DS lick ratio
+  A(2)*B(0)#T: SET B(45)=B(43)/B(17)--->S1  \calculate DS lick ratio
 
 
 
@@ -611,7 +611,7 @@ S1,
     19,NS PT,B(34),
     20,NS PE,B(11),
     21,PostNS PT,B(35),
-    22,PostNS PE,B(12)
+    22,PostNS PE,B(12),
     23, TrialState, B(3)--->S2 \dp added 5/30/21 trying to debug
 
 S2,
@@ -636,11 +636,11 @@ S2,
     20,NS PE,B(11),
     21,PostNS PT,B(35),
     22,PostNS PE,B(12),
-    23,TrialState, B(3)--->SX \dp added 5/30/21 trying to debug 
- 
+    23,TrialState, B(3)--->SX \dp added 5/30/21 trying to debug
+
   #Z2: SHOW 24, Last Z2 DS start, B(13)/100--->SX
 
-  #Z4: Show 25, Last Z6 NS start, B(13)/100 --->SX  
+  #Z4: Show 25, Last Z6 NS start, B(13)/100 --->SX
 
 
 S.S.23 \Cue Lights
