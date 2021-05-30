@@ -118,13 +118,13 @@ DIM B=81
     \B(34)= Port Time in NS
     \B(35)= Port Time in Post NS
 
-    \B(36)= Total Licks
-    \B(37)= Licks in ITI
-    \B(38)= Licks in Pre DS/NS
-    \B(39)= Licks in DS \todo: not implemented?
-    \B(40)= Licks in Post DS
-    \B(41)= Licks in NS
-    \B(42)= Licks in Post NS
+    \B(36)= Total Licks 
+    \B(37)= Licks in ITI \These arrays are never explicitly referenced in the script, but what it does is use B(37)+B(3) as an index. Since B(3) 1=preDS 2=DS 3=postDSPlus 0=ITI 4=NS 5=postNS, B(37)=ITI B(38)=preDS B(39)=DS B(40)=postDS B(41)=NS B(42)= postNS... but only IF B(3) is correct 
+    \B(38)= Licks in Pre DS/NS \? so this coollapses all pre-cue licks? 1=preDS +37
+    \B(39)= Licks in DS \ 2=DS +37
+    \B(40)= Licks in Post DS \3=postDS +37
+    \B(41)= Licks in NS \ 4=NS +37
+    \B(42)= Licks in Post NS 5=postNS +37
     \B(43)= Number of DS trials with licks
     \B(44)= Number of NS trials with licks
     \B(45)= DS with Licks to Number of DS Ratio
@@ -148,6 +148,9 @@ DIM P=31   \ Time of first PE following NS
 DIM S=9999 \ Lick timestamps in sec
 DIM V=31   \ 5-sec Licks after first PE following DS
 DIM U=31   \ 5-sec Licks after first PE following NS
+
+DIM W=61 \record of trial states B(3) dp added 5/30/21
+DIM X=61 \
 
 
 \Z signals (within box):
@@ -234,7 +237,7 @@ S4, \Begin 1st half of regular ITI
   #K21: SET B(3)=0--->S5
 
 S5, \Begin 2nd half of regular ITI, and US if unpaired
-  #K22: IF A(5)=1 [@T2,@F2] \A(5)=0 from S.S.2
+  #K22: IF A(5)=1 [@T2,@F2] \A(5)=0 from S.S.2 \only if unpaired protocol (A(5))=1
           @T2: Z3--->S6
           @F2:--->S6
 
@@ -249,7 +252,7 @@ S6, \Begin Pre-DS, unless all trials have run and session is over
           \If false, then end the session ---> S9
 
 S7, \Begin DS, and also US (after delay) if paired
-  #K24: SET B(3)=2; Z2; \Z2 starts the DS trial epoch within-box?
+  #K24: SET B(3)=2; Z2; \Z2 starts the DS trial epoch within-box
         IF A(5)=0 [@T4,@F4]
           @T4: Z3--->S8 \if unpaired DS-US protocol (A(5)=0), trigger Z3 signal to initiate US 
           @F4:--->S8
@@ -291,7 +294,7 @@ S4, \Signal end of 2nd half of ITI to all boxes
   (B(2)/2+A(3))*B(0)#T: K23--->S5
 
 S5, \Pick NS or DS
-   .1": RANDD B(14)=Y--->S6
+   .1": RANDD B(14)=Y--->S6 \select from list Y DS (1) or NS (0)
 
 S6, \Trigger NS or DS
    .1": IF B(14)=0 [@T3,@F3]
@@ -299,25 +302,25 @@ S6, \Trigger NS or DS
           @F3: --->S7    \DS Trigger
 
 S7, \Signal end of Pre-DS interval to all boxes
-  10": K24--->S8
+  10": K24--->S8 \after pre-cue delay, send K24 pulse to initate DS trial in all boxes
 
-S8, \Signal end of DS interval to all boxes
-  A(2)*B(0)#T: K25--->S9
+S8, \Signal end of DS interval to all boxes after full cue duration 
+  A(2)*B(0)#T: K25--->S9 
 
 S9, \Signal end of post-DS interval to all boxes, choose next ITI
   10": K21; RANDD B(2)=X--->S3
 
-S10, \Signal end of Pre-NS interval to all boxes
+S10, \Signal end of Pre-NS interval to all boxes 
   10": K26--->S11
 
-S11, \Signal end of NS interval to all boxes
-  10": K27--->S12
+S11, \Signal end of NS interval to all boxes after full cue duration
+   A(2)*B(0)#T: K27--->S12 \shouldn't this be A(2)*B(0)??
 
 S12, \Signal end of post-NS interval to all boxes, choose next ITI
-  A(2)*B(0)#T: K21; RANDD B(2)=X--->S3
+   10" : K21; RANDD B(2)=X--->S3 \and this should be 10" 
 
 S13, \Passive state for non-control boxes
-  60':--->SX
+  60':--->SX \TODO: if the non-control boxes actually aren't going into this state they could be sending their own k pulses, right?
 
 
 
@@ -453,7 +456,7 @@ S3,
 
 
 
-S.S.16, \ Counts the 5 seconds after the first post-DS port entry
+S.S.16, \ Counts the 5 seconds after the first post-cue port entry
 s1,
   #Z2: ---> s2
 
@@ -482,7 +485,7 @@ S1,
   #K21:--->S2 \wait for K21 signal that the ITI has started?
 
 S2, 
-  #R^Lick: ADD B(36); ADD B(37+B(3)); \?not sure of syntax but this seems wrong? why is b(3) used
+  #R^Lick: ADD B(36); ADD B(37+B(3)); \TODO: ?there's some kind of ERROR here, potentially with B(3). I have seen NS licks count as DS licks so something is off.
            SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> S2 \save timestamp of lick into array S, set next lick to highly negative number
            \ITI, PreCue, Cue, and PostCue
   #Z9:--->S1 \if Z9 signals trial end, go back to S1 and wait for next ITI
@@ -503,7 +506,7 @@ S5, \Waits for post-NS port entry
 
 S6, \Counts licks for 5 sec post NS port entry
   #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(48); ADD U(B(18)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> s4
-  #z11: ---> s2
+  #z11: ---> s2 
 
 
 
