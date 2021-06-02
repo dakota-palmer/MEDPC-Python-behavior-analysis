@@ -66,7 +66,7 @@ LIST T = 0,0,0,0,0,1,1,1,1,1
 Var_Alias Startup Delay (Sec)                 = A(0)
 Var_Alias Number of trials                    = A(1)
 Var_Alias DS duration                         = A(2)
-Var_Alias Pump Delay (Sec)                    = A(3) 
+Var_Alias Pump Delay (Sec)                    = A(3)
 Var_Alias Pump duration (Sec)                 = A(4)
 Var_Alias Paired (0), or Unpaired (1) DS-US   = A(5)
 
@@ -178,8 +178,8 @@ DIM F= 61 \NS Laser trial array
     \Z11 = Signal that 5" has passed since first PE after DS
     \Z12 = Siren on
     \Z13 = Siren off
-    
-    \Z14= Laser was ON 
+
+    \Z14= Laser was ON
     \Z15= Laser was OFF
 
 
@@ -317,7 +317,7 @@ S6, \Trigger NS or DS
           @T3: --->S11    \NS trigger
           @F3: --->S7    \DS Trigger
 
-S7, \Choose Laser or No Laser for DS   
+S7, \Choose Laser or No Laser for DS
     .1": RANDD B(50)=C--->S8
 
 
@@ -347,7 +347,7 @@ S14, \Signal end of post-NS interval to all boxes, choose next ITI
    10" : K21; RANDD B(2)=X--->S3
 
 S15, \Passive state for non-control boxes
-  60':--->SX 
+  60':--->SX
 
 S.S.5, \ DS Laser Array
 S1,
@@ -367,9 +367,9 @@ S2,
 S.S.25, \ Laser stimulation start and stop
 
 S1,
-    .1": ON ^Laser--->S2 \Laser TTL for Pulse Pal is inverted (TTL offset triggers Laser), so ON^Laser turns the lasers off and OFF^Laser turns the lasers on 
+    .1": ON ^Laser--->S2 \Laser TTL for Pulse Pal is inverted (TTL offset triggers Laser), so ON^Laser turns the lasers off and OFF^Laser turns the lasers on
 S2,
-    #K28: OFF ^Laser; Z14; ON ^yellowLight ADD B(51); SET D(B(51))=B(13)/100, D(B(51)+1)=-987.987--->S3 \turn on laser and yellow light
+    #K28: OFF ^Laser; Z14; ON ^yellowLight; ADD B(51); SET D(B(51))=B(13)/100, D(B(51)+1)=-987.987--->S3 \turn on laser and yellow light
 S3,
     #R^PortEntry: ON ^Laser; OFF^yellowLight --->S2 \if there is a port entry detected, cease laser, turn off yellow light
     #K23: ON ^Laser; OFF^yellowLight --->S2
@@ -454,7 +454,7 @@ S3, \calculate PE latency for this trial, then iterate DS trial counter \ ?Why 5
 
 
 
-S.S.11,  \ Latency to enter port after NS
+S.S.13,  \ Latency to enter port after NS
 S1,
   #Z6: --->S2
 
@@ -665,7 +665,7 @@ S1,
     20,NS PE,B(11),
     21,PostNS PT,B(35),
     22,PostNS PE,B(12),
-    23, TrialState, B(3), 
+    23, TrialState, B(3),
     24, LaserTrial, B(50)--->S2
 
 S2,
@@ -691,7 +691,7 @@ S2,
     21,PostNS PT,B(35),
     22,PostNS PE,B(12),
     23,TrialState, B(3),
-    24, LaserTrial, B(50)--->SX 
+    24, LaserTrial, B(50)--->SX
 
   #Z2: SHOW 25, Last Z2 DS start, B(13)/100--->SX
 
