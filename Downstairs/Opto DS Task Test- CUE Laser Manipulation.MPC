@@ -1,3 +1,4 @@
+\Opto DS and NS Manipulation Test
 \Some DS & NS trials are randomly chosen as "Laser On" trials. On these trials, laser will turn on from cue onset until animal makes a PE or cue duration ends.
 
 \In this code, the DS will trigger a siren. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
