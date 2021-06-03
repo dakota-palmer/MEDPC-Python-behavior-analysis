@@ -16,8 +16,8 @@
 ^Pump = 9
 ^Houselight = 7
 ^yellowLight = 25
-^greenLight = 26
-^redLight = 27
+^greenLight = 26 \DS
+^redLight = 27 \NS
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 \Sound stuff from Jocelyn's old code\
@@ -206,11 +206,11 @@ S1,
        ~SetRF(MG, BOX, R[5]);~;
        ON ^HouseLight--->S2
 S2,
-  #R^PortEntry: ON ^NSwhiteNoise, ^Pump ;~setFreq(MG,BOX,R[1]);~; ~setDur(MG,BOX,R[0]);~; ~onAmp(MG, BOX, R[6]);~; --->S3
+  #R^PortEntry: ON ^NSwhiteNoise, ^Pump ;~setFreq(MG,BOX,R[1]);~; ~setDur(MG,BOX,R[0]);~; ~onAmp(MG, BOX, R[6]);~--->S3
 S3,
-   2":~toneOff(MG, BOX);~;OFF ^NSwhiteNoise, ^Pump; Z12 ---> S4
+   2":~toneOff(MG, BOX);~;OFF ^NSwhiteNoise, ^Pump; Z12; ON ^greenLight, ^yellowLight, ^redLight ---> S4
 S4,
-   2": Z13; OFF ^HouseLight--->S5
+   2": Z13; OFF ^HouseLight, ^greenLight, ^yellowLight, ^redLight--->S5
 S5,
   .1": SHOW 1, Ready,A(1); Z10--->S6
 S6,
@@ -341,13 +341,13 @@ s3,
 
 
 
-S.S.6, \ DS control
+S.S.6, \ DS control \dp added cue light for duration of cue presenation here
 S1,
-  #Z2: Z12; SET H(B(17))=B(13)/100--->S2 \once the DS period starts, Z12 turns on siren and logs the onset time
+  #Z2: Z12; SET H(B(17))=B(13)/100; ON ^greenLight--->S2 \once the DS period starts, Z12 turns on siren and logs the onset time
 
 S2,
-  A(2)*B(0)#T: Z13 ---> S1 \Z13 turns off siren once cue duration ends
-  #R^PortEntry: Z13 --->S1 \Z13 turns off siren if a PE is made
+  A(2)*B(0)#T: Z13; OFF ^greenLight ---> S1 \Z13 turns off siren once cue duration ends
+  #R^PortEntry: Z13; OFF ^greenLight --->S1 \Z13 turns off siren if a PE is made
 
 
 
@@ -364,12 +364,12 @@ S3,
 
 
 
-S.S.8, \ NS control
+S.S.8, \ NS control \dp added cue lights for duration of cue
 S1,
-  #Z6: ON ^NSwhiteNoise; SET I(B(18))=B(13)/100--->S2
+  #Z6: ON ^NSwhiteNoise; SET I(B(18))=B(13)/100; ON ^redLight--->S2
 
 S2,
-  A(2)*B(0)#T: OFF ^NSwhiteNoise--->S1
+  A(2)*B(0)#T: OFF ^NSwhiteNoise;  OFF^redLight--->S1
 
 
 
@@ -643,14 +643,14 @@ S2,
   #Z4: Show 25, Last Z6 NS start, B(13)/100 --->SX
 
 
-S.S.23 \Cue Lights
+\S.S.23 \Cue Lights
 
-S1,
-  #Z12: ON ^greenLight--->S3 \DS Cue
-  #Z6: ON ^redLight--->S2 \NS Cue
+\S1,
+\  #Z12: ON ^greenLight--->S3 \DS Cue
+ \ #Z6: ON ^redLight--->S2 \NS Cue
 
-S2,
-  3": OFF ^redLight --->S1 \TODO: consider making this entire cue duration? Also add light for laser on
+\S2,
+ \ 3": OFF ^redLight --->S1 \TODO: consider making this entire cue duration? Also add light for laser on
 
-S3,
-  3": OFF ^greenLight--->S1
+\S3,
+ \ 3": OFF ^greenLight--->S1
