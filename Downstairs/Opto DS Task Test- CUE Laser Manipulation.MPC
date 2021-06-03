@@ -222,11 +222,11 @@ S1,
        ~SetRF(MG, BOX, R[5]);~;
        ON ^HouseLight--->S2
 S2,
-  #R^PortEntry: ON ^NSwhiteNoise, ^Pump ;~setFreq(MG,BOX,R[1]);~; ~setDur(MG,BOX,R[0]);~; ~onAmp(MG, BOX, R[6]);~; --->S3
+  #R^PortEntry: ON ^NSwhiteNoise, ^Pump ;~setFreq(MG,BOX,R[1]);~; ~setDur(MG,BOX,R[0]);~; ~onAmp(MG, BOX, R[6]);~--->S3
 S3,
-   2":~toneOff(MG, BOX);~;OFF ^NSwhiteNoise, ^Pump; Z12 ---> S4
+   2":~toneOff(MG, BOX);~;OFF ^NSwhiteNoise, ^Pump; Z12; ON ^greenLight, ^yellowLight, ^redLight ---> S4
 S4,
-   2": Z13; OFF ^HouseLight--->S5
+   2": Z13; OFF ^HouseLight, ^greenLight, ^yellowLight, ^redLight--->S5
 S5,
   .1": SHOW 1, Ready,A(1); Z10--->S6
 S6,
@@ -367,12 +367,13 @@ S2,
 S.S.25, \ Laser stimulation start and stop
 
 S1,
-    .1": ON ^Laser--->S2 \Laser TTL for Pulse Pal is inverted (TTL offset triggers Laser), so ON^Laser turns the lasers off and OFF^Laser turns the lasers on
+    .1": ON ^Laser--->S2 \Laser TTL for Pulse Pal is inverted (TTL offset triggers Laser), so ON^Laser turns the lasers off by default until a K28 signal is sent for OFF^Laser to turn the lasers on
 S2,
     #K28: OFF ^Laser; Z14; ON ^yellowLight; ADD B(51); SET D(B(51))=B(13)/100, D(B(51)+1)=-987.987--->S3 \turn on laser and yellow light
 S3,
     #R^PortEntry: ON ^Laser; OFF^yellowLight --->S2 \if there is a port entry detected, cease laser, turn off yellow light
-    #K23: ON ^Laser; OFF^yellowLight --->S2
+    #K25: ON ^Laser; OFF^yellowLight --->S2 \Or if the cue duration ends do the same; dp changed this to K25, which signals DS trial end. Previously was K23 which would have been ITI end
+    #K27: ON ^Laser; OFF^yellowLight --->S2 \also needs to accomodate NS trial end with K27 signal
 
 
 
@@ -394,13 +395,13 @@ s3,
 
 
 
-S.S.8, \ DS control
+S.S.8, \ DS control \dp added cue light for duration of cue presenation here
 S1,
-  #Z2: Z12; SET H(B(17))=B(13)/100--->S2 \once the DS period starts, Z12 turns on siren and logs the onset time
+  #Z2: Z12; SET H(B(17))=B(13)/100; ON ^greenLight--->S2 \once the DS period starts, Z12 turns on siren and logs the onset time
 
 S2,
-  A(2)*B(0)#T: Z13 ---> S1 \Z13 turns off siren once cue duration ends
-  #R^PortEntry: Z13 --->S1 \Z13 turns off siren if a PE is made
+  A(2)*B(0)#T: Z13; OFF ^greenLight ---> S1 \Z13 turns off siren once cue duration ends
+  #R^PortEntry: Z13; OFF^greenLight --->S1 \Z13 turns off siren if a PE is made
 
 
 
@@ -417,12 +418,12 @@ S3,
 
 
 
-S.S.10, \ NS control
+S.S.10, \ NS control \dp added cue lights for duration of cue
 S1,
-  #Z6: ON ^NSwhiteNoise; SET I(B(18))=B(13)/100--->S2
+  #Z6: ON ^NSwhiteNoise; SET I(B(18))=B(13)/100; ON ^redLight--->S2
 
 S2,
-  A(2)*B(0)#T: OFF ^NSwhiteNoise--->S1
+  A(2)*B(0)#T: OFF ^NSwhiteNoise; OFF^redLight--->S1 \TODO: should a PE here terminate the NS also?
 
 
 
@@ -698,14 +699,13 @@ S2,
   #Z4: Show 26, Last Z6 NS start, B(13)/100 --->SX
 
 
-S.S.26 \Cue Lights
+\S.S.26 \Cue Lights
 
-S1,
-  #Z12: ON ^greenLight--->S3 \DS Cue
-  #Z6: ON ^redLight--->S2 \NS Cue
+\S1,
+ \ #Z12: ON ^greenLight--->S3 \DS Cue
+  \#Z6: ON ^redLight--->S2 \NS Cue
 
-S2,
-  3": OFF ^redLight --->S1 \TODO: consider making this entire cue duration? Also add light for laser on
-
-S3,
-  3": OFF ^greenLight--->S1
+\S2,
+ \ 3": OFF ^redLight --->S1 \TODO: consider making this entire cue duration?
+\S3,
+ \ 3": OFF ^greenLight--->S1
