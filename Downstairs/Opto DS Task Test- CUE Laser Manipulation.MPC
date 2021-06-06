@@ -337,7 +337,7 @@ S11, \Choose Laser or No Laser for NS
 
 S12, \Signal end of Pre-NS interval to all boxes
   10": IF B(50)=0 [@T1, @F1]
-    @T1:  K26--->S11
+    @T1:  K26--->S13
     @F1: K26; K28 --->S13 \Send K28 Signal for Laser ON
 
 S13, \Signal end of NS interval to all boxes after full cue duration
@@ -361,8 +361,8 @@ S.S.6, \ NS Laser Array
 S1,
     #K26:--->S2
 S2,
-    #Z14: SET F(B(17))=1; SET F(B(17)+1)=-987.987--->S1
-    1": SET F(B(17))=0; SET F(B(17)+1)=-987.987--->S1
+    #Z14: SET F(B(18))=1; SET F(B(18)+1)=-987.987--->S1
+    1": SET F(B(18))=0; SET F(B(18)+1)=-987.987--->S1
 
 S.S.25, \ Laser stimulation start and stop
 

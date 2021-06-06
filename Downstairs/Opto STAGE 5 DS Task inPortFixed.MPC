@@ -359,7 +359,7 @@ S2,
   A(2)*B(0)#T: --->S1 \if the full cue duration passes, go back to S1 and wait for the next Z3
   #R^PortEntry: ON ^Pump; SET J(B(1))=B(13)/100; ADD B(5)--->S3 \if PE, turn pump on, record onset time, iterate reward count, then move to S3
 
-S3,
+S3, \extra B(3)=3 here is redundant, so multiple PostDS periods are being logged
   A(4)*B(0)#T: OFF ^Pump; SET B(3)=3; SET W(B(49))=B(3); ADD B(49)--->S1 \following pump duration A(4), turn pump off, update B(3) and return to S1 waiting for next Z3 signal
 
 
@@ -409,7 +409,7 @@ S2,
   A(2)*B(0)#T: SET N(B(18))=A(2); SET P(B(18))=0; ADD B(18)--->S1
   #R^PortEntry: ADD B(22); SET P(B(18))=B(13)/100--->S3
 
-S3,
+S3, \I think 5" here is preventing B(3) from being set to 5 so some 'postNS' are not being logged
   5": SET N(B(18))=P(B(18))-I(B(18)); ADD B(18); SET B(3)=5, P(B(18)+1)=-987.987; SET W(B(49))=B(3); ADD B(49)--->S1
 
 
