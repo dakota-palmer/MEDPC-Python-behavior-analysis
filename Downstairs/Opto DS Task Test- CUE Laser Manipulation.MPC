@@ -56,10 +56,10 @@ LIST X = 10, 20, 30, 40, 50, 10, 20, 30, 40, 50   \ Inter-trial intervals in sec
 LIST Y = 0,0,0,0,0,1,1,1,1,1 \CueType
 
 \ Choose Laser ON or OFF for each DS trial   \OFF= 0  and ON = 1
-LIST C = 0,0,0,0,0,1,1,1,1,1  \DSlaserState
+LIST C = 0,0,0,0,0,1,1,1,1,1  \probDSLaser
 
 \ Choose Laser ON or OFF for each NS trial   \OFF= 0  and ON = 1
-LIST T = 0,0,0,0,0,1,1,1,1,1 \NSlaserState
+LIST T = 0,0,0,0,0,1,1,1,1,1 \probNSLaser
 
 
 Var_Alias Startup Delay (Sec)                 = A(0)
