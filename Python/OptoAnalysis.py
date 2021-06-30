@@ -368,31 +368,91 @@ if __name__ == '__main__':
     dfCue.shape[0]-dfLaser.shape[0]
  
     #Merge two together
-    dfCue= pd.concat([dfCue,dfLaser])
+    dfCue= pd.concat([dfCue,dfLaser[['laserType','laserState']]],axis=1)
+    # test=pd.merge(dfCue,dfLaser,how= 'left')
+    
+    #Finally, merge the event and cue dfs into one df
+    #concat() taking long time?
+    # dfTidy= pd.concat([dfCue,dfEvent[['eventType','eventTime']]],axis=1)
+    # dfTidy= pd.concat([dfCue,dfEvent],axis=1, keys= ['trial','event'])
 
-    #here am melting all except id_vars 
-    # df3= df.melt(id_vars= ['file','subject','Sex','Virus','laserDur','note'], var_name='eventType', value_name='eventTime') 
-    #related?https://stackoverflow.com/questions/53218931/how-to-unnest-explode-a-column-in-a-pandas-dataframe 
-    def unnesting(df, explode):
-        idx = df.index.repeat(df[explode[0]].str.len())
-        df1 = pd.concat([
-            pd.DataFrame({x: np.concatenate(df[x].values)}) for x in explode], axis=1)
-        df1.index = idx
-        return df1.join(df.drop(explode, 1), how='left')
+    # dfTidy= dfCue.join(dfEvent, dfEvent)
+    
+    # # dfTidy= pd.merge(dfCue,dfEvent,how='left')
+    # dfTidy= pd.merge(dfCue,dfEvent['eventType','eventTime'],on=['subject','date'])
+    # dfTidy = pd.merge(dfCue, dfEvent[['eventType','eventTime']], left_index=True, right_index=True, how='outer').drop_duplicates()
+   
+    #related https://stackoverflow.com/questions/51669232/pandas-merge-with-duplicated-key-removing-duplicated-rows-or-preventing-its-c 
+    dfEvent['g'] = dfEvent.groupby(level=0).cumcount()
+    
+    
+    #save an index for fileID 
+    dfCue.index.name= 'fileID'
+    #save an index for trialID, first sort by cueTime within file so trials are in order
+    dfCue= dfCue.sort_values(by=['fileID','cueTime'])
+    dfCue['g'] = dfCue.groupby(level=0).cumcount()
+    dfCue['trialID']= dfCue['g']
+    
+    dfCue= dfCue.set_index([dfCue.index,'trialID'])
 
+    # dfEvent.reset_index().merge(dfCue, how="right").set_index('fileID')
+        #works but doesn't retain ind
+    # dfTidy = pd.merge(dfCue,dfEvent[['subject','date','g','eventType','eventTime']],on=['subject','date', 'g'],how='right').drop('g',axis=1)
+    dfTidy = pd.merge(dfCue,dfEvent[['g','eventType','eventTime']],on=['fileID', 'g'],how='right').drop('g',axis=1)
+
+    #TODO: is there a wayto set the index below such that events don't havea a trialID unless I assign them?  (e.g. nan in these spots but could assign later on?)   
+    # dfTidy.eventType= dfTidy.eventType.reset_index()
+    #summing together should cause offset so events don't match with trialID?
+    #but just causes everything to be nan (probs bc 'g' has no matches):
     
-    df4= unnesting(df,['x_E_laserDStrial'])
+    # dfEvent['g']= dfEvent['g']+dfCue['g'].max()+1 
+    # dfTidy = pd.merge(dfCue,dfEvent[['g','eventType','eventTime']],on=['fileID', 'g'],how='right').drop('g',axis=1)
+
+    #now it seems we have everything together, set multiindex to help readability
+    #this gives us a df with a hierarchical index of fileID,trialID. While not all events match
+    #up at this point, should be good fordoing trial-by-trial analyses. And now, since we sorted all the trials
+    #we don't have to treat DS & NS separately at all anymore! we can just go by cueType and laserType
+    dfTidy= dfTidy.set_index([dfTidy.index,'trialID'])
     
-    #     Option 2
+    #%% Identify events during each trial
     
-    # If the sublists have different length, you need an additional step:
+    #for now assume cue duration = 10, but TODO: get programmatically from B() array
     
-    # vals = df.B.values.tolist()
-    # rs = [len(r) for r in vals]    
-    # a = np.repeat(df.A, rs)
+    cueDur= 10
     
-    # pd.DataFrame(np.column_stack((a, np.concatenate(vals))), columns=df.columns)
-        
+    licks= dfTidy[dfTidy.eventTime[dfTidy.eventType=='x_S_lickTime']- dfTidy.cueTime <cueDur]
+
+
+    #%%Alternative df org: All events in single column, sort by time by file- could be good for time series
+
+    dfEventAll= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_K_PEtime','PExEst','x_S_lickTime','x_D_laserTime','x_H_DStime','x_I_NStime'],var_name='eventType',value_name='eventTime', ignore_index=False)
+
+  
+
+    #now explode event timestamp array
+    dfEventAll= dfEventAll.explode('eventTime')
+
+
+    # eventCount= dfEvent.groupby(['subject','date'])['eventType'].value_counts()
+
+    # g=sns.relplot(x='date',y=eventCount.values,hue='eventType',
+    #               data=eventCount,kind="line", 
+    #               facet_kws={'sharey': False, 'sharex': True})
+    # g.fig.subplots_adjust(top=0.9) # adjust the figure for title 
+    # g.fig.suptitle('Event counts over time pre deletion')
+
+    #remove invalid/placeholder 0s
+    #TODO: seem to be removing legitimate port exits with peDur==0, not sure how to deal with this so just excluding
+    dfEventAll= dfEventAll[dfEventAll.eventTime!=0]
+    
+    #sort all event times by file and timestamp
+    #set index name so we can sort by it easily
+    dfEventAll.index.name= 'fileID'
+    dfEventAll= dfEventAll.sort_values(by=['fileID','eventTime'])
+
+    #visualize all events per file
+    # sns.relplot(x='eventTime',y='fileID',hue='eventType', data= dfEventAll, kind='scatter')
+    
     #%% Doing some more basic visualizations
     import seaborn as sns
     import matplotlib.pyplot as plt

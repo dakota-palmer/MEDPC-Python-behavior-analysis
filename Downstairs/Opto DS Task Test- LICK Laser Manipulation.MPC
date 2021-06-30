@@ -27,7 +27,7 @@
 \Sound stuff from Jocelyn's old code\
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 \Sound frequencies and other parameters
-DIM R=8
+DIM R=8 \soundParams
      ^ToneDur=10000         \R(0) Length of tone's on time, in ms
      ^ToneFreq=2600         \R(1) freq of tone
      ^SirenBaseFreq=6000    \R(2) starting (low) freq of the siren (Hz)
@@ -50,18 +50,17 @@ DIM R=8
 \^rightLeverPress = 3
 
 \ Inter-trial intervals in seconds
-LIST X = 10, 20, 30, 40, 50,
-         10, 20, 30, 40, 50   \ Inter-trial intervals in seconds - average ITI is 30 seconds
+LIST X = 10, 20, 30, 40, 50, 10, 20, 30, 40, 50   \ITI
 
 
 \ Choose DS or NS for each trial
-LIST Y = 0,0,0,0,0,1,1,1,1,1
+LIST Y = 0,0,0,0,0,1,1,1,1,1 \listCueType
 
 \ Choose Laser ON or OFF for each DS trial   \OFF= 0  and ON = 1
-LIST C = 0,0,0,0,0,1,1,1,1,1
+LIST C = 0,0,0,0,0,1,1,1,1,1  \listProbDSLaser
 
 \ Choose Laser ON or OFF for each NS trial   \OFF= 0  and ON = 1
-LIST T = 0,0,0,0,0,1,1,1,1,1
+LIST T = 0,0,0,0,0,1,1,1,1,1 \listProbNSLaser
 
 
 Var_Alias Startup Delay (Sec)                 = A(0)
@@ -74,7 +73,7 @@ Var_Alias Paired (0), or Unpaired (1) DS-US   = A(5)
 
 
 
-DIM A=9 \ User-editable values
+DIM A=9 \stageParams
     \A(0)=Delay before 1st ITI in seconds (default 120 sec)
     \A(1)=Number of DS trials (default 60)
     \A(2)=Duration of DS phase in seconds (default 10 sec)
@@ -86,7 +85,7 @@ DIM A=9 \ User-editable values
 
 
 \WORKING VARIABLES
-DIM B=81
+DIM B=81 \workingVars
     \B(0) = 1" in MED time units, used for time input calculations
     \B(1) = Current trial #
     \B(2) = Current ITI length in seconds
@@ -149,25 +148,25 @@ DIM B=81
     \B(52)= Simple interlick interval calculation. Used to cease laser if ILI exceeds certain amount
 
 \DATA ARRAYS
-DIM H=61   \ DS onset time per trial
-DIM I=61   \ NS onset time per trial
-DIM J=61   \ US onset time per trial
+DIM H=61   \DStime \ DS onset time per trial
+DIM I=61   \NStime \ NS onset time per trial
+DIM J=61   \UStime \ US onset time per trial
 
-DIM K=9999 \ PE timestamps in sec
-DIM L=9999 \ PE durations in sec
-DIM M=31   \ Latency to PE following DS per trial
-DIM N=31   \ Latency to PE following NS per trial
-DIM O=31   \ Time of first PE following DS
-DIM P=31   \ Time of first PE following NS
-DIM S=9999 \ Lick timestamps in sec
-DIM V=31   \ 5-sec Licks after first PE following DS
-DIM U=31   \ 5-sec Licks after first PE following NS
+DIM K=9999 \PEtime \ PE timestamps in sec
+DIM L=9999 \PEdur \ PE durations in sec
+DIM M=31   \DSPElat \ Latency to PE following DS per trial
+DIM N=31   \NSPElat \ Latency to PE following NS per trial
+DIM O=31   \DSPE1 \ Time of first PE following DS
+DIM P=31   \NSPE1 \ Time of first PE following NS
+DIM S=9999 \lickTime \ LickTimestamps in sec
+DIM V=31   \lickDSpost \ 5-sec Licks after first PE following DS
+DIM U=31   \lickNSpost \ 5-sec Licks after first PE following NS
 
-DIM W=9999 \record of trial states B(3) dp added 5/30/21
+DIM W=9999 \trialState \record of trial states B(3) dp added 5/30/21
 
-DIM D= 9999 \Laser timestamps
-DIM E= 61 \DS Laser trial array
-DIM F= 61 \NS Laser trial array
+DIM D= 9999 \laserTime \Laser timestamps
+DIM E= 61 \laserDStrial \DS Laser trial array
+DIM F= 61 \laserNStrial \NS Laser trial array
 
 \Z signals (within box):
     \Z1 = Start initial delay
