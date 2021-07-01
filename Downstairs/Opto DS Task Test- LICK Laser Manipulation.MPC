@@ -382,23 +382,21 @@ S1,
 S2,
     #K28: SET B(53)=0 --->S3 \when K28 received, go to wait for lick \upon initial lick turn on laser and yellow light \start counter of laser availablility time at 0
 S3,
-    .01": ADD B(53); \continuously iterate the timer for laser availability
-          IF (B(53)/100)>(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser. Else, permit additional laser
+    .01": IF (B(53)/100)>(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser. Else, permit additional laser
                 @T3: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2    \if exceed laser available time, go back to state 2 and wait for next laser trial signal
-                @F3:-->S4
+                @F3:--->S4
 
 
   #R^Lick: OFF ^Laser; Z14; ON ^yellowLight; ADD B(51); SET D(B(51))=B(13)/100, D(B(51)+1)=-987.987--->S4 \If lick counted- turn on laser and yellow light, go to wait for subsequent licks
-   #Z16:---> ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2 \If Z16 signal received, cease laser bc laser no long available, go back to state 2 and wait for next laser trial signal
+  #Z16: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2 \If Z16 signal received, cease laser bc laser no long available, go back to state 2 and wait for next laser trial signal
 
 S4,
-    .01": ADD B(53); \continuously iterate the timer for laser availability
-
-          IF (B(53))/100>(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser. Else, permit additional laser
-                @T3: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2    \if exceed laser available time, go back to state 2 and wait for next laser trial signal
-                @F3: IF (B(52)/100)>(A(6)) [@T3,@F3] \THRESHOLD for ILI (time since last lick). If we have exceeded this, cease laser and wait for more licks... Rat ILI should be ~100ms-200ms.
-                            @T3: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S3   \If ILI too long, turn laser off and go back to wait for another lick. Log laserOff time
-                            @F3: --->S4
+    .01": IF (B(53))/100>(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser. Else, permit additional laser
+          @T3: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2    \if exceed laser available time, go back to state 2 and wait for next laser trial signal
+          @F3: IF (B(52)/100)>(A(6)) [@T3,@F3] \THRESHOLD for ILI (time since last lick). If we have exceeded this, cease laser and wait for more licks... Rat ILI should be ~100ms-200ms.
+               @T3: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S3   \If ILI too long, turn laser off and go back to wait for another lick. Log laserOff time
+               @F3: --->S4
+    #Z16: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2 \If Z16 signal received, cease laser bc laser no long available, go back to state 2 and wait for next laser trial signal
 
 S.S.27 \Laser availability timer \Keep track of time since last lick and laser available time. Send Z signals when these reach a threshold to cease laser. TODO: total laser delivery time.
 S1,
@@ -410,10 +408,10 @@ S2,
 
     #K28: ADD B(53)--->S3 \if laser trial starting, start laser available timer
 S3,
-    .01": ADD B(52); ADD B(53)
+    .01": ADD B(52); ADD B(53);
     IF (B(53)/100)>(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser. Else, permit additional laser
         @T3: Z16--->S2    \if exceed laser available time, trigger Z16 to cease laser availability, return to s2 and wait for next laser trial signal
-        @F3:-->SX
+        @F3:--->SX
 
 
 
