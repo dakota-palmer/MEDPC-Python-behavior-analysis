@@ -83,7 +83,7 @@ DIM A=9 \stageParams
 
     \A(6)= ILI (time since last lick) threshold to cease laser (in sec)
     \A(7)= laser available time threshold (time since trial start laser can be triggered by licks)
-
+    \A(8)= max laser delivery threshold (cap for how much laser per trial)
 
 
 
@@ -150,6 +150,7 @@ DIM B=81 \workingVars
 
     \B(52)= Simple time since last lick calculation. Used to cease laser if ILI exceeds certain amount
     \B(53)= Time since laser trial start. Used to cease laser if total time since trial start exceeds specific threshold. (since rats might drink after trial end, we shouldn't rely those signals to pair consumption) Should be some time after this trial ends but before the next trial starts
+    \B(54)= Laser duration timer. Used to cap the amount of total time laser can be on per trial (or could be revised per 'pulse'). This should be <= the pulse pal's duration.
 
 \DATA ARRAYS
 DIM H=61   \DStime \ DS onset time per trial
@@ -190,7 +191,9 @@ DIM G= 9999 \laserOffTime \laser off times (since we can have multiple 'bursts' 
     \Z14= Laser was ON
     \Z15= Laser was OFF
 
-    \Z16= Ceaser laser- laser availability time limit exceeded, cease laser
+    \Z16= Cease laser
+    \Z17= Start laser
+    \Z18= Laser unavailable
 
 
 \K signals (across all boxes):
@@ -211,10 +214,7 @@ S1,
   #K21:--->S2 \ K21= Start first half of ITI
 
 S2,
-  .01": ADD B(13);
-  ADD B(52)--->SX \ B(13)= Event timer in .01" units; milliseconds. Also add to ILI in .01" as time progresses
-
-
+  .01": ADD B(13)--->SX \ B(13)= Event timer in .01" units; milliseconds.
 
 S.S.2, \ Test the boxes
 S1,
@@ -248,7 +248,7 @@ S6,
 S.S.3, \ Initialization and trial control for all boxes. DS duration is A(2) seconds.
 S1, \Initialize variables
   .01": SET A(5)=0;   \This value specifies the protocol: 0 for paired DS-US or 1 for unpaired
-        SET A(0)=10, A(1)=60, A(2)=30, A(3)=10, A(4)=2, A(6)=5, A(7)=(A(2)+5); \ILI threshold for ceasing laser, laser availability time (setting= cueDur +5s)
+        SET A(0)=10, A(1)=60, A(2)=30, A(3)=10, A(4)=2, A(6)=2, A(7)=(A(2)+5), A(8)=10; \ILI threshold for ceasing laser, laser availability time (setting= cueDur +5s), max laser delivery=10s (to match pulse pal)
         SET B(0)=1";
         SET H(1)=-987.987, I(1)=-987.987, J(1)=-987.987, K(1)=-987.987, L(1)=-987.987, W(1)= -987.987--->SX
   #Z10:--->S2
@@ -375,43 +375,60 @@ S2,
     #Z14: SET F(B(18))=1; SET F(B(18)+1)=-987.987--->S1
     1": SET F(B(18))=0; SET F(B(18)+1)=-987.987--->S1
 
-S.S.25, \ Lick-paired laser stimulation start and stop. Could also consider pairing with PortEntrySus
 
-S1,
+
+S.S.25, \ ~~ Lick-paired laser stimulation start and stop.~~
+
+S1, \Ready trigger for lasers
     .1": ON ^Laser--->S2 \Laser TTL for Pulse Pal is inverted (TTL offset triggers Laser), so ON^Laser turns the lasers off by default until a K28 signal is sent for OFF^Laser to turn the lasers on
-S2,
-    #K28: SET B(53)=0 --->S3 \when K28 received, go to wait for lick \upon initial lick turn on laser and yellow light \start counter of laser availablility time at 0
-S3,
-    .01": IF (B(53)/100)>(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser. Else, permit additional laser
-                @T3: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2    \if exceed laser available time, go back to state 2 and wait for next laser trial signal
-                @F3:--->S4
+S2, \Wait for laser trial
+    #K28:--->S3 \when K28 received, go to wait for lick \upon initial lick turn on laser and yellow light \start counter of laser availablility time at 0
+S3, \Laser trial: control lasers based on Z signals from the laser availability timer state set. Remain in this state until laser available time threshold exceeded
+    #Z16: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S3 \If Z16 signal received, cease laser bc laser no long available, log off time
+
+    #Z17: OFF^Laser; ON ^yellowLight; ADD B(51); SET D(B(51))=B(13)/100, D(B(51)+1)=-987.987--->S3 \If Z17 signal, turn on laser and yellow light, log on time
+    \good place to save variables related to laser trials
+    #Z18: SET B(53)=A(7)*100 --->S2 \if laser availability end signal, set available time beyond threshold to prevent additional laser, go back to wait for next laser trial
 
 
-  #R^Lick: OFF ^Laser; Z14; ON ^yellowLight; ADD B(51); SET D(B(51))=B(13)/100, D(B(51)+1)=-987.987--->S4 \If lick counted- turn on laser and yellow light, go to wait for subsequent licks
-  #Z16: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2 \If Z16 signal received, cease laser bc laser no long available, go back to state 2 and wait for next laser trial signal
-
-S4,
-    .01": IF (B(53))/100>(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser. Else, permit additional laser
-          @T3: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2    \if exceed laser available time, go back to state 2 and wait for next laser trial signal
-          @F3: IF (B(52)/100)>(A(6)) [@T3,@F3] \THRESHOLD for ILI (time since last lick). If we have exceeded this, cease laser and wait for more licks... Rat ILI should be ~100ms-200ms.
-               @T3: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S3   \If ILI too long, turn laser off and go back to wait for another lick. Log laserOff time
-               @F3: --->S4
-    #Z16: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S2 \If Z16 signal received, cease laser bc laser no long available, go back to state 2 and wait for next laser trial signal
-
-S.S.27 \Laser availability timer \Keep track of time since last lick and laser available time. Send Z signals when these reach a threshold to cease laser. TODO: total laser delivery time.
+S.S.27 \~~ Laser availability timer \Keep track of time since last lick, laser available time, and time delivered. Send Z signals when these reach a threshold to cease laser. ~~
 S1,
  #K21:--->S2 \ K21= initial ITI start signal
 
-S2,
-    .01": ADD B(52); \iterate last ILI timer(this is reset to 0 every time a lick is counted in another S.S.
-    ADD B(52)--->SX
+S2, \wait for laser trial start signal
 
-    #K28: ADD B(53)--->S3 \if laser trial starting, start laser available timer
-S3,
-    .01": ADD B(52); ADD B(53);
-    IF (B(53)/100)>(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser. Else, permit additional laser
-        @T3: Z16--->S2    \if exceed laser available time, trigger Z16 to cease laser availability, return to s2 and wait for next laser trial signal
-        @F3:--->SX
+    #R^Lick: SET B(52)=0--->S2 \running ILI timer continuously, reset if lick
+    #K28: SET B(53)=0; SET B(54)=0--->S3 \if laser trial starting, start laser available timer and max laser timer
+    .01": ADD B(52)--->S2 \iterate last ILI timer
+
+
+S3, \laser trial pre lick or between laser pulses: trigger laser if ILI and duration meet our desired parameters.
+    #R^Lick: SET B(52)=0; ON^Laser; Z17--->S4 \ reset ILI if lick detected \reset laser trigger and send Z17 signal to start laser
+
+    .01": ADD B(52), B(53); \continuously add to timers.
+
+        IF ((B(53)/100))>=(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser and make unavailable. Else, permit additional laser
+           @T3: Z16; Z18--->S2    \if exceed laser available time, trigger Z16 to stop laser, trigger z18 to make laser unavailable, return to s2 and wait for next laser trial signal
+           @F3: IF (B(54)/100)>=(A(8)) [@T3,@F3] \THRESHOLD max laser delivered. If we have exceeded this, cease laser and make unavailable
+                @T3: Z16; Z18--->S2
+                @F3: --->S3 \else stay in this state
+
+S4, \laser trial during laser pulses.  Stay in this state until laser available time > threshold or ILI > threshold
+      #R^Lick: SET B(52)=0--->S4 \reset ILI if lick detected
+\same problem as before, if ILI is too frequent laser can end without trigger being reset. Then have to wait for ILI threshold to pass until it is reset
+\now running into issue where b(53) is becoming -, somehow not getting z18 to move to other state? so it's not being reset
+     .01": ADD B(52), B(53), B(54); \only add to b(54) when laser is on \continuously add to timers and check their values against threshold. Stay in this state if below threshold. Send Z16 signal to stop laser when necessary
+
+            IF ((B(53)/100))>=(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser and make unavailable. Else, permit additional laser
+               @T3: Z16; Z18--->S2    \if exceed laser available time, trigger Z16 to stop laser, trigger z18 to make laser unavailable, return to s2 and wait for next laser trial signal
+               @F3: IF (B(54)/100)>=(A(8)) [@T3,@F3] \THRESHOLD max laser delivered. If we have exceeded this, cease laser and make unavailable
+                    @T3: Z16; Z18--->S2
+                    @F3: IF (B(52)/100)>=(A(6)) [@T3,@F3] \THRESHOLD for ILI (time since last lick). If we have exceeded this, send signal to stop laser
+                        @T3: Z16--->S3   \If ILI too long, send signal to stop laser and go back to wait for another lick.
+                        @F3: --->S4 \if below ILI threshold, just stay in this state
+
+
+
 
 
 
@@ -576,7 +593,7 @@ S1,
   #K21:--->S2 \wait for K21 signal that the ITI has started?
 
 S2,
-  #R^Lick: ADD B(36); ADD B(37+B(3)); SET B(52)=0; \=S(B(36))-S(B(36)-1); \Save lick timestamp and reset ILI to 0 \TODO: ?there's some kind of ERROR here, potentially with B(3). I have seen NS licks count as DS licks so something is off.
+  #R^Lick: ADD B(36); ADD B(37+B(3)); \SET B(52)=0; \=S(B(36))-S(B(36)-1); \Save lick timestamp and reset ILI to 0 \TODO: ?there's some kind of ERROR here, potentially with B(3). I have seen NS licks count as DS licks so something is off.
            SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987 ---> S2 \save timestamp of lick into array S, set next lick to highly negative number
            \ITI, PreCue, Cue, and PostCue
   #Z9:--->S1 \if Z9 signals trial end, go back to S1 and wait for next ITI
@@ -588,7 +605,7 @@ S3, \Waits for post-DS port entry
   A(2)*B(0)#T: ---> s2 \if full cue duration passes, treat as if in ITI?
 
 S4, \Counts licks for 5 sec post DS port entry
-  #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(47); ADD V(B(17)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987; SET B(52)=0 ---> s4 \reset ILI
+  #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(47); ADD V(B(17)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987---> S4 \SET B(52)=0 ---> s4 \reset ILI
   #z11: ---> s2 \if a Z11 signals 5" has passed since first PE during DS, go back to treat as if ITI state
 
 S5, \Waits for post-NS port entry
@@ -596,7 +613,7 @@ S5, \Waits for post-NS port entry
   A(2)*B(0)#T: ---> s2
 
 S6, \Counts licks for 5 sec post NS port entry
-  #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(48); ADD U(B(18)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987; SET B(52)=0 ---> s4 \reset ILI
+  #R^Lick: ADD B(36); ADD B(37+B(3)); ADD B(48); ADD U(B(18)); SET S(B(36))=B(13)/100, S(B(36)+1)=-987.987--->S4 \SET B(52)=0 ---> s4 \reset ILI
   #z11: ---> s2
 
 
@@ -607,7 +624,7 @@ S1,
 
 S2, \TODO: Shouldn't a #R^PortEntry "gate" be used to prevent lick counting here?
   A(2)*B(0)#T: --->S3 \if the full cue duration passes
-  #R^Lick: ADD B(43); SET B(52)=0 --->S3 \if there's a lick add to the DS with lick trial count and go to S3 \reset ILI
+  #R^Lick: ADD B(43)--->S3 \SET B(52)=0 --->S3 \if there's a lick add to the DS with lick trial count and go to S3 \reset ILI
 
 S3,
   A(2)*B(0)#T: SET B(45)=B(43)/B(17)--->S1  \calculate DS lick ratio
@@ -620,7 +637,7 @@ S1,
 
 S2,
   A(2)*B(0)#T: --->S3
-  #R^Lick: ADD B(44); SET B(52)=0 --->S3 \reset ILI
+  #R^Lick: ADD B(44) --->S3 \SET B(52)=0 --->S3 \reset ILI
 
 S3,
   A(2)*B(0)#T: SET B(46)=B(44)/B(18)--->S1
@@ -706,10 +723,11 @@ S1,
     23, TrialState, B(3),
     24, LaserTrial, B(50),
     28, lastILI, B(52),
-    29, laserAvail, B(53)--->S2
+    29, laserAvail, A(7)-(B(53)/100),
+    30, laserDeliv, B(54)--->S2
 
 S2,
-  1": SHOW 2,Total PE,B(6),
+  .01": SHOW 2,Total PE,B(6),
     3, Total Licks,B(36),
     4, DS PE Licks, B(47),
     5, DS PE Ratio, B(23),
@@ -733,7 +751,8 @@ S2,
     23,TrialState, B(3),
     24, LaserTrial, B(50),
     28, lastILI, B(52),
-    29, laserAvail, B(53)--->SX
+    29, laserAvail, A(7)-(B(53)/100),
+    30, laserDeliv, B(54)--->SX
 
   #Z2: SHOW 25, Last Z2 DS start, B(13)/100--->SX
 
