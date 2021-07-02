@@ -262,6 +262,11 @@ if __name__ == '__main__':
           g=sns.relplot(x='date',y='discrimPEratio',hue='RatID', col='Virus', row='Sex', data= result,kind="line",linewidth=3)
           g.fig.subplots_adjust(top=0.9) # adjust the figure for title 
           g.fig.suptitle('Individual PE discrimination (DS/NS ratio)')
+        
+          g=sns.relplot(x='date',y='discrimPEratio',hue='laserDur', row='RatID', data= result,kind="scatter",linewidth=3)
+          g.fig.subplots_adjust(top=0.9) # adjust the figure for title 
+          g.fig.suptitle('Individual PE discrimination (DS/NS ratio): Laser ON vs Laser OFF days')
+                  
           
     #Aggregated training data
     sns.set_palette('tab10')
@@ -294,7 +299,7 @@ if __name__ == '__main__':
 
     #here am melting columns of behavioral events into single column of event label and column of individual timestamps (value_vars= want to melt) 
     #ignore_index=False: to keep the original index (1 per file)
-    dfEvent= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_K_PEtime','x_L_PEdur','PExEst','x_S_lickTime','x_D_laserTime'],var_name='eventType',value_name='eventTime', ignore_index=False)
+    dfEvent= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_K_PEtime','PExEst','x_S_lickTime','x_D_laserTime'],var_name='eventType',value_name='eventTime', ignore_index=False)
 
   
 
@@ -385,15 +390,17 @@ if __name__ == '__main__':
     #related https://stackoverflow.com/questions/51669232/pandas-merge-with-duplicated-key-removing-duplicated-rows-or-preventing-its-c 
     dfEvent['g'] = dfEvent.groupby(level=0).cumcount()
     
-    
-    #save an index for fileID 
+    #save a named index for fileID 
     dfCue.index.name= 'fileID'
+    dfEvent.index.name= 'fileID'
+    
     #save an index for trialID, first sort by cueTime within file so trials are in order
     dfCue= dfCue.sort_values(by=['fileID','cueTime'])
     dfCue['g'] = dfCue.groupby(level=0).cumcount()
+    
     dfCue['trialID']= dfCue['g']
     
-    dfCue= dfCue.set_index([dfCue.index,'trialID'])
+    # dfCue= dfCue.set_index([dfCue.index,'trialID'])
 
     # dfEvent.reset_index().merge(dfCue, how="right").set_index('fileID')
         #works but doesn't retain ind
@@ -420,38 +427,60 @@ if __name__ == '__main__':
     
     cueDur= 10
     
-    licks= dfTidy[dfTidy.eventTime[dfTidy.eventType=='x_S_lickTime']- dfTidy.cueTime <cueDur]
+    licks= dfTidy[dfTidy.eventTime[dfTidy.eventType=='x_S_lickTime']- [dfTidy.cueTime <cueDur]]
 
+    #groupby trialID to get all of the trials. will just loop through
+    #and find events occurring within cueDur for this trial
+    # dfTidy.groupby(level=1).cueType-cueTime
 
-    #%%Alternative df org: All events in single column, sort by time by file- could be good for time series
+    #%% Better df org: All events in single column, sort by time by file, with fileID column and trialID column that matches trial 1-60 through each session.
 
     dfEventAll= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_K_PEtime','PExEst','x_S_lickTime','x_D_laserTime','x_H_DStime','x_I_NStime'],var_name='eventType',value_name='eventTime', ignore_index=False)
-
-  
-
+     
     #now explode event timestamp array
     dfEventAll= dfEventAll.explode('eventTime')
-
-
-    # eventCount= dfEvent.groupby(['subject','date'])['eventType'].value_counts()
-
-    # g=sns.relplot(x='date',y=eventCount.values,hue='eventType',
-    #               data=eventCount,kind="line", 
-    #               facet_kws={'sharey': False, 'sharex': True})
-    # g.fig.subplots_adjust(top=0.9) # adjust the figure for title 
-    # g.fig.suptitle('Event counts over time pre deletion')
 
     #remove invalid/placeholder 0s
     #TODO: seem to be removing legitimate port exits with peDur==0, not sure how to deal with this so just excluding
     dfEventAll= dfEventAll[dfEventAll.eventTime!=0]
+
+
+    #before any removal/sorting is done, next issue is to match up laser state with cues. 
+    dfLaser= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_E_laserDStrial','x_F_laserNStrial'],var_name='laserType',value_name='laserState',ignore_index=False);
+    #explode arrays into their own cells
+    dfLaser= dfLaser.explode('laserState')
+     
+    #use cumcount() of DS & NS to match up laser status with cue time (redundant since we have a timestamp of laser on, but good verification still)
+    dfEventAll.index.name= 'fileID'
+    dfEventAll= dfEventAll.reset_index()
+    dfEventAll['g']= dfEventAll[(dfEventAll.eventType=='x_H_DStime') | (dfEventAll.eventType=='x_I_NStime')].groupby('fileID').cumcount()#.index
+    
+    
+    dfLaser.index.name= 'fileID'
+    dfLaser= dfLaser.reset_index()
+    dfLaser['g']= dfLaser[(dfLaser.laserType== 'x_E_laserDStrial') | (dfLaser.laserType== 'x_F_laserNStrial')].groupby('fileID').cumcount()
+    
+    # print(dfLaser['g'].shape, dfLaser['g'].max(), dfEventAll['g'].shape, dfEventAll['g'].max())
+
+    
+    
+    dfEventAll= pd.merge(dfEventAll,dfLaser[['g', 'fileID', 'laserType','laserState']],on=['fileID', 'g'],how='left').drop('g',axis=1)
     
     #sort all event times by file and timestamp
     #set index name so we can sort by it easily
-    dfEventAll.index.name= 'fileID'
+    # dfEventAll.index.name= 'fileID'
     dfEventAll= dfEventAll.sort_values(by=['fileID','eventTime'])
-
+    
+    #need to reset_index before assigning values back to dfEventAll (this is because the fileID index repeats so assignment is ambiguous)
+    dfEventAll= dfEventAll.reset_index()
+    
+    #add trialID column by cumulative counting each DS or NS within each file
+    #now we have ID for trials 0-59 matching DS or NS within each session, nan for other events
+    dfEventAll['trialID']= dfEventAll[(dfEventAll.eventType=='x_H_DStime') | (dfEventAll.eventType=='x_I_NStime')].groupby('fileID').cumcount()
+    
+    dfTidy= dfEventAll
     #visualize all events per file
-    # sns.relplot(x='eventTime',y='fileID',hue='eventType', data= dfEventAll, kind='scatter')
+    # sns.relplot(x='eventTime',y='fileID',hue='eventType', data= dfTidy, kind='scatter')
     
     #%% Doing some more basic visualizations
     import seaborn as sns
