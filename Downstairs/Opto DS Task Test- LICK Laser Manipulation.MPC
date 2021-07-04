@@ -400,7 +400,11 @@ S2, \wait for laser trial start signal
     #R^Lick: SET B(52)=0--->S2 \running ILI timer continuously, reset if lick
     #K28: SET B(53)=0; SET B(54)=0--->S3 \if laser trial starting, start laser available timer and max laser timer
     .01": ADD B(52)--->S2 \iterate last ILI timer
-
+ 
+S5, \gate laser behind PE within cue duration . Only proceed to laser activation if PE is made within cueDUr, else make laser unavailable
+    
+    R^PortEntry: --->S3 \if PE registered before cueDur ends, proceed to S3 and wait for licks 
+    A(2)*B(0)#T: Z18--->S2 \if cueDur ends with no PE, signal laser unavailable and go back to wait for next trial
 
 S3, \laser trial pre lick or between laser pulses: trigger laser if ILI and duration meet our desired parameters.
     #R^Lick: SET B(52)=0; ON^Laser; Z17--->S4 \ reset ILI if lick detected \reset laser trigger and send Z17 signal to start laser

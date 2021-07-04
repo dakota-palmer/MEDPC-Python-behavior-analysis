@@ -407,11 +407,13 @@ if __name__ == '__main__':
     # dfTidy = pd.merge(dfCue,dfEvent[['subject','date','g','eventType','eventTime']],on=['subject','date', 'g'],how='right').drop('g',axis=1)
     dfTidy = pd.merge(dfCue,dfEvent[['g','eventType','eventTime']],on=['fileID', 'g'],how='right').drop('g',axis=1)
 
-    #TODO: is there a wayto set the index below such that events don't havea a trialID unless I assign them?  (e.g. nan in these spots but could assign later on?)   
+    # is there a wayto set the index below such that events don't havea a trialID unless I assign them?  (e.g. nan in these spots but could assign later on?)   
     # dfTidy.eventType= dfTidy.eventType.reset_index()
     #summing together should cause offset so events don't match with trialID?
     #but just causes everything to be nan (probs bc 'g' has no matches):
-    
+     
+        #resolved in next 
+        
     # dfEvent['g']= dfEvent['g']+dfCue['g'].max()+1 
     # dfTidy = pd.merge(dfCue,dfEvent[['g','eventType','eventTime']],on=['fileID', 'g'],how='right').drop('g',axis=1)
 
@@ -421,18 +423,7 @@ if __name__ == '__main__':
     #we don't have to treat DS & NS separately at all anymore! we can just go by cueType and laserType
     dfTidy= dfTidy.set_index([dfTidy.index,'trialID'])
     
-    #%% Identify events during each trial
-    
-    #for now assume cue duration = 10, but TODO: get programmatically from B() array
-    
-    cueDur= 10
-    
-    licks= dfTidy[dfTidy.eventTime[dfTidy.eventType=='x_S_lickTime']- [dfTidy.cueTime <cueDur]]
-
-    #groupby trialID to get all of the trials. will just loop through
-    #and find events occurring within cueDur for this trial
-    # dfTidy.groupby(level=1).cueType-cueTime
-
+  
     #%% Better df org: All events in single column, sort by time by file, with fileID column and trialID column that matches trial 1-60 through each session.
 
     dfEventAll= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_K_PEtime','PExEst','x_S_lickTime','x_D_laserTime','x_H_DStime','x_I_NStime'],var_name='eventType',value_name='eventTime', ignore_index=False)
@@ -482,42 +473,124 @@ if __name__ == '__main__':
     #visualize all events per file
     # sns.relplot(x='eventTime',y='fileID',hue='eventType', data= dfTidy, kind='scatter')
     
-    #%% Doing some more basic visualizations
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    # Apply the default theme
-    sns.set_theme()    
+      #%% Identify events during each trial
+      
+     #TODO: for now assume cue duration = 10, but should get programmatically from A() array
     
-    #plot relationships between some variables
-    # for ses in range(len(df)):
-    # sns.relplot(x=df['file'][0],y=df['x_O_DSPE'][0].flatten(), hue=df['RatID'][0])
+    cueDur= 10
     
-    # for ses in range(len(df)):
-        # df['file'][ses]= df['file'][ses][0]
-        # df['subject'][ses]= df['subject'][ses][0]
-        # df['Virus'][ses]= df['Virus'][ses][0][0]
+    #fill in intermediate trialID values... We have absolute trialIDs now for each Cue but other events have trialID=nan
+    #we can't tell for certain if events happened during a trial or ITI at this point but we do have all of the timestamps
+    #and we know the cue duration, so we can calculate and assign events to a trial using this.
     
+    #To start, fill in these values between each trialID as -trialID (could also use decimal like trial 1.5) between each actual Cue
+    #Get the values and index of nan trialIDs
+    #this returns a series of each nan trialID along with its index. 
+    indNan= dfTidy.trialID[dfTidy.trialID.isnull()]
+    
+    #pandas has a function for this- groupby().ffill or .backfill or .fillna
+    #this fills nan trialID
+    dfTidy.trialID= dfTidy.trialID.fillna(method='ffill')
+    
+    # #try groupbytrial before -1
+    # test=dfTidy.groupby(['fileID','trialID']).eventTime
+ 
+    # #group by event type within same file and trial, then we can just subtract 
+    # test2= dfTidy.groupby(['fileID','trialID'])
+    # #groupby returns each combination of the values
+    # #this still takes awhile.
+    # for file, trial in test2.groups:
+    #     if trial>=0: #ignore the - trialIDs
+    #         # atestSubj= group['eventType']
+    #         print(file, trial)
+    #         test= dfTidy.eventTime[(dfTidy.fileID==file) & dfTidy.trialID==trial]
         
-    df['file']= df['file'].astype('category')
-    df['subject']= df['subject'].astype('category')
-    df['Mode_0_stgtacr_1_mCherry_']= df['Virus'].astype('category')
+    # # dfTidy[trialID] eventType~= DS | NS - eventType= DS | NS?
     
-    # #don't fully understand what is being done here... but it is plotting without reorganizing data
-    # #plot DS PE latency based on Laser state
-    # grid = sns.FacetGrid(df,row='Virus',col='Sex')
-    # grid.map(lambda _x,_y,**kwargs : plt.scatter(_x.values[0],_y.values[0]),'x_E_laserDStrial','x_M_DSPElat')
-    
-    # #plot DS PE latency based on Laser state
-    # grid = sns.FacetGrid(df,row='Virus',col='Sex')
-    # #this works but I think am only getting one session?
-    # grid.map(lambda _x,_y,**kwargs : sns.histplot(x=_x.values[0],hue=_y.values[0]),'x_M_DSPElat','x_E_laserDStrial')
-    
-    # #try visualizing DS PE and latency based on Laser state
-    # grid = sns.FacetGrid(df,row='x_E_laserDStrial',col='Group_0_Stgtacr_1_Mcherry') 
-    # grid.map(lambda _x,_y,**kwargs : plt.scatter(_x.values[0],_y.values[0]),'x_O_DSPE','x_M_DSPElat')
+    # # #get time difference between non-cue event types and cue per trial
+    # # for trial in dfTidy.trialID.unique():
+    # #     dfTrial= dfTidy.trialID==trial
+    # #     dfTrial.dfTidy.eventType!='x_I_NStime' | dfTidy.eventType!='x_H_DStime'
+    # #     trialDiff= dfTidy.eventTime[dfTidy.eventType!='x_I_NStime' | dfTidy.eventType!='x_H_DStime' & dfTidy.eventTime[dfTidy.trialTyp==trial]]
         
+
+    
+    #now multiply previously nan trialIDs by -1 so we can set them apart from the valid trialIDs
+    #using .at[] replaces value without SettingWithCopyWarning
+    dfTidy.trialID.at[indNan.index]= dfTidy.trialID[indNan.index]*-1
+     
+    # #should be easy right?
+    # #if dfTidy.eventTime[fileID][-trial] <= eventTime[fileID][trial]
+    #     # dfTidy.eventTime[fileID]
+    
+    # #pandas cross-section method df.xs() might be good
+    # # test= dfTidy.xs['trialID'==1,'fileID=='1]
+    # #get time difference between non-cue event types and cue per trial
+    
+    # #this method is taking too long... 
+    
+    
+    # testSub=np.empty([60,dfTidy.shape[0]])
+    # for file in dfTidy.fileID:
+    #     for trial in dfTidy.trialID[dfTidy.trialID>=0].unique():
+    #         # dfTrial= dfTidy[(dfTidy.fileID==file) & (dfTidy.trialID==trial)]
+    #         # dfTrial= dfTrial.assign(trialDiff= dfTidy.eventTime[dfTidy.trialID==trial] - dfTidy.eventTime[dfTidy.trialID==-trial])
+    #         print(file)
+    # #maybe it would be faster if we set the df index to file and trial first? then we avoid two loops?
+    # #reindex by file, trial and then use pandas cross section method df.xs() to select data
+    # #TODO: this may be more efficient https://pandas.pydata.org/pandas-docs/stable/whatsnew/v0.14.0.html#multi-indexing-using-slicers
+    
+    # # trials= dfTidy.trialID[dfTidy.trialID>=0].unique()
+    
+    # dfTidy= dfTidy.reset_index()
+    # dfTidy= dfTidy.set_index(['fileID','trialID'])
+    
+    # #sort ind before, faster
+    # dfTidy= dfTidy.sort_index()
+    # #~!~~~~~HERE~~~~~
+    # #still takes way too long
+    # for file in dfTidy.index.get_level_values(0):
+    #     for trial in dfTidy.index.get_level_values(1)[dfTidy.index.get_level_values(1)>=0].unique():#dfTidy.trialID[dfTidy.trialID.unique()[dfTidy.trialID>=0]].unique():
+    #         # test= dfTidy.xs((trial),level='trialID')
         
-    #%% Try Pandas_profiling report
+    #         # test2= dfTidy.xs((file,trial),level=['fileID','trialID'])
+
+    #         print(dfTidy.loc[file,trial])
+            
+    # trials= dfTidy.trialID[dfTidy.trialID>=0].unique()
+
+    # dfTidy= dfTidy.reset_index()
+
+    # for date, new_df in dfTidy.groupby(['fileID',dfTidy.trialID==trials]):
+    #     print(new_df)
+
+    # #now use groupby() trialID and take difference of event times in -trialID with the cue time in +trialID
+    # test=dfTidy.groupby(['fileID','trialID']).eventTime.groups
+    
+    #Did a lot of experimenting with different methods to subtract each event
+    #from each cue on a trial-by-trial basis...didn't find a good way to do it quickly
+    #without nested loops.
+    #Instead, can just get a trial end time based on cue onset, then just check
+    #event times against this
+    dfTidy= dfTidy.sort_values(by=['fileID','eventTime'])
+
+    dfTidy['trialEnd']= dfTidy.eventTime[dfTidy.trialID>=0]+cueDur
+    
+    dfTidy.trialEnd= dfTidy.trialEnd.fillna(method='ffill')
+    
+    #find events that occur after cue start but before cue duration end
+    dfTidy.trialID.loc[(dfTidy.eventTime-dfTidy.trialEnd<=0) & (dfTidy.eventTime-dfTidy.trialEnd>-10)]= dfTidy.trialID*-1
+    
+    
+
+
+
+    #groupby trialID to get all of the trials. will just loop through
+    #and find events occurring within cueDur for this trial
+    # dfTidy.groupby(level=1).cueType-cueTime
+
+    
+#    #%% Try Pandas_profiling report
     #note- if you are getting errors with ProfileReport() and you installed using conda, remove and reinstall using pip install  
     from pandas_profiling import ProfileReport
     
@@ -528,33 +601,3 @@ if __name__ == '__main__':
 
     
         
-    
-     #%% result is a numpy structured array, let's convert it to pandas dataframe
-    # # df= pd.DataFrame(matContents['trainData'], index=[0]) #.set_index('f0')
-    
-    # mdata = matContents['trainData']  # variable in mat file
-    # mdtype = mdata.dtype  # dtypes of structures are "unsized objects"
-    # # * SciPy reads in structures as structured NumPy arrays of dtype object
-    # # * The size of the array is the size of the structure array, not the number
-    # #   elements in any particular field. The shape defaults to 2-dimensional.
-    # # * For convenience make a dictionary of the data using the names from dtypes
-    # # * Since the structure has only one element, but is 2-D, index it at [0, 0]
-    # ndata = {n: mdata[n][0, 0] for n in mdtype.names}
-    # # Reconstruct the columns of the data table from just the time series
-    # # Use the number of intervals to test if a field is a column or metadata
-    # # columns = [n for n, v in ndata.items() if v.size == ndata['numIntervals']]
-    # columns = [n for n in ndata.items()]
-    
-    # # now make a data frame, setting the time stamps as the index
-    # # df = pd.DataFrame(np.concatenate([ndata[c] for c in columns], axis=1),
-    # #                   index=[datetime(*ts) for ts in ndata['timestamps']],
-    # #                   columns=columns)
-    
-    
-    # for c in columns:
-    #     varName= [c][0][0] #getting the first element which is a string label
-    #     test=(np.concatenate([ndata[varName]]))#, axis=1))#,
-    #                   # index= [datetime(*ts) for ts in ndata['timestamps']],
-    #                   # columns=columns)
-    
-    # df = pd.DataFrame(test,index=0)#,columns=varName)
