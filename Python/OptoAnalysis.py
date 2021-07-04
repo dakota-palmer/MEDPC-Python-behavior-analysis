@@ -108,21 +108,21 @@ if __name__ == '__main__':
     result = pd.concat(unnested_lst, axis=1, keys=df2.columns).fillna(method='ffill')
     
     #Now let's perform some preliminary analysis, make a new variable for DS PE outcome per trial
-    result['DSPEoutcome']= result['x_M_DSPElat']
-    result['DSPEoutcome']=result['DSPEoutcome'].replace(10,0) #10s= no PE
+    result.loc[:,'DSPEoutcome']= result['x_M_DSPElat'].copy()
+    result.loc[:,'DSPEoutcome']=result['DSPEoutcome'].replace(10,0).copy() #10s= no PE
     result.loc[result['DSPEoutcome'] > 0, 'DSPEoutcome'] = 1
     #also replace 10s or 0s latencies with nan (since there was no PE)
     #not sure where the 0s latencies are coming from, but are there for every trial 30 & 31?
-    result.x_M_DSPElat[result.x_M_DSPElat==10] = np.nan
-    result.x_M_DSPElat[result.x_M_DSPElat==0]= np.nan
+    result.loc[result.x_M_DSPElat==10,'x_M_DSPElat'] = np.nan
+    result.loc[result.x_M_DSPElat==0,'x_M_DSPElat']= np.nan
     
     #same for NS
     result['NSPEoutcome']= result['x_N_NSPElat']
     result['NSPEoutcome']=result['NSPEoutcome'].replace(10,0) #10s= no PE
     result.loc[result['NSPEoutcome'] > 0, 'NSPEoutcome'] = 1
     #also replace 10s latencies with nan (since there was no PE)
-    result.x_N_NSPElat[result.x_N_NSPElat==10] = np.nan
-    result.x_N_NSPElat[result.x_N_NSPElat==0]= np.nan
+    result.loc[result.x_N_NSPElat==10,'x_N_NSPElat'] = np.nan
+    result.loc[result.x_N_NSPElat==0,'x_N_NSPElat']= np.nan
 
 
     #convert ratID to categorical data type so seaborn uses divergent color hues
@@ -281,17 +281,6 @@ if __name__ == '__main__':
 #regression
     g=sns.lmplot(x= 'x_E_laserDStrial', y='x_M_DSPElat',hue='Virus',col='laserDur',data=result)
 
-     #%% Playing with grouping and shape
-    groupBySex= df.groupby('Sex')
-    groupBySex.count()
-    groupBySex.get_group('F')
-    
-    groupBySexVirus= df.groupby(['Sex','Virus'])
-    groupBySexVirus.count()
-    groupBySexVirus.groups #groups
-    groupBySexVirus.get_group(('F', 1)) #get this specific group
-    # groupBySexVirus['x_M_DSPElat'].mean()
-
      
     #%% melt() each event variable into eventType and eventTime 
     #use explode() to reduce arrays of event timestamps into many rows with single element
@@ -306,7 +295,7 @@ if __name__ == '__main__':
     #now explode event timestamp array
     dfEvent= dfEvent.explode('eventTime')
 
-
+    #visualize
     # eventCount= dfEvent.groupby(['subject','date'])['eventType'].value_counts()
 
     # g=sns.relplot(x='date',y=eventCount.values,hue='eventType',
@@ -340,90 +329,7 @@ if __name__ == '__main__':
     g.fig.subplots_adjust(top=0.9) # adjust the figure for title 
     g.fig.suptitle('Event counts over time by subject post deletion')
  
-    #%% Do same for trial-based events (DS,NS,laser state for both trial types )
 
-    # dfCue= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_H_DStime','x_I_NStime'],var_name='cueType',value_name='cueTime');
-    
-    #retain original index (1 per file) by setting ignore_index=False
-    dfCue= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_H_DStime','x_I_NStime'],var_name='cueType',value_name='cueTime', ignore_index=False);
-    #so can use dfCue.loc[ses] to get values from specific session
-
-    #explode arrays of timestamps into their own cells
-    dfCue= dfCue.explode('cueTime')
-        
-    #now remove entires where cueTime==0 (these are invalid or fillers just due to how MPC code was written)
-    #may have to remove these at end so they match up with laser?
-    dfCue= dfCue[dfCue.cueTime!=0]
-    
-    #let's check the shape of dfCue to see how many cue timestamps we have per session now
-    # print('num cue timestamps per file= ',dfCue.loc[1].shape[0])
-    # g= sns.catplot(x='date', y='cueTime', hue='cueType', kind='box', data=dfCue)
-    # g.fig.subplots_adjust(top=0.9) # adjust the figure for title 
-    # g.fig.suptitle('cue onset time by date')
-  
-    
-    #Now melt() laser state for each cue, keep original index
-    dfLaser= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_E_laserDStrial','x_F_laserNStrial'],var_name='laserType',value_name='laserState',ignore_index=False);
-    #explode arrays into their own cells
-    dfLaser= dfLaser.explode('laserState')
-     
-    #somehow different amount of cues and laser states...
-    #possibly due to error in code from 20210604 session
-    #~26 missing NSlaser entries x 11 subjects ~286. = size mismatch
-    dfCue.shape[0]-dfLaser.shape[0]
- 
-    #Merge two together
-    dfCue= pd.concat([dfCue,dfLaser[['laserType','laserState']]],axis=1)
-    # test=pd.merge(dfCue,dfLaser,how= 'left')
-    
-    #Finally, merge the event and cue dfs into one df
-    #concat() taking long time?
-    # dfTidy= pd.concat([dfCue,dfEvent[['eventType','eventTime']]],axis=1)
-    # dfTidy= pd.concat([dfCue,dfEvent],axis=1, keys= ['trial','event'])
-
-    # dfTidy= dfCue.join(dfEvent, dfEvent)
-    
-    # # dfTidy= pd.merge(dfCue,dfEvent,how='left')
-    # dfTidy= pd.merge(dfCue,dfEvent['eventType','eventTime'],on=['subject','date'])
-    # dfTidy = pd.merge(dfCue, dfEvent[['eventType','eventTime']], left_index=True, right_index=True, how='outer').drop_duplicates()
-   
-    #related https://stackoverflow.com/questions/51669232/pandas-merge-with-duplicated-key-removing-duplicated-rows-or-preventing-its-c 
-    dfEvent['g'] = dfEvent.groupby(level=0).cumcount()
-    
-    #save a named index for fileID 
-    dfCue.index.name= 'fileID'
-    dfEvent.index.name= 'fileID'
-    
-    #save an index for trialID, first sort by cueTime within file so trials are in order
-    dfCue= dfCue.sort_values(by=['fileID','cueTime'])
-    dfCue['g'] = dfCue.groupby(level=0).cumcount()
-    
-    dfCue['trialID']= dfCue['g']
-    
-    # dfCue= dfCue.set_index([dfCue.index,'trialID'])
-
-    # dfEvent.reset_index().merge(dfCue, how="right").set_index('fileID')
-        #works but doesn't retain ind
-    # dfTidy = pd.merge(dfCue,dfEvent[['subject','date','g','eventType','eventTime']],on=['subject','date', 'g'],how='right').drop('g',axis=1)
-    dfTidy = pd.merge(dfCue,dfEvent[['g','eventType','eventTime']],on=['fileID', 'g'],how='right').drop('g',axis=1)
-
-    # is there a wayto set the index below such that events don't havea a trialID unless I assign them?  (e.g. nan in these spots but could assign later on?)   
-    # dfTidy.eventType= dfTidy.eventType.reset_index()
-    #summing together should cause offset so events don't match with trialID?
-    #but just causes everything to be nan (probs bc 'g' has no matches):
-     
-        #resolved in next 
-        
-    # dfEvent['g']= dfEvent['g']+dfCue['g'].max()+1 
-    # dfTidy = pd.merge(dfCue,dfEvent[['g','eventType','eventTime']],on=['fileID', 'g'],how='right').drop('g',axis=1)
-
-    #now it seems we have everything together, set multiindex to help readability
-    #this gives us a df with a hierarchical index of fileID,trialID. While not all events match
-    #up at this point, should be good fordoing trial-by-trial analyses. And now, since we sorted all the trials
-    #we don't have to treat DS & NS separately at all anymore! we can just go by cueType and laserType
-    dfTidy= dfTidy.set_index([dfTidy.index,'trialID'])
-    
-  
     #%% Better df org: All events in single column, sort by time by file, with fileID column and trialID column that matches trial 1-60 through each session.
 
     dfEventAll= df.melt(id_vars=['subject','Virus','Sex','date','laserDur','note'],value_vars=['x_K_PEtime','PExEst','x_S_lickTime','x_D_laserTime','x_H_DStime','x_I_NStime'],var_name='eventType',value_name='eventTime', ignore_index=False)
@@ -473,7 +379,7 @@ if __name__ == '__main__':
     #visualize all events per file
     # sns.relplot(x='eventTime',y='fileID',hue='eventType', data= dfTidy, kind='scatter')
     
-      #%% Identify events during each trial
+      #% Identify events during each trial, assign them trialID matching the cue
       
      #TODO: for now assume cue duration = 10, but should get programmatically from A() array
     
@@ -486,111 +392,31 @@ if __name__ == '__main__':
     #To start, fill in these values between each trialID as -trialID (could also use decimal like trial 1.5) between each actual Cue
     #Get the values and index of nan trialIDs
     #this returns a series of each nan trialID along with its index. 
-    indNan= dfTidy.trialID[dfTidy.trialID.isnull()]
+    indNan= dfTidy.trialID[dfTidy.trialID.isnull()].copy()
     
     #pandas has a function for this- groupby().ffill or .backfill or .fillna
     #this fills nan trialID
-    dfTidy.trialID= dfTidy.trialID.fillna(method='ffill')
-    
-    # #try groupbytrial before -1
-    # test=dfTidy.groupby(['fileID','trialID']).eventTime
- 
-    # #group by event type within same file and trial, then we can just subtract 
-    # test2= dfTidy.groupby(['fileID','trialID'])
-    # #groupby returns each combination of the values
-    # #this still takes awhile.
-    # for file, trial in test2.groups:
-    #     if trial>=0: #ignore the - trialIDs
-    #         # atestSubj= group['eventType']
-    #         print(file, trial)
-    #         test= dfTidy.eventTime[(dfTidy.fileID==file) & dfTidy.trialID==trial]
-        
-    # # dfTidy[trialID] eventType~= DS | NS - eventType= DS | NS?
-    
-    # # #get time difference between non-cue event types and cue per trial
-    # # for trial in dfTidy.trialID.unique():
-    # #     dfTrial= dfTidy.trialID==trial
-    # #     dfTrial.dfTidy.eventType!='x_I_NStime' | dfTidy.eventType!='x_H_DStime'
-    # #     trialDiff= dfTidy.eventTime[dfTidy.eventType!='x_I_NStime' | dfTidy.eventType!='x_H_DStime' & dfTidy.eventTime[dfTidy.trialTyp==trial]]
-        
-
+    dfTidy.trialID= dfTidy.trialID.fillna(method='ffill').copy()
     
     #now multiply previously nan trialIDs by -1 so we can set them apart from the valid trialIDs
     #using .at[] replaces value without SettingWithCopyWarning
-    dfTidy.trialID.at[indNan.index]= dfTidy.trialID[indNan.index]*-1
-     
-    # #should be easy right?
-    # #if dfTidy.eventTime[fileID][-trial] <= eventTime[fileID][trial]
-    #     # dfTidy.eventTime[fileID]
-    
-    # #pandas cross-section method df.xs() might be good
-    # # test= dfTidy.xs['trialID'==1,'fileID=='1]
-    # #get time difference between non-cue event types and cue per trial
-    
-    # #this method is taking too long... 
-    
-    
-    # testSub=np.empty([60,dfTidy.shape[0]])
-    # for file in dfTidy.fileID:
-    #     for trial in dfTidy.trialID[dfTidy.trialID>=0].unique():
-    #         # dfTrial= dfTidy[(dfTidy.fileID==file) & (dfTidy.trialID==trial)]
-    #         # dfTrial= dfTrial.assign(trialDiff= dfTidy.eventTime[dfTidy.trialID==trial] - dfTidy.eventTime[dfTidy.trialID==-trial])
-    #         print(file)
-    # #maybe it would be faster if we set the df index to file and trial first? then we avoid two loops?
-    # #reindex by file, trial and then use pandas cross section method df.xs() to select data
-    # #TODO: this may be more efficient https://pandas.pydata.org/pandas-docs/stable/whatsnew/v0.14.0.html#multi-indexing-using-slicers
-    
-    # # trials= dfTidy.trialID[dfTidy.trialID>=0].unique()
-    
-    # dfTidy= dfTidy.reset_index()
-    # dfTidy= dfTidy.set_index(['fileID','trialID'])
-    
-    # #sort ind before, faster
-    # dfTidy= dfTidy.sort_index()
-    # #~!~~~~~HERE~~~~~
-    # #still takes way too long
-    # for file in dfTidy.index.get_level_values(0):
-    #     for trial in dfTidy.index.get_level_values(1)[dfTidy.index.get_level_values(1)>=0].unique():#dfTidy.trialID[dfTidy.trialID.unique()[dfTidy.trialID>=0]].unique():
-    #         # test= dfTidy.xs((trial),level='trialID')
-        
-    #         # test2= dfTidy.xs((file,trial),level=['fileID','trialID'])
-
-    #         print(dfTidy.loc[file,trial])
-            
-    # trials= dfTidy.trialID[dfTidy.trialID>=0].unique()
-
-    # dfTidy= dfTidy.reset_index()
-
-    # for date, new_df in dfTidy.groupby(['fileID',dfTidy.trialID==trials]):
-    #     print(new_df)
-
-    # #now use groupby() trialID and take difference of event times in -trialID with the cue time in +trialID
-    # test=dfTidy.groupby(['fileID','trialID']).eventTime.groups
-    
-    #Did a lot of experimenting with different methods to subtract each event
-    #from each cue on a trial-by-trial basis...didn't find a good way to do it quickly
-    #without nested loops.
-    #Instead, can just get a trial end time based on cue onset, then just check
+    dfTidy.at[indNan.index,'trialID']= dfTidy.trialID[indNan.index].copy()*-1
+   
+    #Can get a trial end time based on cue onset, then just check
     #event times against this
-    dfTidy= dfTidy.sort_values(by=['fileID','eventTime'])
+    dfTidy= dfTidy.sort_values(by=['fileID','eventTime']).copy()
 
-    dfTidy['trialEnd']= dfTidy.eventTime[dfTidy.trialID>=0]+cueDur
+    dfTidy.loc[:,'trialEnd']= dfTidy.eventTime[dfTidy.trialID>=0].copy()+cueDur
     
-    dfTidy.trialEnd= dfTidy.trialEnd.fillna(method='ffill')
+    dfTidy.loc[:,'trialEnd']= dfTidy.trialEnd.fillna(method='ffill').copy()
     
-    #find events that occur after cue start but before cue duration end
-    dfTidy.trialID.loc[(dfTidy.eventTime-dfTidy.trialEnd<=0) & (dfTidy.eventTime-dfTidy.trialEnd>-10)]= dfTidy.trialID*-1
+    #find events that occur after cue start but before cue duration end.
+    #multiply those trialIDs by -1 so that they match the corresponding cue.
+    #remaining events with negative trialIDs must have occurred somewhere in that ITI (or 'pre/post cue') 
+    dfTidy.loc[(dfTidy.eventTime-dfTidy.trialEnd<=0) & (dfTidy.eventTime-dfTidy.trialEnd>-10),'trialID']= dfTidy.trialID.copy()*-1
     
     
-
-
-
-    #groupby trialID to get all of the trials. will just loop through
-    #and find events occurring within cueDur for this trial
-    # dfTidy.groupby(level=1).cueType-cueTime
-
-    
-#    #%% Try Pandas_profiling report
+  #%% Try Pandas_profiling report
     #note- if you are getting errors with ProfileReport() and you installed using conda, remove and reinstall using pip install  
     from pandas_profiling import ProfileReport
     
