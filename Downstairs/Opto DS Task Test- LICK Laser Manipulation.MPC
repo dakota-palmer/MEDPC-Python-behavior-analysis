@@ -50,17 +50,17 @@ DIM R=8 \soundParams
 \^rightLeverPress = 3
 
 \ Inter-trial intervals in seconds
-LIST X = 10\10, 20, 30, 40, 50, 10, 20, 30, 40, 50   \ITI
+LIST X = 10, 20, 30, 40, 50, 10, 20, 30, 40, 50   \ITI
 
 
 \ Choose DS or NS for each trial
 LIST Y = 0,0,0,0,0,1,1,1,1,1 \listCueType
 
 \ Choose Laser ON or OFF for each DS trial   \OFF= 0  and ON = 1
-LIST C = 1\0,0,0,0,0,1,1,1,1,1  \listProbDSLaser
+LIST C = 0,0,0,0,0,1,1,1,1,1  \listProbDSLaser
 
 \ Choose Laser ON or OFF for each NS trial   \OFF= 0  and ON = 1
-LIST T = 1\0,0,0,0,0,1,1,1,1,1 \listProbNSLaser
+LIST T = 0,0,0,0,0,1,1,1,1,1 \listProbNSLaser
 
 
 Var_Alias Startup Delay (Sec)                 = A(0)
@@ -81,9 +81,9 @@ DIM A=9 \stageParams
     \A(4)=Pump duration in sec (default 5 sec)
     \A(5)=0 if paired DS-US, 1 if unpaired
 
-    \A(6)= ILI (time since last lick) threshold to cease laser (in sec)
-    \A(7)= laser available time threshold (time since trial start laser can be triggered by licks)
-    \A(8)= max laser delivery threshold (cap for how much laser per trial)
+    \A(6)= ILI (time since last lick) threshold to cease laser (in sec) \VP-VTA-StGTACR mean ILI <.5s for NS (more variable). <.3s for DS  
+    \A(7)= laser available time threshold (time since trial start laser can be triggered by licks) \VP-VTA-STGTACR median first lick latency after trial end ~6s.
+    \A(8)= max laser delivery threshold (cap for how much laser per trial) \VP-VTA-StGTACR cue manipulation capped at 10s
 
 
 
@@ -146,7 +146,7 @@ DIM B=81 \workingVars
     \B(49)= Number of trial state (B(3)) transitions \dp added 5.30.21 for indexing of new array W
 
     \B(50) = Current trial Laser OFF (0) or Laser ON (1)
-    \B(51)= Total Laser trials
+    \B(51)= Total Laser onsets
 
     \B(52)= Simple time since last lick calculation. Used to cease laser if ILI exceeds certain amount
     \B(53)= Time since laser trial start. Used to cease laser if total time since trial start exceeds specific threshold. (since rats might drink after trial end, we shouldn't rely those signals to pair consumption) Should be some time after this trial ends but before the next trial starts
@@ -169,11 +169,11 @@ DIM U=31   \lickNSpost \ 5-sec Licks after first PE following NS
 
 DIM W=9999 \trialState \record of trial states B(3) dp added 5/30/21
 
-DIM D= 9999 \laserTime \Laser timestamps
 DIM E= 61 \laserDStrial \DS Laser trial array
 DIM F= 61 \laserNStrial \NS Laser trial array
 
-DIM G= 9999 \laserOffTime \laser off times (since we can have multiple 'bursts' of lasers paired with lick bursts)
+DIM D= 9999 \laserTime \Laser ON timestamps
+DIM G= 9999 \laserOffTime \laser OFF times (since we can have multiple 'bursts' of lasers paired with lick bursts)
 
 \Z signals (within box):
     \Z1 = Start initial delay
@@ -248,7 +248,7 @@ S6,
 S.S.3, \ Initialization and trial control for all boxes. DS duration is A(2) seconds.
 S1, \Initialize variables
   .01": SET A(5)=0;   \This value specifies the protocol: 0 for paired DS-US or 1 for unpaired
-        SET A(0)=10, A(1)=60, A(2)=30, A(3)=10, A(4)=2, A(6)=2, A(7)=(A(2)+5), A(8)=10; \ILI threshold for ceasing laser, laser availability time (setting= cueDur +5s), max laser delivery=10s (to match pulse pal)
+        SET A(0)=10, A(1)=60, A(2)=10, A(3)=10, A(4)=2, A(6)=0.5, A(7)=(A(2)+5), A(8)=10; \ILI threshold for ceasing laser, laser availability time (setting= cueDur +5s), max laser delivery=10s (to match pulse pal)
         SET B(0)=1";
         SET H(1)=-987.987, I(1)=-987.987, J(1)=-987.987, K(1)=-987.987, L(1)=-987.987, W(1)= -987.987--->SX
   #Z10:--->S2

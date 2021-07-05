@@ -450,8 +450,15 @@ if __name__ == '__main__':
 
   # Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
   # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time
-    dfTidy.loc[dfTidy.trialID >= 0, 'eventLatency'] = (
+  
+    dfTidy.loc[dfTidy.trialID>=0, 'eventLatency'] = (
         (dfTidy.eventTime)-(dfTidy.trialEnd-cueDur)).copy()
+    
+    #for 'ITI' events, calculate latency based on last trial end (not cue onset)
+    dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = (
+        (dfTidy.eventTime)-(dfTidy.trialEnd)).copy()
+    
+    #Huge negative latencies for trial -59. why?
 
    # count of events per trial. We can easily find firstPE and firstLick with this (==0)
     dfTidy['trialPE'] = dfTidy[(dfTidy.eventType == 'x_K_PEtime')].groupby([
@@ -477,13 +484,13 @@ if __name__ == '__main__':
     # sns.set_palette('tab10') #tab10 is default
 
 
-    # %% Plot individual subject behavior: laser OFF sessions (laserDur==0).
+    # %% Plot individual subject ILIs: laser OFF sessions (laserDur==0).
     # for plot across sessions of individual rats, change color to tab20 and make background white to help colors pop...default color palettes have blues that I can't distinguish
     
     #trial-based, ignoring ITI
-    dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur==0)].copy()
+    # dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur==0)].copy()
     #trial-based, including ITI
-    # dfPlot = dfTidy[(dfTidy.laserDur==0)].copy()
+    dfPlot = dfTidy[(dfTidy.laserDur==0)].copy()
 
     #All subj distribution of ILI (inter-lick interval)
     #only include trialLick~=nan
@@ -535,8 +542,57 @@ if __name__ == '__main__':
     g.set_ylabels('ILI (s)')
     g.set(ylim=(0,1))
 
-        
-        
+    #%% Plot individual subject First lick latencies (time from cue or trialEnd if ITI events)
+    #will inform cue manipulation laser availability window
+          
+    #trial-based, ignoring ITI
+    # dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur==0)].copy()
+    #trial-based, including ITI
+    dfPlot = dfTidy[(dfTidy.laserDur==0)].copy()
+
+    #All subj distribution of ILI (inter-lick interval)
+    #only include first trialLick~=nan
+    dfPlot = dfPlot[dfPlot.trialLick==0].copy()
+
+
+    #bar- all subj
+    #median here takes awhile
+    g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType', estimator=np.median, kind='bar', order=np.sort(dfPlot.trialType.unique()))
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('Median first lick latencies by trial type; laser OFF; all subj')
+    g.set_ylabels('lick latency from epoch start (s)')
+
+    
+    # #hist- all subj
+    # ili= ili.astype('float') #allows KDE, but kde here takes awhile
+    # g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='hist', stat="density", common_norm=False, kde=True, multiple='layer', hue_order=np.sort(dfPlot.trialType.unique()))
+    # g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    # g.fig.suptitle('ILI by trial type; laser OFF; all subj')
+    # g.set_xlabels('ILI (s)')
+    # g.set(xlim=(0,1))
+    
+    #box- all subj
+    g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType',  kind='box', order=np.sort(dfPlot.trialType.unique()))
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('First Lick latencies by trial type; laser OFF; all subj')
+    g.set_ylabels('lick latency from epoch start (s)')
+
+    
+    #ecdf- all subj
+    g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue_order=np.sort(dfPlot.trialType.unique()))
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('First Lick latencies by trial type; laser OFF; all subj')
+    g.set_xlabels('lick latency from epoch start (s)')
+
+    
+    #Individual distribution of ILI (inter-lick interval)
+    #only include trialLick~=nan
+    #bar- individual subj
+    g= sns.catplot(data=dfPlot, y='eventLatency', x='RatID', hue='trialType',  kind='bar', hue_order=np.sort(dfPlot.trialType.unique()))
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('First Lick latencies by trial type; laser OFF; individual subj')
+    g.set_ylabels('lick latency from epoch start (s)')
+
         
 
         # %% Effect of laser on PE & licks
