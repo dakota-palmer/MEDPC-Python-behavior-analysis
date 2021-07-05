@@ -485,54 +485,56 @@ if __name__ == '__main__':
     #trial-based, including ITI
     # dfPlot = dfTidy[(dfTidy.laserDur==0)].copy()
 
-    with sns.axes_style("whitegrid"), sns.color_palette('tab20', n_colors=np.unique(result.RatID).size):
-        #All subj distribution of ILI (inter-lick interval)
-        #only include trialLick~=nan
-        dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
-        #calculate ILI by taking diff() of latencies
-        ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
+    #All subj distribution of ILI (inter-lick interval)
+    #only include trialLick~=nan
+    dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
+    #calculate ILI by taking diff() of latencies
+    ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
 
-        #bar- all subj
-        g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='bar', order=np.sort(dfPlot.trialType.unique()))
-        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        g.fig.suptitle('ILI by trial type; laser OFF; all subj')
-        g.set_ylabels('ILI (s)')
-        
-        # #hist- all subj
-        # ili= ili.astype('float') #allows KDE, but kde here takes awhile
-        # g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='hist', stat="density", common_norm=False, kde=True, multiple='layer', hue_order=np.sort(dfPlot.trialType.unique()))
-        # g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        # g.fig.suptitle('ILI by trial type; laser OFF; all subj')
-        # g.set_xlabels('ILI (s)')
-        # g.set(xlim=(0,1))
-        
-        #box- all subj
-        g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='box', order=np.sort(dfPlot.trialType.unique()))
-        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        g.fig.suptitle('ILI by trial type; laser OFF; all subj')
-        g.set_ylabels('ILI (s)')
-        g.set(ylim=(0,0.5))
+    #bar- all subj
+    g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='bar', order=np.sort(dfPlot.trialType.unique()))
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('ILI by trial type; laser OFF; all subj')
+    g.set_ylabels('ILI (s)')
+    g.set(ylim=(0,0.5))
 
+    
+    # #hist- all subj
+    # ili= ili.astype('float') #allows KDE, but kde here takes awhile
+    # g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='hist', stat="density", common_norm=False, kde=True, multiple='layer', hue_order=np.sort(dfPlot.trialType.unique()))
+    # g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    # g.fig.suptitle('ILI by trial type; laser OFF; all subj')
+    # g.set_xlabels('ILI (s)')
+    # g.set(xlim=(0,1))
+    
+    #box- all subj
+    g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='box', order=np.sort(dfPlot.trialType.unique()))
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('ILI by trial type; laser OFF; all subj')
+    g.set_ylabels('ILI (s)')
+    g.set(ylim=(0,0.5))
 
-        
-        #ecdf- all subj
-        g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='ecdf', hue_order=np.sort(dfPlot.trialType.unique()))
-        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        g.fig.suptitle('ILI by trial type; laser OFF; all subj')
-        g.set_xlabels('ILI (s)')
-        g.set(xlim=(0,1))
+    
+    #ecdf- all subj
+    g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='ecdf', hue_order=np.sort(dfPlot.trialType.unique()))
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('ILI by trial type; laser OFF; all subj')
+    g.set_xlabels('ILI (s)')
+    g.set(xlim=(0,1))
 
-        
-        #Individual distribution of ILI (inter-lick interval)
-        #only include trialLick~=nan
-        dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
-        #calculate ILI by taking diff() of latencies
-        ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
-        #bar- individual subj
-        g= sns.catplot(data=dfPlot, y=ili, x='RatID', hue='trialType',  kind='bar', hue_order=np.sort(dfPlot.trialType.unique()))
-        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        g.fig.suptitle('ILI by trial type; laser OFF; individual subj')
-        g.set_ylabels('ILI (s)')
+    
+    #Individual distribution of ILI (inter-lick interval)
+    #only include trialLick~=nan
+    dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
+    #calculate ILI by taking diff() of latencies
+    ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
+    #bar- individual subj
+    g= sns.catplot(data=dfPlot, y=ili, x='RatID', hue='trialType',  kind='bar', hue_order=np.sort(dfPlot.trialType.unique()))
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('ILI by trial type; laser OFF; individual subj')
+    g.set_ylabels('ILI (s)')
+    g.set(ylim=(0,1))
+
         
         
         
