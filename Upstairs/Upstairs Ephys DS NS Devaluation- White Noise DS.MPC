@@ -1,5 +1,5 @@
 \STAGE 5 WN DS Devaluation
-\In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Pump 2 (previously used for probe trials) will be activated
+\In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Pump 3 (should be empty) will be activated
 
 \no "test" of boxes to eliminate extra cue & pump onsets
 
@@ -14,7 +14,7 @@
 ^DSTone2 = 23
 ^NSwhiteNoise = 8
 ^Boxlight = 28
-^Pump2 = 10
+^Pump3 = 11
 ^Houselight = 7
 
 
@@ -363,10 +363,10 @@ S1,
 
 S2,
   A(2)*B(0)#T: --->S1
-  #R^PortEntry: ON ^Pump2; SET J(B(1))=B(13)/100; ADD B(5)--->S3
+  #R^PortEntry: ON ^Pump3; SET J(B(1))=B(13)/100; ADD B(5)--->S3
 
 S3,
-  A(4)*B(0)#T: OFF ^Pump2; SET B(3)=3--->S1
+  A(4)*B(0)#T: OFF ^Pump3; SET B(3)=3--->S1
 
 
 

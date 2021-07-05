@@ -17,7 +17,7 @@
 ^NSwhiteNoise = 8
 ^Boxlight = 28
 ^Pump1 = 9
-^Pump2= 10 \ for probe trials; if pump 2 is left empty, nothing is delivered
+^Pump3= 11 \ for probe trials; if pump 3 is left empty, nothing is delivered
 ^Houselight = 7
 
 
@@ -193,7 +193,7 @@ DIM C= 60 \Reward identity for DS trials (pump 1, 2, or 3)
 \K27 = Start post-NS period
 \K28-29= Variable Reward Identity (tells other boxes which pump to turn on by setting B(51))
     \K28= Pump1
-    \K29= Pump2
+    \K29= Pump3
 
 
 S.S.1, \ Session clock in .01" units
@@ -395,12 +395,12 @@ S2,
   A(2)*B(0)#T--->S1
   #R^PortEntry: IF B(51)=1 [@True,@False] \VARIABLE REWARD DELIVERY \Choose which pump to activate (9 or 10)
           @True: ON ^Pump1; ON ^Reward1TTL; SET J(B(1))=B(13)/100; ADD B(5) --->S3    \Turn on pump 1
-          @False: ON ^Pump2; ON ^Reward2TTL; SET J(B(1))=B(13)/100; ADD B(5)--->S4    \Turn on pump 2
+          @False: ON ^Pump3; ON ^Reward2TTL; SET J(B(1))=B(13)/100; ADD B(5)--->S4    \Turn on pump 2
 S3,
   A(4)*B(0)#T: OFF ^Pump1; OFF ^Reward1TTL;  SET B(3)=3--->S1
  \Turn off pump 1 ; this is where variable pump duration could be implemented
 S4,
-  A(4)*B(0)#T: OFF ^Pump2; OFF ^Reward2TTL;  SET B(3)=3--->S1
+  A(4)*B(0)#T: OFF ^Pump3; OFF ^Reward2TTL;  SET B(3)=3--->S1
 \Turn off pump 2 ; this is where variable pump duration could be implemented
 
 
