@@ -1,6 +1,5 @@
 ﻿\Edited on 2.3.2021 by Ankit- shofted from PUMP1 to PUMP2, no need to open box and clean the port and tubing.
 \Edited on 28.2.2021 by Ankit
-\dp change pump 2 to pump 1 7.2.21
 \Removed the testing part, program directly starts, done so as to not disturb the animal in chamber
 \30 minutes free-access in chamber test
 \adapted from RG's free access test
@@ -24,8 +23,8 @@
 \^DSTone2 = 23
 \^NSwhiteNoise = 8
 \^Boxlight = 28
-^Pump1 = 9
-\^Pump2 = 10
+\^Pump1 = 9
+^Pump2 = 10
 ^Houselight = 7
 
 \Input
@@ -36,8 +35,8 @@
 
 \Output
 \rightLever = 3
-^Pump1 = 9
-\^Pump2 = 10
+\^Pump1 = 9
+^Pump2 = 10
 \greenLight = 26
 \redLight = 27
 \^Boxlight = 28
@@ -114,9 +113,9 @@ S.S.2, \ timing
 S1,
   #Z1: ---> S2
 S2,
-  .01": ON^Pump1 ---> S3
+  .01": ON^Pump2 ---> S3
 S3,
-  5": OFF^Pump1; SET B(6) = 0; Z2 ---> S4
+  5": OFF^Pump2; SET B(6) = 0; Z2 ---> S4
 S4,
   .01": ADD B(6);
 IF B(6)  >= B(0) [@T1, @F1]
@@ -178,10 +177,10 @@ S2,
   #Z3: ---> S3
 S3,
   #Z4: ---> S2
-  #R^PortEntry: ON ^Pump1; SET B(7) = B(6); ADD B(14) ---> S4
+  #R^PortEntry: ON ^Pump2; SET B(7) = B(6); ADD B(14) ---> S4
   #Z6:---> S5
 S4,
-  #Z4 : OFF ^Pump1; SET H(B(14)) = (B(6) - B(7)) / 100, H(B(14) + 1) = -987.987 ---> S2
+  #Z4 : OFF ^Pump2; SET H(B(14)) = (B(6) - B(7)) / 100, H(B(14) + 1) = -987.987 ---> S2
   \#R^Lick:--->S4
   \0.3": OFF ^Pump; SET H(B(14)) = (B(6) - B(7)) / 100, H(B(14) + 1) = -987.987 ---> S3
   \#Z6 : OFF ^Pump; SET H(B(14)) = (B(6) - B(7)) / 100, H(B(14) + 1) = -987.987 ---> S5
