@@ -152,6 +152,8 @@ DIM B=81 \workingVars
     \B(53)= Time since laser trial start. Used to cease laser if total time since trial start exceeds specific threshold. (since rats might drink after trial end, we shouldn't rely those signals to pair consumption) Should be some time after this trial ends but before the next trial starts
     \B(54)= Laser duration timer. Used to cap the amount of total time laser can be on per trial (or could be revised per 'pulse'). This should be <= the pulse pal's duration.
 
+    \B(55)= inPort detection
+
 \DATA ARRAYS
 DIM H=61   \DStime \ DS onset time per trial
 DIM I=61   \NStime \ NS onset time per trial
@@ -397,7 +399,9 @@ S1,
 
 S2, \wait for laser trial start signal
 
-    #R^Lick: SET B(52)=0--->S2 \running ILI timer continuously, reset if lick
+    #R^Lick: IF B(55)>0 [@inPort, @notInPort]
+        @inPort: SET B(52)=0--->S2 \running ILI timer continuously, reset if lick
+        @notInPort: --->S2
     #K28: SET B(53)=0; SET B(54)=0--->S5 \if laser trial starting, start laser available timer and max laser timer
     .01": ADD B(52)--->S2 \iterate last ILI timer
 
@@ -406,8 +410,10 @@ S5, \gate laser behind PE within cue duration . Only proceed to laser activation
     #R^PortEntry: --->S3 \if PE registered before cueDur ends, proceed to S3 and wait for licks
     A(2)*B(0)#T: Z18--->S2 \if cueDur ends with no PE, signal laser unavailable and go back to wait for next trial
 
-S3, \laser trial pre lick or between laser pulses: trigger laser if ILI and duration meet our desired parameters.
-    #R^Lick: SET B(52)=0; ON^Laser; Z17--->S4 \ reset ILI if lick detected \reset laser trigger and send Z17 signal to start laser
+S3, \laser trial pre lick or between laser pulses: trigger laser if ILI and duration meet our desired parameters. \Only count licks while rat in port as defined by B(55) in S.S.28
+    #R^Lick: IF B(55)>0 [@inPort, @notInPort]
+            @inPort: SET B(52)=0; ON^Laser; Z17--->S4 \ reset ILI if lick detected \reset laser trigger and send Z17 signal to start laser
+            @notinPort: --->S3 \if invalid lick detected outside of port, remain in this state
 
     .01": ADD B(52), B(53); \continuously add to timers.
 
@@ -418,9 +424,10 @@ S3, \laser trial pre lick or between laser pulses: trigger laser if ILI and dura
                 @F3: --->S3 \else stay in this state
 
 S4, \laser trial during laser pulses.  Stay in this state until laser available time > threshold or ILI > threshold
-      #R^Lick: SET B(52)=0--->S4 \reset ILI if lick detected
-\same problem as before, if ILI is too frequent laser can end without trigger being reset. Then have to wait for ILI threshold to pass until it is reset
-\now running into issue where b(53) is becoming -, somehow not getting z18 to move to other state? so it's not being reset
+      #R^Lick: IF B(55)>0 [@inPort, @notInPort]
+          @inPort: SET B(52)=0--->S4 \reset ILI if valid lick detected
+          @notinPort: ---> S4 \don't reset if not in port
+
      .01": ADD B(52), B(53), B(54); \only add to b(54) when laser is on \continuously add to timers and check their values against threshold. Stay in this state if below threshold. Send Z16 signal to stop laser when necessary
 
             IF ((B(53)/100))>=(A(7)) [@T3,@F3] \THRESHOLD for laser available time. If we have exceeded this, cease laser and make unavailable. Else, permit additional laser
@@ -429,11 +436,29 @@ S4, \laser trial during laser pulses.  Stay in this state until laser available 
                     @T3: Z16; Z18--->S2
                     @F3: IF (B(52)/100)>=(A(6)) [@T3,@F3] \THRESHOLD for ILI (time since last lick). If we have exceeded this, send signal to stop laser
                         @T3: Z16--->S3   \If ILI too long, send signal to stop laser and go back to wait for another lick.
-                        @F3: --->S4 \if below ILI threshold, just stay in this state
+                        @F3: ---> S4 \if below ILI threshold, just stay in this state
 
+S.S.28,  \Detect if rat in port w Beam Break - 20ms Break, 20ms Release.
+S1,
+     #K21:--->S2 \wait for K21 signal that the first ITI has started
+S2,     \ Inputs in Level Mode generate an input "count" on each
+        \ interrupt.  With a 10 ms system resolution 2 counts
+        \ will be reached in 20 ms.  The Z3 pulse is used to
+        \ signal a completed Beam Break.  The second statement resets
+        \ the counter every 20 ms so that a partial Beam Break of
+        \ less than 20 ms will not constitute a Response.
+  #R^PortEntrySus: ADD B(55); IF B(55) >= .02 [@inPort, @notInPort]
+                 @inPort: ---> S3
+                 @notInPort: ---> SX
+  0.02": SET B(55) = 0 ---> S2
 
-
-
+S3,     \ As long as the Beam is broken the second statement
+        \ causes a re-entry to this State.  This resets the
+        \ the internal 20 ms timer so it never times out.  When
+        \ the Beam is released for 20 ms the timer times out
+        \ and a Z20 pulse signals the release.
+  0.02": ---> S2
+  #R^PortEntrySus: ADD B(55) ---> S3
 
 
 S.S.7, \ Siren control
@@ -484,7 +509,7 @@ S2,
   A(2)*B(0)#T: OFF ^NSwhiteNoise; OFF^redLight--->S1 \TODO: should a PE here terminate the NS also?
 
 
-
+\record licks. DP add gate behind PortEntrySus 7/7/2021 bc if rat touches liquids in chamber (e.g. sucrose, conflikt, urine) lick circuit can be triggered when they touch other metal
 S.S.11, \ Record PE times and durations
 S1,
   #K21:--->S2
@@ -726,9 +751,10 @@ S1,
     22,PostNS PE,B(12),
     23, TrialState, B(3),
     24, LaserTrial, B(50),
-    28, lastILI, B(52),
+    28, lastLick, B(52),
     29, laserAvail, A(7)-(B(53)/100),
-    30, laserDeliv, B(54)--->S2
+    30, laserDeliv, B(54),
+    31, inPort, B(55)--->S2
 
 S2,
   .01": SHOW 2,Total PE,B(6),
@@ -754,9 +780,10 @@ S2,
     22,PostNS PE,B(12),
     23,TrialState, B(3),
     24, LaserTrial, B(50),
-    28, lastILI, B(52),
+    28, lastLick, B(52),
     29, laserAvail, A(7)-(B(53)/100),
-    30, laserDeliv, B(54)--->SX
+    30, laserDeliv, B(54),
+    31, inPort, B(55)--->SX
 
   #Z2: SHOW 25, Last Z2 DS start, B(13)/100--->SX
 
