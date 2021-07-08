@@ -18,11 +18,38 @@ if __name__ == '__main__':
     import scipy.io as sio
     import pandas as pd
 
-    # import matlab struct from .mat
-    # setting squeeze_me argument=true, otherwise each element seems to get nested in individual arrays
-    # matContents= sio.loadmat(r'Z:\Dakota\MEDPC\Downstairs\vp-vta-stgtacr_DStrain\Opto DS Task Test- CUE Laser Manipulation\trainData.mat',squeeze_me=True)
-    matContents = sio.loadmat(
-        r'C:\Users\Dakota\Desktop\Opto DS Task Test- CUE Laser Manipulation\trainData.mat', squeeze_me=True)
+#%% define a function to open file with gui
+    def openFile():
+        global matContents #global var so we can access later
+        filepath = filedialog.askopenfilename(initialdir=r'C:\Users\Dakota\Desktop\Opto DS Task Test- CUE Laser Manipulation',
+                                           title="open trainData.mat",
+                                           filetypes= (("mat files","*.mat"),
+                                           ("all files","*.*")))
+        print(filepath)
+        #load the mat file contents
+        # setting squeeze_me argument=true, otherwise each element seems to get nested in individual arrays
+        # matContents= sio.loadmat(r'Z:\Dakota\MEDPC\Downstairs\vp-vta-stgtacr_DStrain\Opto DS Task Test- CUE Laser Manipulation\trainData.mat',squeeze_me=True)
+        matContents= sio.loadmat(filepath,squeeze_me=True)
+        window.destroy()
+     
+ 
+    #%% import matlab struct from .mat
+    from tkinter import *
+    from tkinter import filedialog
+    
+# #use GUI
+    window = Tk()
+    button = Button(text="Open",command=openFile) #openFile() function
+    button.pack()
+    window.mainloop()
+
+
+    #%% import matlab struct manually
+    
+    # matContents= sio.loadmat(r'C:\Users\Dakota\Desktop\Opto DS Task Test- CUE Laser Manipulation\trainData.mat',squeeze_me=True)
+   #licklaser
+    # matContents= sio.loadmat(r'C:\Users\Dakota\Desktop\Opto DS Task Test- CUE Laser Manipulation\2021-07-07-16-24-31trainData.mat',squeeze_me=True)
+    # matContents= sio.loadmat(r'C:\Users\Dakota\Desktop\Opto DS Task Test- CUE Laser Manipulation\laserDay\2021-07-08-12-47-22trainData.mat',squeeze_me=True)
 
     # %% Extract the relevant data and get the data into pandas.dataframe format
     # adapted from https://www.kaggle.com/avilesmarcel/open-mat-in-python-pandas-dataframe
@@ -342,12 +369,16 @@ if __name__ == '__main__':
     g.fig.suptitle('Event counts over time by subject post deletion')
 
     # %% Tidy df org: All events in single column, sort by time by file, with fileID column and trialID column that matches trial 1-60 through each session.
-
     dfEventAll = df.melt(id_vars=['subject', 'RatID', 'Virus', 'Sex', 'date', 'laserDur', 'note'], value_vars=[
+
                          'x_K_PEtime', 'PExEst', 'x_S_lickTime', 'x_D_laserTime', 'x_H_DStime', 'x_I_NStime'], var_name='eventType', value_name='eventTime', ignore_index=False)
 
     # now explode event timestamp array
     dfEventAll = dfEventAll.explode('eventTime')
+    
+    #checking type, for some reason laser session retaining matlab.opaque somewhere- trialState
+    # for ev in dfEventAll.eventType.unique():
+    #     print(ev,'times = type ',df[ev][0].dtype) #coming from most recent sessions with array w for some reason
 
     # remove invalid/placeholder 0s
     # TODO: seem to be removing legitimate port exits with peDur==0, not sure how to deal with this so just excluding
@@ -394,8 +425,30 @@ if __name__ == '__main__':
 
     # drop redundant columns
     dfEventAll = dfEventAll.drop(columns=['laserType', 'laserState']).copy()
+    
+    #sort again by file & event timestamp before saving to new df
+    dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
+
 
     dfTidy = dfEventAll
+    # dfTidy=np.round(dfTidy,2) #this doesn't seem to resolve issues. need decimal.decimals
+    # #%% Round df 
+    #TODO: round decimals to point of precision. 
+    # #important because floats are imprecise and can lead to compounding errors
+    # #first convert columns to string
+    # dfTidy= dfTidy.astype(str)
+    # #now loop through columns and convert to decimal (if we can, otherwise skip column)
+    # import decimal
+    # #set precision of decimal places to 2
+    # decimal.DefaultContext.prec = 2 
+
+    # for col in dfTidy.columns:
+    #     try:
+    #         dfTidy[col]=dfTidy[col].values.apply(decimal.Decimal)
+    #     except:
+    #         continue
+                    
+    # dfTidy.values= dfTidy.values.round(2)
     # visualize all events per fileq
     # sns.relplot(x='eventTime',y='fileID',hue='eventType', data= dfTidy, kind='scatter')
 
@@ -414,16 +467,19 @@ if __name__ == '__main__':
     # this returns a series of each nan trialID along with its index.
     indNan = dfTidy.trialID[dfTidy.trialID.isnull()].copy()
 
+
+    #Need to group by file, otherwise the ffill method here will contaminate between files (events before trial 0 in fileB are filled as 59 from fileA)
     # pandas has a function for this- groupby().ffill or .backfill or .fillna
     # this fills nan trialID
-    dfTidy.trialID = dfTidy.trialID.fillna(method='ffill').copy()
+    dfTidy.trialID= dfTidy.groupby('fileID')['trialID'].fillna(method='ffill').copy()
 
     # do the same for trialType
-    dfTidy.trialType = dfTidy.trialType.fillna(method='ffill').copy()
+    dfTidy.trialType= dfTidy.groupby('fileID')['trialType'].fillna(method='ffill').copy()
+
 
     # now multiply previously nan trialIDs by -1 so we can set them apart from the valid trialIDs
     # using .at[] replaces value without SettingWithCopyWarning
-    dfTidy.at[indNan.index, 'trialID'] = dfTidy.trialID[indNan.index].copy()*-1
+    dfTidy.loc[indNan.index, 'trialID'] = dfTidy.trialID[indNan.index].copy()*-1
 
     # Can get a trial end time based on cue onset, then just check
     # event times against this
@@ -432,20 +488,31 @@ if __name__ == '__main__':
     dfTidy.loc[:, 'trialEnd'] = dfTidy.eventTime[dfTidy.trialID >= 0].copy() + \
         cueDur
 
-    dfTidy.loc[:, 'trialEnd'] = dfTidy.trialEnd.fillna(method='ffill').copy()
+    dfTidy.loc[:, 'trialEnd'] = dfTidy.fillna(method='ffill').copy()
 
     # find events that occur after cue start but before cue duration end.
     # multiply those trialIDs by -1 so that they match the corresponding cue.
     # remaining events with negative trialIDs must have occurred somewhere in that ITI (or 'pre/post cue')
 
-    dfTidy.loc[(dfTidy.trialEnd-dfTidy.eventTime >= 0) & (dfTidy.trialEnd -
-                                                          dfTidy.eventTime < 10), 'trialID'] = dfTidy.trialID.copy()*-1
+#I think error is coming from very subtle difference in trialEnd-eventTime of cue. For some reason 9.99999 instead of 10
+#causing second bool to be True ---> *-1
+    
+#decimal.Decimal() shows us that the floats we are seeing in timestamps are actually
+#much longer than they appear 
+    # import decimal
+    #  #getting some very odd values in this date at this ind
+    # test= dfTidy[dfTidy.date==20210609] 
+    # testInd= 82790
+    # print(decimal.Decimal((test.loc[testInd,'eventTime'])))
+    # print(decimal.Decimal((test.loc[testInd,'trialEnd'])))
+    # print(decimal.Decimal(test.loc[testInd,'trialEnd']-test.loc[testInd,'eventTime']))
+    
+    dfTidy.loc[(dfTidy.trialEnd-dfTidy.eventTime >= 0) & ((dfTidy.trialEnd -
+                                                          dfTidy.eventTime).apply(np.round) < 10.0), 'trialID'] = dfTidy.trialID.copy()*-1
 
     # remove trialType labels from events outside of cueDur (- trial ID or nan trialID)
     # for now labelling with "ITI", but could be nan
-    dfTidy.loc[dfTidy.trialID < 0,
-               'trialType' or dfTidy.trialID.isnull()] = 'ITI'
-
+    dfTidy.loc[(dfTidy.trialID < 0) | (dfTidy.trialID.isnull()), 'trialType'] = 'ITI'
   # %% Preliminary data analyses
 
   # Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
@@ -458,7 +525,18 @@ if __name__ == '__main__':
     dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = (
         (dfTidy.eventTime)-(dfTidy.trialEnd)).copy()
     
-    #Huge negative latencies for trial -59. why?
+    #seems earliest events from next file are being ffilled from trial 59 
+    
+#     	eventType	eventTime	trialID	trialType	trialEnd
+# 1528	x_K_PEtime	3677.9	-59.0	ITI	3668.24
+# 1529	PExEst	3678.59	-59.0	ITI	3668.24
+# 1530	x_K_PEtime	27.41	-59.0	ITI	3668.24
+# 1531	PExEst	27.44	-59.0	ITI	3668.24
+# 1532	x_S_lickTime	27.63	-59.0	ITI	3668.24
+# 1533	x_D_laserTime	30.31	-59.0	ITI	3668.24
+
+    
+    #Huge negative latencies for trial -59. why? Events misassigned to -59?
 
    # count of events per trial. We can easily find firstPE and firstLick with this (==0)
     dfTidy['trialPE'] = dfTidy[(dfTidy.eventType == 'x_K_PEtime')].groupby([
@@ -483,14 +561,13 @@ if __name__ == '__main__':
     sns.set_palette('Paired')
     # sns.set_palette('tab10') #tab10 is default
 
-
-    # %% Plot individual subject ILIs: laser OFF sessions (laserDur==0).
+    # %% Plot individual subject ILIs: laser OFF sessions (laserDur=="Off").
     # for plot across sessions of individual rats, change color to tab20 and make background white to help colors pop...default color palettes have blues that I can't distinguish
     
     #trial-based, ignoring ITI
-    # dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur==0)].copy()
+    # dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur=="Off")].copy()
     #trial-based, including ITI
-    dfPlot = dfTidy[(dfTidy.laserDur==0)].copy()
+    dfPlot = dfTidy[(dfTidy.laserDur=='Off')].copy()
 
     #All subj distribution of ILI (inter-lick interval)
     #only include trialLick~=nan
@@ -543,23 +620,27 @@ if __name__ == '__main__':
     g.set(ylim=(0,1))
 
     #%% Plot individual subject First lick latencies (time from cue or trialEnd if ITI events)
-    #will inform cue manipulation laser availability window
+    # should represent "baseline" behavior  without laser
           
     #trial-based, ignoring ITI
-    # dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur==0)].copy()
+    # dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur=="Off")].copy()
     #trial-based, including ITI
-    dfPlot = dfTidy[(dfTidy.laserDur==0)].copy()
+    dfPlot = dfTidy[(dfTidy.laserDur=="Off")].copy()
 
     #All subj distribution of ILI (inter-lick interval)
     #only include first trialLick~=nan
     dfPlot = dfPlot[dfPlot.trialLick==0].copy()
-
+    
+    #manually defining color order so that paired color scheme looks nice
+    trialOrder =['x_E_laserDStrial_0', 'x_E_laserDStrial_1',
+       'x_F_laserNStrial_0', 'x_F_laserNStrial_1','ITI']
+    
 
     #bar- all subj
     #median here takes awhile
-    g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType', estimator=np.median, kind='bar', order=np.sort(dfPlot.trialType.unique()))
+    g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType', kind='bar', order=trialOrder)
     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('Median first lick latencies by trial type; laser OFF; all subj')
+    g.fig.suptitle('first lick latencies by trial type; laser OFF; all subj')
     g.set_ylabels('lick latency from epoch start (s)')
 
     
@@ -572,34 +653,156 @@ if __name__ == '__main__':
     # g.set(xlim=(0,1))
     
     #box- all subj
-    g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType',  kind='box', order=np.sort(dfPlot.trialType.unique()))
+    g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType',  kind='box', order=trialOrder)
     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
     g.fig.suptitle('First Lick latencies by trial type; laser OFF; all subj')
     g.set_ylabels('lick latency from epoch start (s)')
 
     
     #ecdf- all subj
-    g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue_order=np.sort(dfPlot.trialType.unique()))
+    g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue_order=trialOrder)
     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
     g.fig.suptitle('First Lick latencies by trial type; laser OFF; all subj')
     g.set_xlabels('lick latency from epoch start (s)')
 
     
     #Individual distribution of ILI (inter-lick interval)
-    #only include trialLick~=nan
+    #only include trialLick~=nan 
     #bar- individual subj
-    g= sns.catplot(data=dfPlot, y='eventLatency', x='RatID', hue='trialType',  kind='bar', hue_order=np.sort(dfPlot.trialType.unique()))
+    g= sns.catplot(data=dfPlot, y='eventLatency', x='RatID', hue='trialType',  kind='bar', hue_order=trialOrder)
     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
     g.fig.suptitle('First Lick latencies by trial type; laser OFF; individual subj')
     g.set_ylabels('lick latency from epoch start (s)')
 
         
 
-        # %% Effect of laser on PE & licks
+        # %% Effect of cue+laser on current trial PE behavior
+        
+    #select data corresponding to first PE from valid trials
     dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.trialPE == 0)].copy()
+    
+    # PE latency: virus x laserDur
     g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
-                    col='laserDur', row='Virus', kind='ecdf')
+                    col='laserDur', row='Virus', kind='ecdf', hue_order= trialOrder)
+    g.fig.suptitle('First PE latency by trial type; laser + CUE')
+    g.set_ylabels('First PE latency from epoch start (s)')
+    
+    #PE latency: virus individual subj
+    g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='RatID', kind='bar', hue_order=trialOrder)
+    g.fig.suptitle('First PE latency by trial type; laser + CUE')
+    g.set_ylabels('First PE latency from epoch start (s)')
+    
+    
+    
+    #PE probability: did they make a PE or not
+    dfPlot = dfTidy[(dfTidy.trialID >= 0)].set_index(['fileID','trialID'])
+    # dfPlot = dfTidy[(dfTidy.trialID >= 0)].groupby(['fileID','trialID'])
+    # groupby() methods will exclude nan, so fill trialPE with placeholder - and find trials where sum>1
+    # dfPlot.loc[dfPlot.trialPE.isnull()]= -1
+    #count the number of PEs per trial. if >0, they entered the port and earned sucrose. If <=0, they did not.
+    # peOutcome= dfPlot.groupby(['fileID','trialID'], dropna=False)['trialPE'].sum()
+    # peOutcome= dfPlot.trialPE.sum(level=[0,1])
 
+    # peOutcome.loc[peOutcome>0]='PE'
+    # peOutcome.loc[peOutcome==0]='no PE'
+    #a bit unintuitive since groupby counting methods don't work well with nans, but nunique() works
+    peOutcome= dfPlot.trialPE.count()
+    peOutcome= dfPlot.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
+    peOutcome.loc[peOutcome>0]='PE'
+    peOutcome.loc[peOutcome==0]='noPE'
+    
+    #fill in matching file,trial with peOutcome
+    dfPlot.loc[peOutcome.index,'peOutcome']= peOutcome
+
+
+
+    
+    #given fixed sequence of trials (1-60), what is probability of peOutcome per trial?
+    #to find out, groupby subject,trialID and then compute across sessions? Out of all trials this subject completed, how does
+    #trial order within a session impact behavior?
+
+    
+    g=sns.catplot(data=dfPlot,x='peOutcome',hue='trialType',hue_order=trialOrder, row='Virus', kind='count')
+
+    g= sns.displot(data=dfPlot,x='peOutcome',hue='trialType', hue_order=trialOrder, row='Virus', kind='hist', stat='probability', common_norm=True, multiple='dodge')
+    
+    # g=sns.relplot(data=dfPlot,x='trialID',y='peOutcome',hue='trialType', hue_order=trialOrder, row='Virus')
+    
+    #%% Calculate PE probability of each trial type. This is normalized so is more informative than count of trials. 
+    
+    # probPE= dfPlot[dfPlot.peOutcome=='PE'].groupby(['fileID','trialID'])['peOutcome'].count().index
+    
+    #TODO: probably worth saving these into the df. Might be better to do this a different way, maybe a cumcount() within session
+    #for each trial of noPE and PE or a binary coded column  
+    
+    #calculate Probortion of trials with PE out of all trials for each trial type
+    #can use nunique() to get count of unique trialIDs with specific PE outcome per file
+    #given this, can calculate Probortion as #PE/#PE+#noPE
+   
+    test1= dfPlot[dfPlot.peOutcome=='PE'].reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique()
+    test1.name= 'PEtrials'
+    test2= dfPlot[dfPlot.peOutcome=='noPE'].reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique()
+    test2.name= 'noPEtrials'    
+           
+    #num of unique trials with a PE, num of unique trials without a PE per trial type per session, but still cant sum
+    test3= pd.concat((test1,test2),ignore_index=False,axis=1)
+    
+    #reset index and groupby trialType so we can sum across columns
+    test4= test3.reset_index().groupby(['fileID','trialType'])[['PEtrials','noPEtrials']].sum()
+    
+    #sum across PEtrial and noPEtrial columns to get total num of trials per type. Then divide num PEtrials by total trials
+    probPE= test4['PEtrials']/test4.sum(axis=1)
+    
+    # probPE= (dfPlot[dfPlot.peOutcome=='PE'].reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique() //
+    #                  ((dfPlot[dfPlot.peOutcome=='PE'].reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique())/
+    #                 + (dfPlot[dfPlot.peOutcome=='noPE']).reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique()))
+                    
+ 
+    # probPE= dfPlot[dfPlot.peOutcome=='PE'].index.get_level_values('trialID')
+
+
+    # probPE= len(dfPlot.loc[dfPlot.peOutcome=='PE'])/dfPlot.loc[dfPlot.peOutcome=='noPE']+
+    
+    # probPE= dfPlot.groupby(['fileID','trialID','peOutcome']).first()
+    
+    #visualize
+    
+    #select data from laser ON sessions     
+    dfPlot = dfTidy[(dfTidy.trialID >= 0)].set_index(['fileID','trialType'])
+    #Plot probability of PE by trialType 
+   
+    #fill in matching file,trial in df
+    dfPlot.loc[probPE.index,'probPE']= probPE
+    
+    #reset ind so we can plot it
+    dfPlot= dfPlot.reset_index()
+    
+    g=sns.catplot(data=dfPlot,x='RatID', y='probPE', hue='trialType', hue_order=trialOrder, row='Virus', col='laserDur', kind='bar')
+    g=sns.catplot(data=dfPlot,x='trialType', y='probPE', hue='laserDur', row='Virus', kind='bar')
+    g=sns.catplot(data=dfPlot,x='trialType', y='probPE', hue='laserDur', col='RatID', kind='bar')
+    
+    g=sns.catplot(data=dfPlot,x='laserDur', y='probPE', hue='trialType', hue_order=trialOrder, col='subject', kind='bar')
+
+
+
+    #over time?
+    # g=sns.relplot(data=dfPlot,x='fileID',y='probPE',hue='trialType', hue_order=trialOrder, row='Virus')
+
+
+    # %% Effect of cue+laser on current trial lick behavior
+       #select data corresponding to first lick from valid trials
+    dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.trialLick == 0)].copy()
+    
+    # lick latency: virus x laserDur
+    g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
+                    col='laserDur', row='Virus', kind='ecdf', hue_order= trialOrder)
+    g.fig.suptitle('First lick latency by trial type; laser + CUE')
+    g.set_ylabels('First lick latency from epoch start (s)')
+    
+    #lick latency: virus individual subj
+    g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='RatID', kind='bar', hue_order=trialOrder)
+    g.fig.suptitle('First lick latency by trial type; laser + CUE')
+    g.set_ylabels('First lick latency from epoch start (s)')
   # %% Try Pandas_profiling report
     # note- if you are getting errors with ProfileReport() and you installed using conda, remove and reinstall using pip install
 

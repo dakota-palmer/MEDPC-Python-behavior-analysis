@@ -362,7 +362,7 @@ S14, \Signal end of post-NS interval to all boxes, choose next ITI
 S15, \Passive state for non-control boxes
   60':--->SX
 
-S.S.5, \ DS Laser Array
+S.S.5, \ DS Laser Array \TODO: need to change for lick stage. Could gate with b(55)? No Z14 sent so this is always 0 as of 7.8.21
 S1,
     #K24:--->S2
 S2,
