@@ -362,7 +362,7 @@ S14, \Signal end of post-NS interval to all boxes, choose next ITI
 S15, \Passive state for non-control boxes
   60':--->SX
 
-S.S.5, \ DS Laser Array \TODO: need to change for lick stage. Could gate with b(55)? No Z14 sent so this is always 0 as of 7.8.21
+S.S.5, \ DS Laser Array \TODO: need to change for lick stage.
 S1,
     #K24:--->S2
 S2,
@@ -384,7 +384,7 @@ S.S.25, \ ~~ Lick-paired laser stimulation start and stop.~~
 S1, \Ready trigger for lasers
     .1": ON ^Laser--->S2 \Laser TTL for Pulse Pal is inverted (TTL offset triggers Laser), so ON^Laser turns the lasers off by default until a K28 signal is sent for OFF^Laser to turn the lasers on
 S2, \Wait for laser trial
-    #K28:--->S3 \when K28 received, go to wait for lick \upon initial lick turn on laser and yellow light \start counter of laser availablility time at 0
+    #K28:Z14 --->S3 \when K28 received, go to wait for lick \upon initial lick turn on laser and yellow light \start counter of laser availablility time at 0 \send z14 signal to mark this as a laser trial (added 7.9.21)
 S3, \Laser trial: control lasers based on Z signals from the laser availability timer state set. Remain in this state until laser available time threshold exceeded
     #Z16: ON^Laser; OFF^yellowLight; SET G(B(51))=B(13)/100, G(B(51)+1)=-987.987--->S3 \If Z16 signal received, cease laser bc laser no long available, log off time
 
