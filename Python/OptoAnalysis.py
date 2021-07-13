@@ -17,6 +17,8 @@ if __name__ == '__main__':
     import numpy as np
     import scipy.io as sio
     import pandas as pd
+    import seaborn as sns
+    import matplotlib.pyplot as plt
 
 #%% define a function to open file with gui
     def openFile():
@@ -116,210 +118,210 @@ if __name__ == '__main__':
    # https://stackoverflow.com/questions/52200710/pandasseaborn-faceting-with-multidimensional-dataframes
     # e.g. could have one row for each date and 60 columns for trial series?
 
-    # temp copy of missing N & F
-    # df['x_N_NSPElat']=df['x_M_DSPElat']
-    # df['x_F_laserNStrial']=df['x_E_laserDStrial']
+#     # temp copy of missing N & F
+#     # df['x_N_NSPElat']=df['x_M_DSPElat']
+#     # df['x_F_laserNStrial']=df['x_E_laserDStrial']
 
-    # let's just get a few variables
-    df2 = df[['RatID', 'Sex', 'laserDur', 'Virus', 'date', 'x_M_DSPElat', 'x_E_laserDStrial',
-              'x_N_NSPElat', 'x_F_laserNStrial', 'DSPEratio', 'NSPEratio', 'discrimPEratio']].copy()
+#     # let's just get a few variables
+#     df2 = df[['RatID', 'Sex', 'laserDur', 'Virus', 'date', 'x_M_DSPElat', 'x_E_laserDStrial',
+#               'x_N_NSPElat', 'x_F_laserNStrial', 'DSPEratio', 'NSPEratio', 'discrimPEratio']].copy()
 
-    # really interesting potential solution looks like here we get 2 indices, one for subject and one for file (date)
-    # but, I think different sized variables within session complicates this factor and causes many repeating values that aren't accurate?
-    unnested_lst = []
-    for col in df2.columns:
-        # pd.series combines into single long array
-        # then, stack() this into one long column. Each value has hierarchical index
-        unnested_lst.append(df2[col].apply(pd.Series).stack())
-    result = pd.concat(unnested_lst, axis=1,
-                       keys=df2.columns).fillna(method='ffill')
+#     # really interesting potential solution looks like here we get 2 indices, one for subject and one for file (date)
+#     # but, I think different sized variables within session complicates this factor and causes many repeating values that aren't accurate?
+#     unnested_lst = []
+#     for col in df2.columns:
+#         # pd.series combines into single long array
+#         # then, stack() this into one long column. Each value has hierarchical index
+#         unnested_lst.append(df2[col].apply(pd.Series).stack())
+#     result = pd.concat(unnested_lst, axis=1,
+#                        keys=df2.columns).fillna(method='ffill')
 
-    # Now let's perform some preliminary analysis, make a new variable for DS PE outcome per trial
-    result.loc[:, 'DSPEoutcome'] = result['x_M_DSPElat'].copy()
-    result.loc[:, 'DSPEoutcome'] = result['DSPEoutcome'].replace(
-        10, 0).copy()  # 10s= no PE
-    result.loc[result['DSPEoutcome'] > 0, 'DSPEoutcome'] = 1
-    # also replace 10s or 0s latencies with nan (since there was no PE)
-    # not sure where the 0s latencies are coming from, but are there for every trial 30 & 31?
-    result.loc[result.x_M_DSPElat == 10, 'x_M_DSPElat'] = np.nan
-    result.loc[result.x_M_DSPElat == 0, 'x_M_DSPElat'] = np.nan
+#     # Now let's perform some preliminary analysis, make a new variable for DS PE outcome per trial
+#     result.loc[:, 'DSPEoutcome'] = result['x_M_DSPElat'].copy()
+#     result.loc[:, 'DSPEoutcome'] = result['DSPEoutcome'].replace(
+#         10, 0).copy()  # 10s= no PE
+#     result.loc[result['DSPEoutcome'] > 0, 'DSPEoutcome'] = 1
+#     # also replace 10s or 0s latencies with nan (since there was no PE)
+#     # not sure where the 0s latencies are coming from, but are there for every trial 30 & 31?
+#     result.loc[result.x_M_DSPElat == 10, 'x_M_DSPElat'] = np.nan
+#     result.loc[result.x_M_DSPElat == 0, 'x_M_DSPElat'] = np.nan
 
-    # same for NS
-    result['NSPEoutcome'] = result['x_N_NSPElat']
-    result['NSPEoutcome'] = result['NSPEoutcome'].replace(10, 0)  # 10s= no PE
-    result.loc[result['NSPEoutcome'] > 0, 'NSPEoutcome'] = 1
-    # also replace 10s latencies with nan (since there was no PE)
-    result.loc[result.x_N_NSPElat == 10, 'x_N_NSPElat'] = np.nan
-    result.loc[result.x_N_NSPElat == 0, 'x_N_NSPElat'] = np.nan
+#     # same for NS
+#     result['NSPEoutcome'] = result['x_N_NSPElat']
+#     result['NSPEoutcome'] = result['NSPEoutcome'].replace(10, 0)  # 10s= no PE
+#     result.loc[result['NSPEoutcome'] > 0, 'NSPEoutcome'] = 1
+#     # also replace 10s latencies with nan (since there was no PE)
+#     result.loc[result.x_N_NSPElat == 10, 'x_N_NSPElat'] = np.nan
+#     result.loc[result.x_N_NSPElat == 0, 'x_N_NSPElat'] = np.nan
 
-    # convert ratID to categorical data type so seaborn uses divergent color hues
-    result.RatID = result.RatID.astype('category')
+#     # convert ratID to categorical data type so seaborn uses divergent color hues
+#     result.RatID = result.RatID.astype('category')
 
-    # change date axis to day count just for nice look
-    # use np.argwhere to convert date to day count (assuming dates in order?) then replace
-    for date in result.date.unique():
-        result.date = result.date.replace(
-            date, np.argwhere(date == result.date.unique())[0][0])
+#     # change date axis to day count just for nice look
+#     # use np.argwhere to convert date to day count (assuming dates in order?) then replace
+#     for date in result.date.unique():
+#         result.date = result.date.replace(
+#             date, np.argwhere(date == result.date.unique())[0][0])
 
-        # visualize
-    import seaborn as sns
-    import matplotlib.pyplot as plt
+#         # visualize
+#     import seaborn as sns
+#     import matplotlib.pyplot as plt
 
-    # paired seems nice for comparing laser on vs off
-    # sns.set_palette('Paired')
-    sns.set_palette('tab10')  # tab10 is default
+#     # paired seems nice for comparing laser on vs off
+#     # sns.set_palette('Paired')
+#     sns.set_palette('tab10')  # tab10 is default
 
-    plt.figure()
-    # plt.subplot(1,2,1) #DS #violin too dense by subj
-    # sns.violinplot(x='RatID',y='x_M_DSPElat',hue='x_E_laserDStrial',data=result, split=True, inner='stick')
-    sns.violinplot(x='RatID', y='x_M_DSPElat', hue='x_E_laserDStrial',
-                   data=result, cut=0, split=True, inner='quartile')  # , scale='count')
+#     plt.figure()
+#     # plt.subplot(1,2,1) #DS #violin too dense by subj
+#     # sns.violinplot(x='RatID',y='x_M_DSPElat',hue='x_E_laserDStrial',data=result, split=True, inner='stick')
+#     sns.violinplot(x='RatID', y='x_M_DSPElat', hue='x_E_laserDStrial',
+#                    data=result, cut=0, split=True, inner='quartile')  # , scale='count')
 
-    plt.figure()
-    # plt.subplot(1,2,2) #NS #violin too dense by subj
-    sns.violinplot(x='RatID', y='x_N_NSPElat', hue='x_F_laserNStrial',
-                   data=result, cut=0, split=True, inner='quartile')  # , scale='count')
+#     plt.figure()
+#     # plt.subplot(1,2,2) #NS #violin too dense by subj
+#     sns.violinplot(x='RatID', y='x_N_NSPElat', hue='x_F_laserNStrial',
+#                    data=result, cut=0, split=True, inner='quartile')  # , scale='count')
 
-    # ~~note that seaborn documentation says that ci=68 can be used to plot SEM but this is actually different from sem. Default is 95% CI i think
-    # ci 68 assumes normal distro and then it's still only 68% probability that mean lies here?
-    plt.figure()
-    plt.subplot(1, 2, 1)  # DS
-    sns.barplot(x='RatID', y='x_M_DSPElat',
-                hue='x_E_laserDStrial', data=result, capsize=.2)
-    plt.subplot(1, 2, 2)  # NS
-    sns.barplot(x='RatID', y='x_N_NSPElat',
-                hue='x_F_laserNStrial', data=result, capsize=.2)
+#     # ~~note that seaborn documentation says that ci=68 can be used to plot SEM but this is actually different from sem. Default is 95% CI i think
+#     # ci 68 assumes normal distro and then it's still only 68% probability that mean lies here?
+#     plt.figure()
+#     plt.subplot(1, 2, 1)  # DS
+#     sns.barplot(x='RatID', y='x_M_DSPElat',
+#                 hue='x_E_laserDStrial', data=result, capsize=.2)
+#     plt.subplot(1, 2, 2)  # NS
+#     sns.barplot(x='RatID', y='x_N_NSPElat',
+#                 hue='x_F_laserNStrial', data=result, capsize=.2)
 
-    plt.figure()
-    plt.subplot(1, 2, 1)  # DS
-    sns.boxplot(x='RatID', y='x_M_DSPElat',
-                hue='x_E_laserDStrial', data=result)
-    # sns.swarmplot(x='RatID',y='x_M_DSPElat',hue='x_E_laserDStrial',data=result, dodge=True,size=1.5,color='.2')
-    plt.subplot(1, 2, 2)  # NS
-    sns.boxplot(x='RatID', y='x_N_NSPElat',
-                hue='x_F_laserNStrial', data=result)
-    # sns.swarmplot(x='RatID',y='x_N_NSPElat',hue='x_F_laserNStrial',data=result, dodge=True,size=1.5,color='.2')
+#     plt.figure()
+#     plt.subplot(1, 2, 1)  # DS
+#     sns.boxplot(x='RatID', y='x_M_DSPElat',
+#                 hue='x_E_laserDStrial', data=result)
+#     # sns.swarmplot(x='RatID',y='x_M_DSPElat',hue='x_E_laserDStrial',data=result, dodge=True,size=1.5,color='.2')
+#     plt.subplot(1, 2, 2)  # NS
+#     sns.boxplot(x='RatID', y='x_N_NSPElat',
+#                 hue='x_F_laserNStrial', data=result)
+#     # sns.swarmplot(x='RatID',y='x_N_NSPElat',hue='x_F_laserNStrial',data=result, dodge=True,size=1.5,color='.2')
 
-    # #try multiple hist()
-    # initially, hist() by count makes it seem that NS + laser has higher latency, but after normalization here looks same
-    plt.figure()
-    plt.subplot(1, 2, 1)  # DS
-    sns.histplot(data=result, x='x_M_DSPElat', hue='x_E_laserDStrial',
-                 stat="density", common_norm=False, kde=True, multiple='layer', bins=20)
-    plt.subplot(1, 2, 2)  # NS
-    sns.histplot(data=result, x='x_N_NSPElat', hue='x_F_laserNStrial',
-                 stat="density", common_norm=False, kde=True, multiple='layer', bins=20)
+#     # #try multiple hist()
+#     # initially, hist() by count makes it seem that NS + laser has higher latency, but after normalization here looks same
+#     plt.figure()
+#     plt.subplot(1, 2, 1)  # DS
+#     sns.histplot(data=result, x='x_M_DSPElat', hue='x_E_laserDStrial',
+#                  stat="density", common_norm=False, kde=True, multiple='layer', bins=20)
+#     plt.subplot(1, 2, 2)  # NS
+#     sns.histplot(data=result, x='x_N_NSPElat', hue='x_F_laserNStrial',
+#                  stat="density", common_norm=False, kde=True, multiple='layer', bins=20)
 
-    # ecdf plot
-    plt.figure()
-    plt.subplot(1, 2, 1)  # DS
-    sns.ecdfplot(data=result, x='x_M_DSPElat', hue='x_E_laserDStrial')
-    plt.subplot(1, 2, 2)  # NS
-    sns.ecdfplot(data=result, x='x_N_NSPElat', hue='x_F_laserNStrial')
+#     # ecdf plot
+#     plt.figure()
+#     plt.subplot(1, 2, 1)  # DS
+#     sns.ecdfplot(data=result, x='x_M_DSPElat', hue='x_E_laserDStrial')
+#     plt.subplot(1, 2, 2)  # NS
+#     sns.ecdfplot(data=result, x='x_N_NSPElat', hue='x_F_laserNStrial')
 
-    # Figure level functions (e.g. catplot) may be better
+#     # Figure level functions (e.g. catplot) may be better
 
-    g = sns.catplot(x='RatID', y='x_M_DSPElat', hue='x_E_laserDStrial',
-                    row='laserDur', col='Virus', data=result, kind="box")
+#     g = sns.catplot(x='RatID', y='x_M_DSPElat', hue='x_E_laserDStrial',
+#                     row='laserDur', col='Virus', data=result, kind="box")
 
-    g = sns.catplot(x='RatID', y='x_M_DSPElat', hue='x_E_laserDStrial',
-                    row='laserDur', col='Virus', data=result, kind="bar")
+#     g = sns.catplot(x='RatID', y='x_M_DSPElat', hue='x_E_laserDStrial',
+#                     row='laserDur', col='Virus', data=result, kind="bar")
 
-    # individual trial PE outcome vs individual trial laser state?
+#     # individual trial PE outcome vs individual trial laser state?
 
-    # todo- normalize count of pe outcome or convert to % for countplot()
-    # g=sns.catplot(x='DSPEoutcome',hue='x_E_laserDStrial', row='laserDur', col='Virus',data=result,kind="count")
+#     # todo- normalize count of pe outcome or convert to % for countplot()
+#     # g=sns.catplot(x='DSPEoutcome',hue='x_E_laserDStrial', row='laserDur', col='Virus',data=result,kind="count")
 
-    g = sns.displot(data=result, x='DSPEoutcome', hue='x_E_laserDStrial', col='laserDur',
-                    row='Virus', kind='hist', stat='probability', common_norm=False, multiple='layer')
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('DS PE outcome: Laser x virus')
+#     g = sns.displot(data=result, x='DSPEoutcome', hue='x_E_laserDStrial', col='laserDur',
+#                     row='Virus', kind='hist', stat='probability', common_norm=False, multiple='layer')
+#     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+#     g.fig.suptitle('DS PE outcome: Laser x virus')
 
-    g = sns.displot(data=result, x='NSPEoutcome', hue='x_F_laserNStrial', col='laserDur',
-                    row='Virus', kind='hist', stat='probability', common_norm=False, multiple='layer')
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('NS PE outcome: Laser x virus')
+#     g = sns.displot(data=result, x='NSPEoutcome', hue='x_F_laserNStrial', col='laserDur',
+#                     row='Virus', kind='hist', stat='probability', common_norm=False, multiple='layer')
+#     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+#     g.fig.suptitle('NS PE outcome: Laser x virus')
 
-    # To get trial # on X axis, use the index from our dataframe corresponding to trial (0:31)
-    result = result.assign(trial=result.index.get_level_values(1))
+#     # To get trial # on X axis, use the index from our dataframe corresponding to trial (0:31)
+#     result = result.assign(trial=result.index.get_level_values(1))
 
-    with sns.axes_style("whitegrid"), sns.color_palette('tab20', n_colors=np.unique(result.RatID).size):
-        g = sns.relplot(x=result.trial, y='DSPEoutcome', hue='RatID',
-                        row='laserDur', col='x_E_laserDStrial', data=result, kind='line')
+#     with sns.axes_style("whitegrid"), sns.color_palette('tab20', n_colors=np.unique(result.RatID).size):
+#         g = sns.relplot(x=result.trial, y='DSPEoutcome', hue='RatID',
+#                         row='laserDur', col='x_E_laserDStrial', data=result, kind='line')
 
-    # g=sns.displot(data= result, x='trial', y='DSPEoutcome', hue='x_E_laserDStrial', row='laserDur', col='Virus', kind='hist', stat='probability', common_norm=False)
+#     # g=sns.displot(data= result, x='trial', y='DSPEoutcome', hue='x_E_laserDStrial', row='laserDur', col='Virus', kind='hist', stat='probability', common_norm=False)
 
-    # g=sns.displot(data= result, y='DSPEoutcome', x='trial', hue='x_E_laserDStrial', row='laserDur', col='Virus', kind='hist', stat='probability', common_norm=False)
+#     # g=sns.displot(data= result, y='DSPEoutcome', x='trial', hue='x_E_laserDStrial', row='laserDur', col='Virus', kind='hist', stat='probability', common_norm=False)
 
-    # g=sns.catplot(x='RatID',y='DSPEratio',hue='x_E_laserDStrial', row='laserDur', col='Virus',data=result,kind="bar")
+#     # g=sns.catplot(x='RatID',y='DSPEratio',hue='x_E_laserDStrial', row='laserDur', col='Virus',data=result,kind="bar")
 
-    # session wide ratio data vs. session laserDur
-    # g=sns.catplot(x='RatID',y='discrimPEratio', hue='laserDur',col='Virus',data=result,kind="bar")
-    # g=sns.catplot(x='RatID',y='discrimPEratio', hue='laserDur',col='Virus',data=result,kind="box")
+#     # session wide ratio data vs. session laserDur
+#     # g=sns.catplot(x='RatID',y='discrimPEratio', hue='laserDur',col='Virus',data=result,kind="bar")
+#     # g=sns.catplot(x='RatID',y='discrimPEratio', hue='laserDur',col='Virus',data=result,kind="box")
 
-    # g=sns.displot(x='DSPEratio',hue='RatID', row='laserDur', col='Virus', data= result,kind="ecdf")
+#     # g=sns.displot(x='DSPEratio',hue='RatID', row='laserDur', col='Virus', data= result,kind="ecdf")
 
-    # Aggregate effect of laser
-    g = sns.displot(x='x_M_DSPElat', hue='x_E_laserDStrial',
-                    col='laserDur', row='Virus', data=result, kind="ecdf")
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('DS PE latency: Laser x virus')
+#     # Aggregate effect of laser
+#     g = sns.displot(x='x_M_DSPElat', hue='x_E_laserDStrial',
+#                     col='laserDur', row='Virus', data=result, kind="ecdf")
+#     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+#     g.fig.suptitle('DS PE latency: Laser x virus')
 
-    g = sns.displot(x='x_N_NSPElat', hue='x_F_laserNStrial',
-                    col='laserDur', row='Virus', data=result, kind="ecdf")
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('NS PE latency: Laser x virus')
+#     g = sns.displot(x='x_N_NSPElat', hue='x_F_laserNStrial',
+#                     col='laserDur', row='Virus', data=result, kind="ecdf")
+#     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+#     g.fig.suptitle('NS PE latency: Laser x virus')
 
-    # g=sns.catplot(x='Virus',y= 'x_M_DSPElat',hue='x_E_laserDStrial', row='laserDur', data= result,kind="bar")
-    # g=sns.catplot(x='Virus',y= 'DSPEratio',hue='laserDur', data= result,kind="bar")
+#     # g=sns.catplot(x='Virus',y= 'x_M_DSPElat',hue='x_E_laserDStrial', row='laserDur', data= result,kind="bar")
+#     # g=sns.catplot(x='Virus',y= 'DSPEratio',hue='laserDur', data= result,kind="bar")
 
-    # Individual effect of laser
-    with sns.axes_style("whitegrid"), sns.color_palette('tab20', n_colors=np.unique(result.RatID).size):
-        g = sns.displot(x='x_M_DSPElat', hue='x_E_laserDStrial',
-                        col='laserDur', row='RatID', data=result, kind="ecdf")
-        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        g.fig.suptitle('Individual DS PE latency: Laser x virus')
+#     # Individual effect of laser
+#     with sns.axes_style("whitegrid"), sns.color_palette('tab20', n_colors=np.unique(result.RatID).size):
+#         g = sns.displot(x='x_M_DSPElat', hue='x_E_laserDStrial',
+#                         col='laserDur', row='RatID', data=result, kind="ecdf")
+#         g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+#         g.fig.suptitle('Individual DS PE latency: Laser x virus')
 
-    # Individual training data
-    # for plot across sessions of individual rats, change color to tab20 and make background white to help colors pop...default color palettes have blues that I can't distinguish
-    with sns.axes_style("whitegrid"), sns.color_palette('tab20', n_colors=np.unique(result.RatID).size):
-        g = sns.relplot(x='date', y='DSPEratio', hue='RatID', col='Virus',
-                        row='Sex', data=result, kind="line", linewidth=3)
-        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        g.fig.suptitle('Individual DS PE ratio')
+#     # Individual training data
+#     # for plot across sessions of individual rats, change color to tab20 and make background white to help colors pop...default color palettes have blues that I can't distinguish
+#     with sns.axes_style("whitegrid"), sns.color_palette('tab20', n_colors=np.unique(result.RatID).size):
+#         g = sns.relplot(x='date', y='DSPEratio', hue='RatID', col='Virus',
+#                         row='Sex', data=result, kind="line", linewidth=3)
+#         g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+#         g.fig.suptitle('Individual DS PE ratio')
 
-        g = sns.relplot(x='date', y='NSPEratio', hue='RatID', col='Virus',
-                        row='Sex', data=result, kind="line", linewidth=3)
-        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        g.fig.suptitle('Individual NS PE ratio')
+#         g = sns.relplot(x='date', y='NSPEratio', hue='RatID', col='Virus',
+#                         row='Sex', data=result, kind="line", linewidth=3)
+#         g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+#         g.fig.suptitle('Individual NS PE ratio')
 
-        g = sns.relplot(x='date', y='discrimPEratio', hue='RatID',
-                        col='Virus', row='Sex', data=result, kind="line", linewidth=3)
-        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        g.fig.suptitle('Individual PE discrimination (DS/NS ratio)')
+#         g = sns.relplot(x='date', y='discrimPEratio', hue='RatID',
+#                         col='Virus', row='Sex', data=result, kind="line", linewidth=3)
+#         g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+#         g.fig.suptitle('Individual PE discrimination (DS/NS ratio)')
 
-        g = sns.relplot(x='date', y='discrimPEratio', hue='laserDur',
-                        row='RatID', data=result, kind="scatter", linewidth=3)
-        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-        g.fig.suptitle(
-            'Individual PE discrimination (DS/NS ratio): Laser ON vs Laser OFF days')
+#         g = sns.relplot(x='date', y='discrimPEratio', hue='laserDur',
+#                         row='RatID', data=result, kind="scatter", linewidth=3)
+#         g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+#         g.fig.suptitle(
+#             'Individual PE discrimination (DS/NS ratio): Laser ON vs Laser OFF days')
 
-    # Aggregated training data
-    sns.set_palette('tab10')
+#     # Aggregated training data
+#     sns.set_palette('tab10')
 
-    # g=sns.relplot(x='date',y='DSPEratio',hue='laserDur', col='Virus', row='Sex', data= result,kind="line",linewidth=2)
-    # g=sns.relplot(x='date',y='NSPEratio',hue='laserDur', col='Virus', row='Sex', data= result,kind="line",linewidth=2)
-    g = sns.relplot(x='date', y='DSPEratio', hue='laserDur',
-                    col='Virus', data=result, kind="line", linewidth=2)
-    g = sns.relplot(x='date', y='discrimPEratio', hue='laserDur',
-                    col='Virus', data=result, kind="line", linewidth=2)
-    g = sns.relplot(x='date', y='DSPEratio', hue='Virus',
-                    data=result, kind="line", linewidth=2)
+#     # g=sns.relplot(x='date',y='DSPEratio',hue='laserDur', col='Virus', row='Sex', data= result,kind="line",linewidth=2)
+#     # g=sns.relplot(x='date',y='NSPEratio',hue='laserDur', col='Virus', row='Sex', data= result,kind="line",linewidth=2)
+#     g = sns.relplot(x='date', y='DSPEratio', hue='laserDur',
+#                     col='Virus', data=result, kind="line", linewidth=2)
+#     g = sns.relplot(x='date', y='discrimPEratio', hue='laserDur',
+#                     col='Virus', data=result, kind="line", linewidth=2)
+#     g = sns.relplot(x='date', y='DSPEratio', hue='Virus',
+#                     data=result, kind="line", linewidth=2)
 
 
-# regression
-    g = sns.lmplot(x='x_E_laserDStrial', y='x_M_DSPElat',
-                   hue='Virus', col='laserDur', data=result)
+# # regression
+#     g = sns.lmplot(x='x_E_laserDStrial', y='x_M_DSPElat',
+#                    hue='Virus', col='laserDur', data=result)
 
     # %% melt() each event variable into eventType and eventTime
     # use explode() to reduce arrays of event timestamps into many rows with single element
@@ -371,7 +373,8 @@ if __name__ == '__main__':
     # %% Tidy df org: All events in single column, sort by time by file, with fileID column and trialID column that matches trial 1-60 through each session.
     dfEventAll = df.melt(id_vars=['subject', 'RatID', 'Virus', 'Sex', 'date', 'laserDur', 'note'], value_vars=[
 
-                         'x_K_PEtime', 'PExEst', 'x_S_lickTime', 'x_D_laserTime', 'x_H_DStime', 'x_I_NStime'], var_name='eventType', value_name='eventTime', ignore_index=False)
+                         'x_K_PEtime', 'PExEst', 'x_S_lickTime', 'x_D_laserTime', 'x_H_DStime', 'x_I_NStime',
+                         'x_G_laserOffTime'], var_name='eventType', value_name='eventTime', ignore_index=False)
 
     # now explode event timestamp array
     dfEventAll = dfEventAll.explode('eventTime')
@@ -390,14 +393,15 @@ if __name__ == '__main__':
     # explode arrays into their own cells
     dfLaser = dfLaser.explode('laserState')
 
-    # use cumcount() of DS & NS to match up laser status with cue time (redundant since we have a timestamp of laser on, but good verification still)
+    # use cumcount() of DS & NS to match up laser status with cue time (redundant since we have a timestamp of laser on, but good verification still and easy grouping by trial)
     dfEventAll.index.name = 'fileID'
-    dfEventAll = dfEventAll.reset_index()
+    dfEventAll.reset_index(inplace=True)
+    dfEventAll.index.name= 'eventID'
     dfEventAll['g'] = dfEventAll[(dfEventAll.eventType == 'x_H_DStime') | (
         dfEventAll.eventType == 'x_I_NStime')].groupby('fileID').cumcount()  # .index
 
     dfLaser.index.name = 'fileID'
-    dfLaser = dfLaser.reset_index()
+    dfLaser.reset_index(inplace=True)
     dfLaser['g'] = dfLaser[(dfLaser.laserType == 'x_E_laserDStrial') | (
         dfLaser.laserType == 'x_F_laserNStrial')].groupby('fileID').cumcount()
 
@@ -412,7 +416,9 @@ if __name__ == '__main__':
     dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
 
     # need to reset_index before assigning values back to dfEventAll (this is because the fileID index repeats so assignment is ambiguous)
-    dfEventAll = dfEventAll.reset_index()
+    dfEventAll.reset_index(drop=True,inplace=False) #dropping old unsorted eventID
+    dfEventAll.index.name= 'eventID'
+
 
     # add trialID column by cumulative counting each DS or NS within each file
     # now we have ID for trials 0-59 matching DS or NS within each session, nan for other events
@@ -420,14 +426,18 @@ if __name__ == '__main__':
         dfEventAll.eventType == 'x_I_NStime')].groupby('fileID').cumcount()
 
    # combine laserState and laserType into one variable for labelling each trial: trialType
-    dfEventAll.loc[:, 'trialType'] = dfEventAll.laserType + \
+   #Exclude the Lick-paired laser sessions. We will label those using a different method below  
+    dfEventAll.loc[dfEventAll.laserDur!='Lick', 'trialType'] = dfEventAll.laserType + \
         '_'+dfEventAll.laserState.astype(str).copy()
 
-    # drop redundant columns
-    dfEventAll = dfEventAll.drop(columns=['laserType', 'laserState']).copy()
     
     #sort again by file & event timestamp before saving to new df
     dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
+    
+    #reset index so that eventIDs are in chronological orders
+    #for some reason inplace=true isn't working here so just reassign
+    dfEventAll= dfEventAll.reset_index(drop=True)
+    dfEventAll.index.name= 'eventID'
 
 
     dfTidy = dfEventAll
@@ -452,7 +462,47 @@ if __name__ == '__main__':
     # visualize all events per fileq
     # sns.relplot(x='eventTime',y='fileID',hue='eventType', data= dfTidy, kind='scatter')
 
-    # % Identify events during each trial, assign them trialID matching the cue
+   #  #%%for lick-paired laser sessions, classify trials as laser on vs. laser off
+   #  #since laser delivery in these sessions is contingent on lick behavior
+   #  #use actual laser on & off times to define trials where laser delivered
+        
+   #  #cumcount each laser onsets per trial
+   #  dfTidy['trialLaser'] = dfTidy[(dfTidy.laserDur=='Lick') & (dfTidy.eventType == 'x_D_laserTime')].groupby([
+   #      'fileID', 'trialID']).cumcount().copy()
+    
+   #  # #index by file, trial and get total count of lasers onsets per trial
+   #  # dfTidy= dfTidy.set_index(['fileID','trialID'])
+    
+   #  #relabel trialType based on presence or absence of laser onset
+   #  laserCount= dfTidy[dfTidy.laserDur=='Lick'].groupby(['fileID','trialID'],dropna=False)['trialLaser'].nunique()
+    
+   #  #0 or 1 to match trialType labels of Cue laser sessions
+   #  laserCount.loc[laserCount>0]='1' 
+   #  laserCount.loc[laserCount==0]='0'
+    
+   #  #reset ind before reassignment
+   #  # dfTidy= dfTidy.reset_index().copy()
+   #  # laserCount= laserCount.reset_index().copy()
+    
+   # # combine laserState and laserType into one variable for labelling each trial: trialType
+   # #only include the laser sessions
+   #  dfTidy.loc[dfTidy.laserDur=='Lick', 'trialType'] = dfTidy[dfTidy.laserDur=='Lick'].laserType + \
+   #      '_'+laserCount.astype(str).copy() #lasercount size not going to match
+
+   #  # drop redundant columns
+   #  dfTidy = dfTidy.drop(columns=['laserType', 'laserState']).copy()
+    
+   #  #example
+   #  peOutcome= dfPlot.trialPE.count()
+   #  peOutcome= dfPlot.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
+   #  peOutcome.loc[peOutcome>0]='PE'
+   #  peOutcome.loc[peOutcome==0]='noPE'
+    
+   #  #fill in matching file,trial with peOutcome
+   #  dfPlot.loc[peOutcome.index,'peOutcome']= peOutcome
+    
+
+    # %% Identify events during each trial, assign them trialID matching the cue
 
     # TODO: for now assume cue duration = 10, but should get programmatically from A() array
 
@@ -473,12 +523,15 @@ if __name__ == '__main__':
     # this fills nan trialID
     dfTidy.trialID= dfTidy.groupby('fileID')['trialID'].fillna(method='ffill').copy()
 
+    #Add 1 to each trialID to avoid trialID==0. 
+    #Don't allow trialIDs=0, so we can avoid issues with -0 trialIDs later (-0 will equate to 0 and we don't want to mix them up)
+    dfTidy.trialID= dfTidy.trialID+1
+    
     # do the same for trialType
     dfTidy.trialType= dfTidy.groupby('fileID')['trialType'].fillna(method='ffill').copy()
 
 
     # now multiply previously nan trialIDs by -1 so we can set them apart from the valid trialIDs
-    # using .at[] replaces value without SettingWithCopyWarning
     dfTidy.loc[indNan.index, 'trialID'] = dfTidy.trialID[indNan.index].copy()*-1
 
     # Can get a trial end time based on cue onset, then just check
@@ -513,7 +566,103 @@ if __name__ == '__main__':
     # remove trialType labels from events outside of cueDur (- trial ID or nan trialID)
     # for now labelling with "ITI", but could be nan
     dfTidy.loc[(dfTidy.trialID < 0) | (dfTidy.trialID.isnull()), 'trialType'] = 'ITI'
-  # %% Preliminary data analyses
+
+    
+
+ #%%for lick-paired laser sessions, classify trials as laser on vs. laser off
+    #since laser delivery in these sessions is contingent on lick behavior
+    #use actual laser on & off times to define trials where laser delivered
+        
+    #cumcount each laser onsets per trial
+    dfTidy['trialLaser'] = dfTidy[(dfTidy.laserDur=='Lick') & (dfTidy.eventType == 'x_D_laserTime')].groupby([
+        'fileID', 'trialID']).cumcount().copy()
+
+    
+    #relabel trialType based on presence or absence of laser onset
+    #grabbing just lick sessions causes index to be mismatched?
+    laserCount= dfTidy[dfTidy.laserDur=='Lick'].groupby(['fileID','trialID'],dropna=False)['trialLaser'].nunique()
+    # laserCount= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialLaser'].nunique()
+    # laserCount= dfTidy[(dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_H_DStime') | (dfTidy.eventType=='x_I_NStime'))].groupby(['fileID','trialID'],dropna=False)['trialLaser'].nunique()
+
+    
+    #make 0 or 1 to match trialType labels of Cue laser sessions
+    laserCount.loc[laserCount>0]='1' 
+    laserCount.loc[laserCount==0]='0'
+    
+    #so  we have a laser state for each trial, but dfTidy has many entries for each trial.
+    #need to either match 1:1 laserCount:cue or get multiple laserCount values consistent with each trial
+    #probably easiest to go with the first option then ffill through trials?
+    #Note- using  reset_index() then set_index() keeps the original named index as a column
+    test= dfTidy.reset_index().set_index(['fileID','trialID'])
+
+    test.loc[(test.index.get_level_values(1)>=0)]
+
+    #reset ind before reassignment
+    # dfTidy= dfTidy.reset_index().copy()
+    # laserCount= laserCount.reset_index().copy()
+    # laserCount= laserCount[laserCount.trialID>=0]
+    
+    laserCount= laserCount.loc[laserCount.index.get_level_values(1)>=0]
+    
+    ## index by file, trial and get total count of lasers onsets per trial
+    #Note- using  reset_index() then set_index() keeps the original named eventID index as a column
+    #we will use this to match up values with the original dfTidy
+
+    # dfLaser= dfTidy[((dfTidy.laserDur=='Lick') & (dfTidy.trialID>=0))].set_index(['fileID','trialID'])
+    dfLaser= dfTidy[((dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_H_DStime') | (dfTidy.eventType=='x_I_NStime')))].reset_index().set_index(['fileID','trialID'])
+    
+    # combine laserState and laserType into one variable for labelling each trial: trialType
+    # #only include the laser sessions
+    dfLaser.trialType= dfLaser.laserType + '_' + laserCount.astype(str).copy()
+    
+    #set index to eventID before assignment
+    dfLaser= dfLaser.reset_index().set_index('eventID')
+    
+    #works
+    test= dfTidy.copy()
+    test.loc[dfLaser.index.get_level_values(0),'trialType']= dfLaser.trialType
+
+    test2= test
+    test2.loc[test.trialID>=0,'trialType']= test[test.trialID>=0].groupby('fileID')['trialType'].fillna(method='ffill').copy()
+     
+    
+    #insert trialTypes using eventID as index
+    dfTidy.loc[dfLaser.index.get_level_values(0),'trialType']= dfLaser.trialType
+    
+    #ffill trialType for each trial
+    dfTidy.loc[dfTidy.trialID>=0,'trialType']= dfTidy[dfTidy.trialID>=0].groupby('fileID')['trialType'].fillna(method='ffill').copy()
+
+    
+  
+
+   # combine laserState and laserType into one variable for labelling each trial: trialType
+   # #only include the laser sessions
+   #  dfTidy.loc[(dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_H_DStime') | (dfTidy.eventType=='x_I_NStime')), 'trialType'] = dfTidy[dfTidy.laserDur=='Lick'].laserType + \
+   #      '_'+laserCount.astype(str).copy() #lasercount size not going to match
+
+    # dfTidy.loc[((dfTidy.laserDur=='Lick') & (dfTidy.trialID>=0)), 'trialType'] = dfTidy[(dfTidy.laserDur=='Lick') & (dfTidy.trialID>=0)].laserType + \
+    #     '_'+laserCount.astype(str).copy() #lasercount size not going to match
+        
+    # drop redundant columns
+    # dfTidy = dfTidy.drop(columns=['laserType', 'laserState']).copy()
+    
+    #example
+    # count of events per trial. We can easily find firstPE and firstLick with this (==0)
+    
+    # dfTidy['trialPE'] = dfTidy[(dfTidy.eventType == 'x_K_PEtime')].groupby([
+    # 'fileID', 'trialID']).cumcount()
+    # dfPlot = dfTidy[(dfTidy.trialID >= 0)].set_index(['fileID','trialID'])
+
+    # peOutcome= dfPlot.trialPE.count()
+    # peOutcome= dfPlot.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
+    # peOutcome.loc[peOutcome>0]='PE'
+    # peOutcome.loc[peOutcome==0]='noPE'
+    
+    # #fill in matching file,trial with peOutcome
+    # dfPlot.loc[peOutcome.index,'peOutcome']= peOutcome
+
+
+# %% Preliminary data analyses
 
   # Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
   # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time
@@ -524,19 +673,6 @@ if __name__ == '__main__':
     #for 'ITI' events, calculate latency based on last trial end (not cue onset)
     dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = (
         (dfTidy.eventTime)-(dfTidy.trialEnd)).copy()
-    
-    #seems earliest events from next file are being ffilled from trial 59 
-    
-#     	eventType	eventTime	trialID	trialType	trialEnd
-# 1528	x_K_PEtime	3677.9	-59.0	ITI	3668.24
-# 1529	PExEst	3678.59	-59.0	ITI	3668.24
-# 1530	x_K_PEtime	27.41	-59.0	ITI	3668.24
-# 1531	PExEst	27.44	-59.0	ITI	3668.24
-# 1532	x_S_lickTime	27.63	-59.0	ITI	3668.24
-# 1533	x_D_laserTime	30.31	-59.0	ITI	3668.24
-
-    
-    #Huge negative latencies for trial -59. why? Events misassigned to -59?
 
    # count of events per trial. We can easily find firstPE and firstLick with this (==0)
     dfTidy['trialPE'] = dfTidy[(dfTidy.eventType == 'x_K_PEtime')].groupby([
@@ -549,7 +685,7 @@ if __name__ == '__main__':
   # df.groupby(['label A','label B']) ['data I want from groups'] . some method operation()
   
   #e.g. 
-    dfTidy.groupby(['Sex','Virus','trialType'])['trialLick'].count()
+    # dfTidy.groupby(['Sex','Virus','trialType'])['trialLick'].count()
     
     # %% Visualization
 
@@ -659,7 +795,7 @@ if __name__ == '__main__':
     g.set_ylabels('lick latency from epoch start (s)')
 
     
-    #ecdf- all subj
+    #ecdf- all subj'[]
     g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue_order=trialOrder)
     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
     g.fig.suptitle('First Lick latencies by trial type; laser OFF; all subj')
@@ -693,6 +829,8 @@ if __name__ == '__main__':
     g.set_ylabels('First PE latency from epoch start (s)')
     
     
+    g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='RatID', kind='bar', hue_order=trialOrder)
+
     
     #PE probability: did they make a PE or not
     dfPlot = dfTidy[(dfTidy.trialID >= 0)].set_index(['fileID','trialID'])
