@@ -243,6 +243,11 @@ if __name__ == '__main__':
     # now multiply previously nan trialIDs by -1 so we can set them apart from the valid trialIDs
     dfTidy.loc[indNan.index, 'trialID'] = dfTidy.trialID[indNan.index].copy()*-1
 
+    #Fill nan trialIDs (first ITI) with a placeholder. Do this because groupby of trialID with nan will result in contamination between sessions
+    #don't know why this is, but I'm guessing if any index value==nan then the entire index likely collapses to nan
+    dfTidy.loc[dfTidy.trialID.isnull(),'trialID']= -0.5
+
+
     # Can get a trial end time based on cue onset, then just check
     # event times against this
     dfTidy = dfTidy.sort_values(by=['fileID', 'eventTime']).copy()
@@ -303,56 +308,37 @@ if __name__ == '__main__':
     #ffill trialType for each trial
     dfTidy.loc[dfTidy.trialID>=0,'trialType']= dfTidy[dfTidy.trialID>=0].groupby('fileID')['trialType'].fillna(method='ffill').copy()
 
-
-    #Fill nan trialIDs (first ITI) with a placeholder. Do this because groupby of trialID with nan will result in contamination between sessions
-    #don't know why this is, but I'm guessing if any index value==nan then the entire index likely collapses to nan
-    dfTidy.loc[dfTidy.trialID.isnull(),'trialID']= -0.5
-
     # drop redundant columns
     dfTidy = dfTidy.drop(columns=['laserType', 'laserState']).copy()
 
 # %% Preliminary data analyses
 # Event latency, count, and PE outcome for each trial
-  # Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
-  # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time
   
+
+#Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
+  # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time  
     dfTidy.loc[dfTidy.trialID>=0, 'eventLatency'] = (
         (dfTidy.eventTime)-(dfTidy.trialEnd-cueDur)).copy()
-    
+
     #for 'ITI' events, calculate latency based on last trial end (not cue onset)
     dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = (
         (dfTidy.eventTime)-(dfTidy.trialEnd)).copy()
     
-    #TODO: we still have 'nan' trialIDs for the first ITI. Should handle these. Could also code them as like trialID -999. Latency could be relative to 0 
-
-   # count of events per trial. We can easily find firstPE and firstLick with this (==0)
-   #TODO: weird values for nan trials here? getting 550 for first trialPE in lick+laser ses
-    
-   #debugging this
-    dfTidyLick= dfTidy.loc[dfTidy.laserDur=='Lick'].copy()
-    dfTidy2= dfTidy.copy()
-   
-    dfTidyLick2= dfTidyLick.copy()
-    dfTidyLick2['trialPE'] = dfTidyLick.loc[(dfTidyLick.eventType == 'x_K_PEtime')].groupby([
-        'fileID', 'trialID'])['eventTime'].cumcount()
-   
-    dfTidy2['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'x_K_PEtime')].groupby([
-        'fileID', 'trialID'])['eventTime'].cumcount() 
-    [488435] #specific value very off. should be 0, is 550
-    dfTidy3= dfTidy.loc[(dfTidy.eventType == 'x_K_PEtime')].groupby([
-        'fileID', 'trialID'])['eventTime'].value_counts()
-    
-   #%% 
+#Count events in each trial 
+    #use cumcount() of event times within file & trial 
     dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'x_K_PEtime')].groupby([
-        'fileID', 'trialID'])['eventTime'].cumcount().copy()
+    'fileID', 'trialID'])['eventTime'].cumcount().copy()
     
     dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'x_S_lickTime')].groupby([
         'fileID', 'trialID']).cumcount().copy()
     
+    
     #For each trial (trialID >=0),
     #count the number of PEs per trial. if >0, they entered the port and earned sucrose. If=0, they did not.
     #since groupby counting methods don't work well with nans, using nunique() 
-    peOutcome= dfTidy.loc[dfTidy.trialID>=0].groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
+    # peOutcome= dfTidy.loc[dfTidy.trialID>=0].groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
+    #do for all trials
+    peOutcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
 
     peOutcome.loc[peOutcome>0]='PE'
     peOutcome.loc[peOutcome==0]='noPE'
@@ -744,30 +730,46 @@ if __name__ == '__main__':
     
     #lick count by trial
     dfPlot = dfTidy[(dfTidy.laserDur=='Lick')].copy()
-        
-    #transform keeps original index?
-    lickCount=dfPlot.groupby(['fileID','trialID','trialType'])['trialLick'].transform('count')
-
-    #axis for aggregated trial variables- since trialID repeats we need to restrict observations to first otherwise we'll plot redundant data and stats will be off
-    #TODO: consider reshaping df for plotting different aggregations. Not sure what is most convenient
-    trialAgg= dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0
-
-    dfPlot= dfPlot.loc[trialAgg]
+    #TODO: consider alternate reshaping df for plotting different aggregations. Not sure what is most convenient
     
+    #need an index for aggregated trial variables- since trialID repeats we need to restrict observations to first otherwise we'll plot redundant data and stats will be off
+    trialAgg= (dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0).copy()
+    #transform keeps original index
+    lickCount= dfPlot.groupby(['fileID','trialID','trialType'])['trialLick'].transform('count').copy()
+    
+    #get only one aggregated value per trial
+    lickCount= lickCount.loc[trialAgg].copy()
+    dfPlot= dfPlot.loc[trialAgg].copy()
+        
     g= sns.catplot(data=dfPlot, y=lickCount,x='RatID',hue='trialType',kind='bar',hue_order=trialOrder)
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('Lick count by trial type; laser+LICK; individual subj')
+    g.set_ylabels('count of licks per trial')
+    g.set_xlabels('subject')
     
-    #Compare to CUE and laser OFF
-    dfPlot = dfTidy
-        
-    #transform keeps original index?
-    lickCount=dfPlot.groupby(['fileID','trialID','trialType'])['trialLick'].transform('count')
-
-    #axis for aggregated trial variables- since trialID repeats we need to restrict observations to first otherwise we'll plot redundant data and stats will be off
-    trialAgg= dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0
-
-    dfPlot= dfPlot.loc[trialAgg]
+    #bar with overlay individual trial overlay
+    plt.figure()
+    plt.subplot(1, 1, 1)
+    sns.barplot(data=dfPlot, y=lickCount,x='RatID',hue='trialType',hue_order=trialOrder)
+    sns.stripplot(data=dfPlot, y=lickCount,x='RatID',hue='trialType',hue_order=trialOrder, dodge=True,size=2)
     
-    g= sns.catplot(data=dfPlot, row='laserDur', y=lickCount,x='RatID',hue='trialType',kind='bar',hue_order=trialOrder)
+    ##Compare to CUE and laser OFF
+    ##TODO: error here
+    # dfPlot = dfTidy.copy() #all data
+    
+    # #need an index for aggregated trial variables- since trialID repeats we need to restrict observations to first otherwise we'll plot redundant data and stats will be off
+    # trialAgg= (dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0).copy()
+    # #transform keeps original index
+    # lickCount= dfPlot.groupby(['fileID','trialID','trialType'])['trialLick'].transform('count').copy()
+    
+    # #get only one aggregated value per trial
+    # lickCount= lickCount.loc[trialAgg].copy()
+    # dfPlot= dfPlot.loc[trialAgg].copy()
+    
+    # g= sns.catplot(data=dfPlot, row='laserDur', y=lickCount,x='RatID',hue='trialType',kind='bar',hue_order=trialOrder)
+    
+    #%% Correct comparison between laser ON and laser OFF trials for lick-paired is
+    # no laser trials w PE or PE+lick vs. lick+laser trials. "Laser on" trials will always have more PE and Licks because that is how they are defined
     
     
     #%% Use pandas profiling on event counts
