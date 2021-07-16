@@ -39,7 +39,7 @@ if __name__ == '__main__':
         window.destroy()
      
  
-    #%% import matlab struct from .mat
+#%% import matlab struct from .mat
     from tkinter import *
     from tkinter import filedialog
     
@@ -48,16 +48,7 @@ if __name__ == '__main__':
     button = Button(text="Open",command=openFile) #openFile() function
     button.pack()
     window.mainloop()
-
-
-    #%% import matlab struct manually
-    
-    # matContents= sio.loadmat(r'C:\Users\Dakota\Desktop\Opto DS Task Test- CUE Laser Manipulation\trainData.mat',squeeze_me=True)
-   #licklaser
-    # matContents= sio.loadmat(r'C:\Users\Dakota\Desktop\Opto DS Task Test- CUE Laser Manipulation\2021-07-07-16-24-31trainData.mat',squeeze_me=True)
-    # matContents= sio.loadmat(r'C:\Users\Dakota\Desktop\Opto DS Task Test- CUE Laser Manipulation\laserDay\2021-07-08-12-47-22trainData.mat',squeeze_me=True)
-
-    # %% Extract the relevant data and get the data into pandas.dataframe format
+# %% Extract the relevant data and get the data into pandas.dataframe format
     # adapted from https://www.kaggle.com/avilesmarcel/open-mat-in-python-pandas-dataframe
 
     # extract the struct contents from the loaded .mat
@@ -84,37 +75,12 @@ if __name__ == '__main__':
     # save the data as a pandas dataframe
     df = pd.DataFrame(data_raw, columns=data_headline)
 
-    # %% Do some preliminary behavioral analysis
-    # TODO: Reshape the table first
-
-    # for now, just grab MPC calculated DS PE ratios
-    # to do so make an empty array, cat() together values and then assign as column in df
-    var = np.empty(df.shape[0])
-    for ses in range(df.shape[0]):
-        # B(23)=DS PE ratio ; B(24= NS PE ratio)
-        # df[ses].DSPEratio.assign=df.x_B_workingVars[ses][23].copy()
-        var[ses] = df.x_B_workingVars[ses][23]
-
-    df = df.assign(DSPEratio=var)
-
-    var = np.empty(df.shape[0])
-    for ses in range(df.shape[0]):
-        # B(23)=DS PE ratio ; B(24= NS PE ratio)
-        # df[ses].DSPEratio.assign=df.x_B_workingVars[ses][23].copy()
-        var[ses] = df.x_B_workingVars[ses][24]
-    df = df.assign(NSPEratio=var)
-
-    # calculate a 'discrimination index' as DSratio/NSratio
-    df = df.assign(discrimPEratio=df.DSPEratio/df.NSPEratio)
-
+    # %% Exclude data
+    # %% Add other events if necessary before tidying
+    
     # calculate port exit time estimate using PEtime and peDur, save this as a new variable
     df = df.assign(PExEst=df.x_K_PEtime + df.x_L_PEdur)
-
-    # somehow different amount of cues and laser states...
-    # possibly due to error in code from 20210604 session
-    # 26 missing NSlaser entries x 11 subjects =286. = size mismatch
-
-    # ~~EXCLUDE this date~~~~~~~~~~~~~~~~~~~!!!
+    # Exclude specific date
     df = df[df.date != 20210604]
 
     # %% melt() each event variable into eventType and eventTime
@@ -218,15 +184,14 @@ if __name__ == '__main__':
     #sort again by file & event timestamp before saving to new df
     dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
     
-    #reset index so that eventIDs are in chronological orders
+    #reset index so that eventIDs are in chronological order
     #for some reason inplace=true isn't working here so just reassign
     dfEventAll= dfEventAll.reset_index(drop=True)
     dfEventAll.index.name= 'eventID'
 
 
     dfTidy = dfEventAll
-    # dfTidy=np.round(dfTidy,2) #this doesn't seem to resolve issues. need decimal.decimals
-    # #%% Round df 
+    
     #TODO: round decimals to point of precision. 
     # #important because floats are imprecise and can lead to compounding errors
     # #first convert columns to string
@@ -245,53 +210,12 @@ if __name__ == '__main__':
     # dfTidy.values= dfTidy.values.round(2)
     # visualize all events per fileq
     # sns.relplot(x='eventTime',y='fileID',hue='eventType', data= dfTidy, kind='scatter')
-
-   #  #%%for lick-paired laser sessions, classify trials as laser on vs. laser off
-   #  #since laser delivery in these sessions is contingent on lick behavior
-   #  #use actual laser on & off times to define trials where laser delivered
-        
-   #  #cumcount each laser onsets per trial
-   #  dfTidy['trialLaser'] = dfTidy[(dfTidy.laserDur=='Lick') & (dfTidy.eventType == 'x_D_laserTime')].groupby([
-   #      'fileID', 'trialID']).cumcount().copy()
     
-   #  # #index by file, trial and get total count of lasers onsets per trial
-   #  # dfTidy= dfTidy.set_index(['fileID','trialID'])
-    
-   #  #relabel trialType based on presence or absence of laser onset
-   #  laserCount= dfTidy[dfTidy.laserDur=='Lick'].groupby(['fileID','trialID'],dropna=False)['trialLaser'].nunique()
-    
-   #  #0 or 1 to match trialType labels of Cue laser sessions
-   #  laserCount.loc[laserCount>0]='1' 
-   #  laserCount.loc[laserCount==0]='0'
-    
-   #  #reset ind before reassignment
-   #  # dfTidy= dfTidy.reset_index().copy()
-   #  # laserCount= laserCount.reset_index().copy()
-    
-   # # combine laserState and laserType into one variable for labelling each trial: trialType
-   # #only include the laser sessions
-   #  dfTidy.loc[dfTidy.laserDur=='Lick', 'trialType'] = dfTidy[dfTidy.laserDur=='Lick'].laserType + \
-   #      '_'+laserCount.astype(str).copy() #lasercount size not going to match
-
-   #  # drop redundant columns
-   #  dfTidy = dfTidy.drop(columns=['laserType', 'laserState']).copy()
-    
-   #  #example
-   #  peOutcome= dfPlot.trialPE.count()
-   #  peOutcome= dfPlot.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
-   #  peOutcome.loc[peOutcome>0]='PE'
-   #  peOutcome.loc[peOutcome==0]='noPE'
-    
-   #  #fill in matching file,trial with peOutcome
-   #  dfPlot.loc[peOutcome.index,'peOutcome']= peOutcome
-    
-
     # %% Identify events during each trial, assign them trialID matching the cue
 
     # TODO: for now assume cue duration = 10, but should get programmatically from A() array
 
     cueDur = 10
-
 
     # fill in intermediate trialID values... We have absolute trialIDs now for each Cue but other events have trialID=nan
     # we can't tell for certain if events happened during a trial or ITI at this point but we do have all of the timestamps
@@ -341,7 +265,7 @@ if __name__ == '__main__':
 
     
 
- #%%for lick-paired laser sessions, classify trials as laser on vs. laser off
+    #%% for lick-paired laser sessions, classify trials as laser on vs. laser off
     #since laser delivery in these sessions is contingent on lick behavior
     #use actual laser on & off times to define trials where laser delivered
         
@@ -357,20 +281,13 @@ if __name__ == '__main__':
     laserCount.loc[laserCount==0]='0'
     
     #so  we have a laser state for each trial, but dfTidy has many entries for each trial.
-    #need to either match 1:1 laserCount:cue or get multiple laserCount values consistent with each trial
-    #probably easiest to go with the first option then ffill through trials?
-    #Note- using  reset_index() then set_index() keeps the original named index as a column
-    test= dfTidy.reset_index().set_index(['fileID','trialID'])
+    #get the first value, then we'll use ffill to fill in other entries later
+    #using  reset_index() then set_index() keeps the original named index as a column
 
-    test.loc[(test.index.get_level_values(1)>=0)]
-    
     laserCount= laserCount.loc[laserCount.index.get_level_values(1)>=0]
     
     ## index by file, trial and get total count of lasers onsets per trial
-    #Note- using  reset_index() then set_index() keeps the original named eventID index as a column
     #we will use this to match up values with the original dfTidy
-
-    # dfLaser= dfTidy[((dfTidy.laserDur=='Lick') & (dfTidy.trialID>=0))].set_index(['fileID','trialID'])
     dfLaser= dfTidy[((dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_H_DStime') | (dfTidy.eventType=='x_I_NStime')))].reset_index().set_index(['fileID','trialID'])
     
     # combine laserState and laserType into one variable for labelling each trial: trialType
@@ -380,45 +297,22 @@ if __name__ == '__main__':
     #set index to eventID before assignment
     dfLaser= dfLaser.reset_index().set_index('eventID')
     
-    
     #insert trialTypes using eventID as index
     dfTidy.loc[dfLaser.index.get_level_values(0),'trialType']= dfLaser.trialType
     
     #ffill trialType for each trial
     dfTidy.loc[dfTidy.trialID>=0,'trialType']= dfTidy[dfTidy.trialID>=0].groupby('fileID')['trialType'].fillna(method='ffill').copy()
 
-    
-  
 
-   # combine laserState and laserType into one variable for labelling each trial: trialType
-   # #only include the laser sessions
-   #  dfTidy.loc[(dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_H_DStime') | (dfTidy.eventType=='x_I_NStime')), 'trialType'] = dfTidy[dfTidy.laserDur=='Lick'].laserType + \
-   #      '_'+laserCount.astype(str).copy() #lasercount size not going to match
+    #Fill nan trialIDs (first ITI) with a placeholder. Do this because groupby of trialID with nan will result in contamination between sessions
+    #don't know why this is, but I'm guessing if any index value==nan then the entire index likely collapses to nan
+    dfTidy.loc[dfTidy.trialID.isnull(),'trialID']= -0.5
 
-    # dfTidy.loc[((dfTidy.laserDur=='Lick') & (dfTidy.trialID>=0)), 'trialType'] = dfTidy[(dfTidy.laserDur=='Lick') & (dfTidy.trialID>=0)].laserType + \
-    #     '_'+laserCount.astype(str).copy() #lasercount size not going to match
-        
     # drop redundant columns
     dfTidy = dfTidy.drop(columns=['laserType', 'laserState']).copy()
-    
-    #example
-    # count of events per trial. We can easily find firstPE and firstLick with this (==0)
-    
-    # dfTidy['trialPE'] = dfTidy[(dfTidy.eventType == 'x_K_PEtime')].groupby([
-    # 'fileID', 'trialID']).cumcount()
-    # dfPlot = dfTidy[(dfTidy.trialID >= 0)].set_index(['fileID','trialID'])
-
-    # peOutcome= dfPlot.trialPE.count()
-    # peOutcome= dfPlot.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
-    # peOutcome.loc[peOutcome>0]='PE'
-    # peOutcome.loc[peOutcome==0]='noPE'
-    
-    # #fill in matching file,trial with peOutcome
-    # dfPlot.loc[peOutcome.index,'peOutcome']= peOutcome
-
 
 # %% Preliminary data analyses
-
+# Event latency, count, and PE outcome for each trial
   # Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
   # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time
   
@@ -428,69 +322,50 @@ if __name__ == '__main__':
     #for 'ITI' events, calculate latency based on last trial end (not cue onset)
     dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = (
         (dfTidy.eventTime)-(dfTidy.trialEnd)).copy()
+    
+    #TODO: we still have 'nan' trialIDs for the first ITI. Should handle these. Could also code them as like trialID -999. Latency could be relative to 0 
 
    # count of events per trial. We can easily find firstPE and firstLick with this (==0)
-    dfTidy['trialPE'] = dfTidy[(dfTidy.eventType == 'x_K_PEtime')].groupby([
-        'fileID', 'trialID']).cumcount()
-    dfTidy['trialLick'] = dfTidy[(dfTidy.eventType == 'x_S_lickTime')].groupby([
-        'fileID', 'trialID']).cumcount()
+   #TODO: weird values for nan trials here? getting 550 for first trialPE in lick+laser ses
+    
+   #debugging this
+    dfTidyLick= dfTidy.loc[dfTidy.laserDur=='Lick'].copy()
+    dfTidy2= dfTidy.copy()
+   
+    dfTidyLick2= dfTidyLick.copy()
+    dfTidyLick2['trialPE'] = dfTidyLick.loc[(dfTidyLick.eventType == 'x_K_PEtime')].groupby([
+        'fileID', 'trialID'])['eventTime'].cumcount()
+   
+    dfTidy2['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'x_K_PEtime')].groupby([
+        'fileID', 'trialID'])['eventTime'].cumcount() 
+    [488435] #specific value very off. should be 0, is 550
+    dfTidy3= dfTidy.loc[(dfTidy.eventType == 'x_K_PEtime')].groupby([
+        'fileID', 'trialID'])['eventTime'].value_counts()
+    
+   #%% 
+    dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'x_K_PEtime')].groupby([
+        'fileID', 'trialID'])['eventTime'].cumcount().copy()
+    
+    dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'x_S_lickTime')].groupby([
+        'fileID', 'trialID']).cumcount().copy()
+    
+    #For each trial (trialID >=0),
+    #count the number of PEs per trial. if >0, they entered the port and earned sucrose. If=0, they did not.
+    #since groupby counting methods don't work well with nans, using nunique() 
+    peOutcome= dfTidy.loc[dfTidy.trialID>=0].groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
 
-  #%% Exploratory data vis & profiling
-   #visualize the raw data, identify patterns and outliers
+    peOutcome.loc[peOutcome>0]='PE'
+    peOutcome.loc[peOutcome==0]='noPE'
     
-   #%% Check for outlier sessions
-    # convert ratID to categorical data type so seaborn uses divergent color hues
-    dfTidy.RatID = dfTidy.RatID.astype('category')
-    sns.set_palette('tab10')  # tab10 is default
+    #set index to file,trial and
+    #fill in matching file,trial with peOutcome
+    dfTidy= dfTidy.reset_index().set_index(['fileID','trialID'])
+    
+    dfTidy.loc[peOutcome.index,'peOutcome']= peOutcome
 
+    #reset index to eventID
+    dfTidy= dfTidy.reset_index().set_index(['eventID'])
     
-    #I know that lick count was absurdly high (>9000) due to liquid shorting lickometer on at least 1 session
-    #visualize event counts by session to ID outliers
-    #not interested in some events (e.g. # cues is fixed), remove those
-    dfPlot= dfTidy.loc[(dfTidy.eventType!='x_I_NStime') & (dfTidy.eventType!='x_H_DStime') & (dfTidy.eventType!='PExEst') & (dfTidy.eventType!='x_G_laserOffTime')] 
-    
-    #count of each event type by date and subj
-    dfPlot= dfPlot.groupby(['RatID','date', 'eventType'])['eventTime'].count().reset_index()
-    
-    
-    g= sns.relplot(data=dfPlot, col='eventType', x='date', y='eventTime', hue='RatID', kind='scatter',
-                    facet_kws={'sharey': False, 'sharex': True})
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('Total event count across sessions by type- check for outliers')
-    g.set_ylabels('# of events')
-    g.set_ylabels('session')
-    
-      #%% #For lick+laser, plot trialType counts
-      #since laser delivery is contingent on animal's licking, should check to see how many trials they are actually getting laser
-
-    dfPlot= dfTidy.loc[(dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_I_NStime') | (dfTidy.eventType=='x_H_DStime'))].groupby(['RatID','date','trialType'])['eventTime'].count().reset_index()
-
-    g= sns.relplot(data=dfPlot, col='trialType', x='date', y='eventTime', hue='RatID', kind='scatter')
-                    # facet_kws={'sharey': False, 'sharex': True})
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('Total trial type count across LICK+laser sessions')
-    g.set_ylabels('# of events')
-    g.set_ylabels('session')
-    
-    #total count of each trial type across sessions for each subject
-    sns.set_palette('Paired')  # tab10 is default
-
-    dfPlot= dfTidy.loc[(dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_I_NStime') | (dfTidy.eventType=='x_H_DStime'))].groupby(['RatID','trialType'])['eventTime'].count().reset_index() 
-    
-    g= sns.catplot(data=dfPlot, x='RatID', y='eventTime', hue='trialType', kind='bar')
-                    # facet_kws={'sharey': False, 'sharex': True})
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('Total trial type count across LICK+laser sessions')
-    g.set_ylabels('Total trial count (lick+laser sessions)')
-    g.set_xlabels('Subject')
-
-    #%% Probing very few laser trials for some subjects
-    #Likely because they aren't responding generally?
-    #If they make a port entry within 10s and lick within the time window of laser availability,
-    #laser is turned on and this is counted as a laser trial. Else, it defaults to a 'no laser' trial.
-    
-    #So, one question is are they making not making PEs or are they not licking?
-
     # %% Analysis & visualization
 
     # visualize using seaborn
@@ -503,6 +378,96 @@ if __name__ == '__main__':
    #manually defining color order so that paired color scheme looks nice
     trialOrder =['x_E_laserDStrial_0', 'x_E_laserDStrial_1',
        'x_F_laserNStrial_0', 'x_F_laserNStrial_1','ITI']
+
+
+  #%% Exploratory data vis & profiling
+   #visualize the raw data, identify patterns and outliers
+    dfTidy.date= dfTidy.date.astype('string')
+   #%% Check for outlier sessions/event counts
+    # convert ratID to categorical data type so seaborn uses divergent color hues
+    dfTidy.RatID = dfTidy.RatID.astype('category')
+    sns.set_palette('tab20')  #good for plotting by many subj
+
+    
+    #I know that lick count was absurdly high (>9000) due to liquid shorting lickometer on at least 1 session
+    #visualize event counts by session to ID outliers
+    #not interested in some events (e.g. # cues is fixed), remove those
+    dfPlot= dfTidy.loc[(dfTidy.eventType!='x_I_NStime') & (dfTidy.eventType!='x_H_DStime') & (dfTidy.eventType!='PExEst') & (dfTidy.eventType!='x_G_laserOffTime')] 
+    
+    #count of each event type by date and subj
+    dfPlot= dfPlot.groupby(['RatID','date', 'eventType'])['eventTime'].count().reset_index()
+    
+    
+    g= sns.relplot(data=dfPlot, col='eventType', x='date', y='eventTime', hue='RatID', kind='line',
+                    facet_kws={'sharey': False, 'sharex': True})
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('Total event count across sessions by type- check for outliers')
+    g.set_ylabels('# of events')
+    g.set_ylabels('session')
+    
+      #%% #For lick+laser, plot trialType counts
+      #since laser delivery is contingent on animal's licking, should check to see how many trials they are actually getting laser
+
+    dfPlot= dfTidy.loc[(dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_I_NStime') | (dfTidy.eventType=='x_H_DStime'))].groupby(['RatID','date','trialType'])['eventTime'].count().reset_index()
+
+    g= sns.relplot(data=dfPlot, col='trialType', x='date', y='eventTime', hue='RatID', kind='line')
+                    # facet_kws={'sharey': False, 'sharex': True})
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('Total trial type count across LICK+laser sessions')
+    g.set_ylabels('# of events')
+    g.set_ylabels('session')
+    
+    #total count of each trial type across all sessions for each subject
+    sns.set_palette('Paired')  # good for comparing two groups (laser on vs off)
+
+    dfPlot= dfTidy.loc[(dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_I_NStime') | (dfTidy.eventType=='x_H_DStime'))].groupby(['RatID','trialType'])['eventTime'].count().reset_index() 
+    
+    g= sns.catplot(data=dfPlot, x='RatID', y='eventTime', hue='trialType', kind='bar')
+                    # facet_kws={'sharey': False, 'sharex': True})
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('Total trial type count across LICK+laser sessions')
+    g.set_ylabels('Total trial count (lick+laser sessions)')
+    g.set_xlabels('Subject')
+    
+    #total lick count needs some kind of normalization, since we have less laser on trials
+    #use trialLicks to get # of licks per trial by type, then plot distribution by trial type
+    dfPlot = dfTidy[(dfTidy.laserDur=='Lick')].copy()
+        #transform keeps original index?
+    lickCount=dfPlot.groupby(['fileID','trialID','trialType'])['trialLick'].transform('count')
+
+    #aggregated measure, but trialIDs repeat, so just restrict to first one   
+    trialAgg= dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0
+    dfPlot= dfPlot.loc[trialAgg]
+    
+    g= sns.displot(data=dfPlot, x=lickCount, hue='trialType', hue_order=trialOrder, kind='hist', stat="density", common_norm=False, kde=True, multiple='dodge')
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('Lick count by trial type: LICK+laser sessions')
+    g.set_ylabels('Lick count (lick+laser sessions)')
+    
+    #TODO: proper comparison for lick+laser trials is not any non-laser trial, but non-laser trial with PE (and lick)!
+
+    #check inter-lick interval
+    #All subj distribution of ILI (inter-lick interval)
+    #only include trialLick~=nan
+    dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
+    #calculate ILI by taking diff() of latencies
+    ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
+
+    #bar- all subj
+    g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='bar', row='Virus', order=trialOrder)
+    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+    g.fig.suptitle('ILI by trial type; laser OFF; all subj')
+    g.set_ylabels('ILI (s)')
+    g.set(ylim=(0,0.5))
+    
+
+    #%% Probing very few laser trials for some subjects
+    #Likely because they aren't responding generally?
+    #If they make a port entry within 10s and lick within the time window of laser availability,
+    #laser is turned on and this is counted as a laser trial. Else, it defaults to a 'no laser' trial.
+    
+    #So, one question is are they making not making PEs or are they not licking?
+
 
     # %% Plot individual subject ILIs: laser OFF sessions (laserDur=="Off").
     # for plot across sessions of individual rats, change color to tab20 and make background white to help colors pop...default color palettes have blues that I can't distinguish
@@ -617,6 +582,8 @@ if __name__ == '__main__':
 
         # %% Effect of cue+laser on current trial PE behavior
         
+    ##TODO: PE prob for lick+laser trials will always be 1, should look at next trial
+        
     #select data corresponding to first PE from valid trials
     dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.trialPE == 0)].copy()
     
@@ -635,30 +602,7 @@ if __name__ == '__main__':
     g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='RatID', kind='bar', hue_order=trialOrder)
 
     
-    #PE probability: did they make a PE or not
-    dfPlot = dfTidy[(dfTidy.trialID >= 0)].set_index(['fileID','trialID'])
-    # dfPlot = dfTidy[(dfTidy.trialID >= 0)].groupby(['fileID','trialID'])
-    # groupby() methods will exclude nan, so fill trialPE with placeholder - and find trials where sum>1
-    # dfPlot.loc[dfPlot.trialPE.isnull()]= -1
-    #count the number of PEs per trial. if >0, they entered the port and earned sucrose. If <=0, they did not.
-    # peOutcome= dfPlot.groupby(['fileID','trialID'], dropna=False)['trialPE'].sum()
-    # peOutcome= dfPlot.trialPE.sum(level=[0,1])
-
-    # peOutcome.loc[peOutcome>0]='PE'
-    # peOutcome.loc[peOutcome==0]='no PE'
-    #a bit unintuitive since groupby counting methods don't work well with nans, but nunique() works
-    peOutcome= dfPlot.trialPE.count()
-    peOutcome= dfPlot.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
-    peOutcome.loc[peOutcome>0]='PE'
-    peOutcome.loc[peOutcome==0]='noPE'
-    
-    #fill in matching file,trial with peOutcome
-    dfPlot.loc[peOutcome.index,'peOutcome']= peOutcome
-
-
-
-    
-    #given fixed sequence of trials (1-60), what is probability of peOutcome per trial?
+    #TODO: given fixed sequence of trials (1-60), what is probability of peOutcome per trial?
     #to find out, groupby subject,trialID and then compute across sessions? Out of all trials this subject completed, how does
     #trial order within a session impact behavior?
 
@@ -666,9 +610,7 @@ if __name__ == '__main__':
     g=sns.catplot(data=dfPlot,x='peOutcome',hue='trialType',hue_order=trialOrder, row='Virus', kind='count')
 
     g= sns.displot(data=dfPlot,x='peOutcome',hue='trialType', hue_order=trialOrder, row='Virus', kind='hist', stat='probability', common_norm=True, multiple='dodge')
-    
-    # g=sns.relplot(data=dfPlot,x='trialID',y='peOutcome',hue='trialType', hue_order=trialOrder, row='Virus')
-    
+        
     #% Calculate PE probability of each trial type. This is normalized so is more informative than count of trials. 
     
     # probPE= dfPlot[dfPlot.peOutcome=='PE'].groupby(['fileID','trialID'])['peOutcome'].count().index
@@ -788,6 +730,7 @@ if __name__ == '__main__':
 
     
     #Individual distribution of ILI (inter-lick interval)
+    dfPlot = dfTidy[(dfTidy.laserDur=='Lick')].copy()
     #only include trialLick~=nan
     dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
     #calculate ILI by taking diff() of latencies
