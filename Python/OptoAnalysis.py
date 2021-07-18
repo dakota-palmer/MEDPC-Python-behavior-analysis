@@ -312,8 +312,8 @@ if __name__ == '__main__':
     dfTidy = dfTidy.drop(columns=['laserType', 'laserState']).copy()
 
 # %% Preliminary data analyses
-# Event latency, count, and PE outcome for each trial
-  
+# Event latency, count, and behavioral outcome for each trial
+
 
 #Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
   # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time  
@@ -332,26 +332,68 @@ if __name__ == '__main__':
     dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'x_S_lickTime')].groupby([
         'fileID', 'trialID']).cumcount().copy()
     
-    
+#Define behavioral (pe,lick) outcome for each trial. For my lick+laser sessions I need 
+#to isolate trials with both a PE+lick to measure effect of laser
+
     #For each trial (trialID >=0),
     #count the number of PEs per trial. if >0, they entered the port and earned sucrose. If=0, they did not.
     #since groupby counting methods don't work well with nans, using nunique() 
     # peOutcome= dfTidy.loc[dfTidy.trialID>=0].groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
     #do for all trials
-    peOutcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
+    outcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
 
-    peOutcome.loc[peOutcome>0]='PE'
-    peOutcome.loc[peOutcome==0]='noPE'
+    #naming "trialOutcomeBeh" for now to distinguish between behavioral outcome and reward outcome if needed later
+    trialOutcomeBeh= outcome.copy()
+    
+    trialOutcomeBeh.loc[outcome>0]='PE'
+    trialOutcomeBeh.loc[outcome==0]='noPE'
+    
+    #now do the same for licks
+    outcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialLick'].nunique()
+    
+    #add lick outcome + PE outcome for clarity #if it doesn't say '+lick', then none was counted
+    trialOutcomeBeh.loc[outcome>0]=trialOutcomeBeh.loc[outcome>0]+ '+' + 'lick'
     
     #set index to file,trial and
-    #fill in matching file,trial with peOutcome
+    #fill in matching file,trial with trialOutcomeBeh
+    #TODO: I think there is a more efficient way to do this assignment, doens't take too long tho
+
     dfTidy= dfTidy.reset_index().set_index(['fileID','trialID'])
     
-    dfTidy.loc[peOutcome.index,'peOutcome']= peOutcome
+    dfTidy.loc[trialOutcomeBeh.index,'trialOutcomeBeh']= trialOutcomeBeh
 
     #reset index to eventID
     dfTidy= dfTidy.reset_index().set_index(['eventID'])
     
+      #%% Correct comparison between laser ON and laser OFF trials for lick-paired is
+    # no laser trials w PE or PE+lick vs. lick+laser trials. "Laser on" trials will always have more PE and Licks because that is how they are defined
+    
+    
+    #%% testing cumcount() with nan in groupby()
+    #not able to replicate issue?
+
+# #example data, note np.nan in trial
+# subject= range(1,14) #['a','a','a','b','b','b','b','b','b','b','c','c','c']
+
+# trial= [np.nan, 1, 2, np.nan, 1, 2, 2, 3, 3, 4, 1, 1, 2]
+
+# event= [np.nan, 100, 300, np.nan, 200, 100, 300, 200, 100, 400, 100, 200, 100]
+
+
+# #create and fill df
+# df=pd.DataFrame()
+# df['subject']= subject
+# df['trial']=trial
+# df['event']=event
+
+# #group values by subject, trial
+# grouped= df.groupby(['subject','trial'])['event']
+# print(grouped.groups)
+# #note the group ('b', nan): [9] and ('c', nan): [12]
+# #Does this nan make collapse the multiindex and make these equivalent?
+
+# test= grouped.cumcount()
+# print(test)
     # %% Analysis & visualization
 
     # visualize using seaborn
@@ -446,14 +488,6 @@ if __name__ == '__main__':
     g.set_ylabels('ILI (s)')
     g.set(ylim=(0,0.5))
     
-
-    #%% Probing very few laser trials for some subjects
-    #Likely because they aren't responding generally?
-    #If they make a port entry within 10s and lick within the time window of laser availability,
-    #laser is turned on and this is counted as a laser trial. Else, it defaults to a 'no laser' trial.
-    
-    #So, one question is are they making not making PEs or are they not licking?
-
 
     # %% Plot individual subject ILIs: laser OFF sessions (laserDur=="Off").
     # for plot across sessions of individual rats, change color to tab20 and make background white to help colors pop...default color palettes have blues that I can't distinguish
@@ -585,21 +619,15 @@ if __name__ == '__main__':
     g.set_ylabels('First PE latency from epoch start (s)')
     
     
-    g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='RatID', kind='bar', hue_order=trialOrder)
-
-    
-    #TODO: given fixed sequence of trials (1-60), what is probability of peOutcome per trial?
+    #TODO: given fixed sequence of trials (1-60), what is probability of trialOutcomeBeh per trial?
     #to find out, groupby subject,trialID and then compute across sessions? Out of all trials this subject completed, how does
     #trial order within a session impact behavior?
 
-    
-    g=sns.catplot(data=dfPlot,x='peOutcome',hue='trialType',hue_order=trialOrder, row='Virus', kind='count')
-
-    g= sns.displot(data=dfPlot,x='peOutcome',hue='trialType', hue_order=trialOrder, row='Virus', kind='hist', stat='probability', common_norm=True, multiple='dodge')
+    # g= sns.displot(data=dfPlot,x='trialOutcomeBeh',hue='trialType', hue_order=trialOrder, row='Virus', kind='hist', stat='probability', common_norm=True, multiple='dodge')
         
-    #% Calculate PE probability of each trial type. This is normalized so is more informative than count of trials. 
+    #%% Calculate PE probability of each trial type. This is normalized so is more informative than count of trials. 
     
-    # probPE= dfPlot[dfPlot.peOutcome=='PE'].groupby(['fileID','trialID'])['peOutcome'].count().index
+    # probPE= dfPlot[dfPlot.trialOutcomeBeh=='PE'].groupby(['fileID','trialID'])['trialOutcomeBeh'].count().index
     
     #TODO: probably worth saving these into the df. Might be better to do this a different way, maybe a cumcount() within session
     #for each trial of noPE and PE or a binary coded column  
@@ -608,31 +636,49 @@ if __name__ == '__main__':
     #can use nunique() to get count of unique trialIDs with specific PE outcome per file
     #given this, can calculate Probortion as #PE/#PE+#noPE
    
-    test1= dfPlot[dfPlot.peOutcome=='PE'].reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique()
-    test1.name= 'PEtrials'
-    test2= dfPlot[dfPlot.peOutcome=='noPE'].reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique()
-    test2.name= 'noPEtrials'    
+    #TODO: need PE+lick included now
+    outcomes= dfTidy.trialOutcomeBeh.unique()
+    
+    test1= dfPlot[(dfPlot.trialOutcomeBeh=='PE')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
+    test1.name= 'PE'
+    test2= dfPlot[dfPlot.trialOutcomeBeh=='noPE'].reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
+    test2.name= 'noPE'    
+    
+    test5= dfPlot[(dfPlot.trialOutcomeBeh=='PE+lick')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
+    test5.name= 'PE+lick'
+    test8= dfPlot[(dfPlot.trialOutcomeBeh=='noPE+lick')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
+    test8.name= 'noPE+lick'
+ 
            
     #num of unique trials with a PE, num of unique trials without a PE per trial type per session, but still cant sum
     test3= pd.concat((test1,test2),ignore_index=False,axis=1)
+    test6= pd.concat((test1,test2,test5,test8),ignore_index=False,axis=1)
     
     #reset index and groupby trialType so we can sum across columns
-    test4= test3.reset_index().groupby(['fileID','trialType'])[['PEtrials','noPEtrials']].sum()
+    test4= test3.reset_index().groupby(['fileID','trialType'])[['PE','noPE']].sum()
+    test7= test6.reset_index().groupby(['fileID','trialType'])[outcomes].sum()
+
     
     #sum across PEtrial and noPEtrial columns to get total num of trials per type. Then divide num PEtrials by total trials
-    probPE= test4['PEtrials']/test4.sum(axis=1)
+    probPE= test4['PE']/test4.sum(axis=1)
+    #sum PE and PE+lick trials, then divide by total trials per type
+    probPE= test7[['PE','PE+lick']].sum(axis=1)/test7.sum(axis=1)
+
+   #TODO: best thing would be to loop through outomes and calculate for each type
+   #something like this, maybe using df.apply() to do it for each column
+   probPE[outcomes]= test7[outcomes].sum(axis=1)/test7.sum(axis=1)
     
-    # probPE= (dfPlot[dfPlot.peOutcome=='PE'].reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique() //
-    #                  ((dfPlot[dfPlot.peOutcome=='PE'].reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique())/
-    #                 + (dfPlot[dfPlot.peOutcome=='noPE']).reset_index().groupby(['fileID','trialType','peOutcome'])['trialID'].nunique()))
+    # probPE= (dfPlot[dfPlot.trialOutcomeBeh=='PE'].reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique() //
+    #                  ((dfPlot[dfPlot.trialOutcomeBeh=='PE'].reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique())/
+    #                 + (dfPlot[dfPlot.trialOutcomeBeh=='noPE']).reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()))
                     
  
-    # probPE= dfPlot[dfPlot.peOutcome=='PE'].index.get_level_values('trialID')
+    # probPE= dfPlot[dfPlot.trialOutcomeBeh=='PE'].index.get_level_values('trialID')
 
 
-    # probPE= len(dfPlot.loc[dfPlot.peOutcome=='PE'])/dfPlot.loc[dfPlot.peOutcome=='noPE']+
+    # probPE= len(dfPlot.loc[dfPlot.trialOutcomeBeh=='PE'])/dfPlot.loc[dfPlot.trialOutcomeBeh=='noPE']+
     
-    # probPE= dfPlot.groupby(['fileID','trialID','peOutcome']).first()
+    # probPE= dfPlot.groupby(['fileID','trialID','trialOutcomeBeh']).first()
     
     #visualize
     
@@ -768,9 +814,7 @@ if __name__ == '__main__':
     
     # g= sns.catplot(data=dfPlot, row='laserDur', y=lickCount,x='RatID',hue='trialType',kind='bar',hue_order=trialOrder)
     
-    #%% Correct comparison between laser ON and laser OFF trials for lick-paired is
-    # no laser trials w PE or PE+lick vs. lick+laser trials. "Laser on" trials will always have more PE and Licks because that is how they are defined
-    
+  
     
     #%% Use pandas profiling on event counts
     ##This might be a decent way to quickly view behavior session results if automated
@@ -788,7 +832,6 @@ if __name__ == '__main__':
     # # save profile report as html
     # profile.to_file('pandasProfileEventCounts.html')
     
-    # %%
   # %% Try Pandas_profiling report
     # note- if you are getting errors with ProfileReport() and you installed using conda, remove and reinstall using pip install
 
