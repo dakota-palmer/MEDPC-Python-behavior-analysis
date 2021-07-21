@@ -369,31 +369,6 @@ if __name__ == '__main__':
     # no laser trials w PE or PE+lick vs. lick+laser trials. "Laser on" trials will always have more PE and Licks because that is how they are defined
     
     
-    #%% testing cumcount() with nan in groupby()
-    #not able to replicate issue?
-
-# #example data, note np.nan in trial
-# subject= range(1,14) #['a','a','a','b','b','b','b','b','b','b','c','c','c']
-
-# trial= [np.nan, 1, 2, np.nan, 1, 2, 2, 3, 3, 4, 1, 1, 2]
-
-# event= [np.nan, 100, 300, np.nan, 200, 100, 300, 200, 100, 400, 100, 200, 100]
-
-
-# #create and fill df
-# df=pd.DataFrame()
-# df['subject']= subject
-# df['trial']=trial
-# df['event']=event
-
-# #group values by subject, trial
-# grouped= df.groupby(['subject','trial'])['event']
-# print(grouped.groups)
-# #note the group ('b', nan): [9] and ('c', nan): [12]
-# #Does this nan make collapse the multiindex and make these equivalent?
-
-# test= grouped.cumcount()
-# print(test)
     # %% Analysis & visualization
 
     # visualize using seaborn
@@ -627,7 +602,7 @@ if __name__ == '__main__':
         
     #%% Calculate PE probability of each trial type. This is normalized so is more informative than count of trials. 
     
-    # probPE= dfPlot[dfPlot.trialOutcomeBeh=='PE'].groupby(['fileID','trialID'])['trialOutcomeBeh'].count().index
+    # outcomeProp= dfPlot[dfPlot.trialOutcomeBeh=='PE'].groupby(['fileID','trialID'])['trialOutcomeBeh'].count().index
     
     #TODO: probably worth saving these into the df. Might be better to do this a different way, maybe a cumcount() within session
     #for each trial of noPE and PE or a binary coded column  
@@ -636,8 +611,15 @@ if __name__ == '__main__':
     #can use nunique() to get count of unique trialIDs with specific PE outcome per file
     #given this, can calculate Probortion as #PE/#PE+#noPE
    
-    #TODO: need PE+lick included now
+    dfPlot= dfTidy.copy() 
+    
     outcomes= dfTidy.trialOutcomeBeh.unique()
+    
+    #TODO: optimize this- combine outcomes here into one variable
+    #using apply() might help? or pivot?
+    
+    # tester[outcomes]= dfPlot[(dfPlot.trialOutcomeBeh==outcomes)].reset_index().groupby(
+    #     ['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
     
     test1= dfPlot[(dfPlot.trialOutcomeBeh=='PE')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
     test1.name= 'PE'
@@ -650,58 +632,101 @@ if __name__ == '__main__':
     test8.name= 'noPE+lick'
  
            
-    #num of unique trials with a PE, num of unique trials without a PE per trial type per session, but still cant sum
-    test3= pd.concat((test1,test2),ignore_index=False,axis=1)
+    ##num of unique trials per trial type per session, but still cant sum
     test6= pd.concat((test1,test2,test5,test8),ignore_index=False,axis=1)
     
-    #reset index and groupby trialType so we can sum across columns
-    test4= test3.reset_index().groupby(['fileID','trialType'])[['PE','noPE']].sum()
+    ##reset index and groupby trialType so we can sum across columns
     test7= test6.reset_index().groupby(['fileID','trialType'])[outcomes].sum()
 
-    
-    #sum across PEtrial and noPEtrial columns to get total num of trials per type. Then divide num PEtrials by total trials
-    probPE= test4['PE']/test4.sum(axis=1)
-    #sum PE and PE+lick trials, then divide by total trials per type
-    probPE= test7[['PE','PE+lick']].sum(axis=1)/test7.sum(axis=1)
 
-   #TODO: best thing would be to loop through outomes and calculate for each type
-   #something like this, maybe using df.apply() to do it for each column
-   probPE[outcomes]= test7[outcomes].sum(axis=1)/test7.sum(axis=1)
+    ##calculate proportion for each trial type: num trials/total num trials
+    outcomeProp= test7.divide(test7.sum(axis=1),axis=0)
     
-    # probPE= (dfPlot[dfPlot.trialOutcomeBeh=='PE'].reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique() //
-    #                  ((dfPlot[dfPlot.trialOutcomeBeh=='PE'].reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique())/
-    #                 + (dfPlot[dfPlot.trialOutcomeBeh=='noPE']).reset_index().groupby(['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()))
-                    
- 
-    # probPE= dfPlot[dfPlot.trialOutcomeBeh=='PE'].index.get_level_values('trialID')
-
-
-    # probPE= len(dfPlot.loc[dfPlot.trialOutcomeBeh=='PE'])/dfPlot.loc[dfPlot.trialOutcomeBeh=='noPE']+
+    #melt() into single column w label
+    test8= outcomeProp.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh',value_name='outcomePropFile')
     
-    # probPE= dfPlot.groupby(['fileID','trialID','trialOutcomeBeh']).first()
+    #assign back to df by merging
+    #TODO: can probably be optimized
+    dfTidy= dfTidy.merge(test8,'right', on=['fileID','trialType','trialOutcomeBeh'])
     
-    #visualize
+    #%% visualize peProp
     
-    #select data from laser ON sessions     
-    dfPlot = dfTidy[(dfTidy.trialID >= 0)].set_index(['fileID','trialType'])
+    #select data     
+    dfPlot = dfTidy#[(dfTidy.trialID >= 0)]#.set_index(['fileID','trialType'])
     #Plot probability of PE by trialType 
-   
-    #fill in matching file,trial in df
-    dfPlot.loc[probPE.index,'probPE']= probPE
     
-    #reset ind so we can plot it
-    dfPlot= dfPlot.reset_index()
+    #get only PE outcomes
+    # dfPlot.reset_index(inplace=True)
+    dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh=='PE') | (dfPlot.trialOutcomeBeh=='PE+lick')].copy()
     
-    g=sns.catplot(data=dfPlot,x='RatID', y='probPE', hue='trialType', hue_order=trialOrder, row='Virus', col='laserDur', kind='bar')
-    g=sns.catplot(data=dfPlot,x='trialType', y='probPE', hue='laserDur', row='Virus', kind='bar')
-    g=sns.catplot(data=dfPlot,x='trialType', y='probPE', hue='laserDur', col='RatID', kind='bar')
+    #since we calculated aggregated proportion across all trials in session,
+    #take only first index. Otherwise repeated observations are redundant
+    dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh']).first().copy()
     
-    g=sns.catplot(data=dfPlot,x='laserDur', y='probPE', hue='trialType', hue_order=trialOrder, col='subject', kind='bar')
+    
+    #sum together both PE and PE+lick for total PE prop
+    # dfPlot['outcomePropFile']= dfPlot.groupby(['fileID'])['outcomePropFile'].sum().copy()
+    
+    dfPlot['propPE']= dfPlot.groupby(['fileID','trialType'])['outcomePropFile'].sum().copy()
 
+    #get an aggregated x axis for files per subject
+    fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
+    
+    #since grouping PE and PE+lick, we still have redundant observations
+    #retain only 1 per trial type per file
+    dfPlot= dfPlot.reset_index().loc[fileAgg]
 
-    #TODO: Plots by trial (or blocks of trials). What is the probabiity within-session over time
+   #Plot
+    #one line per per trialType per subj would be ideal. In subplots
+    #manual control here of facetgrid and titles (i)
+    sns.set_palette('tab20')
+    g = sns.FacetGrid(dfPlot, col='subject', hue='trialType', hue_order=trialOrder, col_wrap=4)
+
+    # Add the line over the area with the plot function
+    g = g.map(plt.plot, 'fileID', 'propPE')
+    
+    # Control the title of each facet
+    g = g.set_titles("{col_name}")
+     
+    # Add a title for the whole plot
+    plt.subplots_adjust(top=0.9)
+    g = g.fig.suptitle('Evolution of the propPE in subjects by trialType')
+    
+     
+    #same with relplot
+    g= sns.relplot(data=dfPlot, x='fileID', y='propPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line')
+    # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
+    g.set_titles('{col_name}')
+    g.fig.suptitle('Evolution of the propPE in subjects by trialType')
+    g.tight_layout(w_pad=0)
+
+#%% TODO: if the individual trial PE outcomes are binary coded as 0 or 1
+#then could see entire distribution within files (variance is missing using method above)
+    
+   #%% Area chart would be nice for evolution of training over time
+   # Create a grid : initialize it
+    g = sns.FacetGrid(dfPlot, col='subject', hue='subject', col_wrap=4, )
+    
+    # Add the line over the area with the plot function
+    g = g.map(plt.plot, 'fileID', 'propPE')
+     
+    # Fill the area with fill_between
+    g = g.map(plt.fill_between, 'fileID', 'propPE', alpha=0.2).set_titles("{col_name} subject")
+     
+    # Control the title of each facet
+    g = g.set_titles("{col_name}")
+     
+    # Add a title for the whole plot
+    plt.subplots_adjust(top=0.92)
+    g = g.fig.suptitle('Evolution of the value of stuff in subjects')
+    
+    # Show the graph
+    plt.show()
+    
+    
+    #%% TODO: Plots by trial (or blocks of trials). What is the probabiity within-session over time
     #over time?
-    # g=sns.relplot(data=dfPlot,x='fileID',y='probPE',hue='trialType', hue_order=trialOrder, row='Virus')
+    # g=sns.relplot(data=dfPlot,x='fileID',y='outcomeProp',hue='trialType', hue_order=trialOrder, row='Virus')
 
 
     # %% Effect of laser on current trial lick behavior
