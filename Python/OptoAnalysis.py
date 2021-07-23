@@ -365,8 +365,24 @@ if __name__ == '__main__':
     #reset index to eventID
     dfTidy= dfTidy.reset_index().set_index(['eventID'])
     
-      #%% Correct comparison between laser ON and laser OFF trials for lick-paired is
-    # no laser trials w PE or PE+lick vs. lick+laser trials. "Laser on" trials will always have more PE and Licks because that is how they are defined
+      #%%TODO:  Correct comparison between laser ON and laser OFF trials for lick-paired is
+    # no laser trials w PE+lick vs. lick+laser trials. "Laser on" trials will always have more PE and Licks because that is how they are defined
+    
+    #noPE+lick laser trials exist, probably from first bad session without PE gate?
+    print(dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialType=='x_E_laserDStrial_1')].trialOutcomeBeh.unique())
+    print(dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialType=='x_F_laserNStrial_1')].trialOutcomeBeh.unique())
+    
+    trialAgg= dfTidy.groupby(['fileID','trialID']).cumcount()==0
+    
+    dfTidyLick= dfTidy.copy()#.loc[trialAgg].copy()
+    
+    #make a new column for just lick+laser sessions? 
+    #or, could also just remove "laser off" trials without PE+lick- easier, doing this
+    
+    #retain only trials with PE+lick for comparison
+    #new df here can be used for lick sessions specifically
+    dfTidyLick= dfTidyLick.loc[(dfTidyLick.laserDur=='Lick') & (dfTidyLick.trialOutcomeBeh=='PE+lick')]
+    
     
     
     # %% Analysis & visualization
@@ -411,9 +427,9 @@ if __name__ == '__main__':
       #%% #For lick+laser, plot trialType counts
       #since laser delivery is contingent on animal's licking, should check to see how many trials they are actually getting laser
 
-    dfPlot= dfTidy.loc[(dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_I_NStime') | (dfTidy.eventType=='x_H_DStime'))].groupby(['RatID','date','trialType'])['eventTime'].count().reset_index()
+    dfPlot= dfTidyLick.loc[(dfTidyLick.laserDur=='Lick') & ((dfTidyLick.eventType=='x_I_NStime') | (dfTidyLick.eventType=='x_H_DStime'))].groupby(['RatID','date','trialType'])['eventTime'].count().reset_index()
 
-    g= sns.relplot(data=dfPlot, col='trialType', x='date', y='eventTime', hue='RatID', kind='line')
+    g= sns.relplot(data=dfPlot, col='RatID', col_wrap=4, x='date', y='eventTime', hue='trialType', hue_order=trialOrder, kind='line')
                     # facet_kws={'sharey': False, 'sharex': True})
     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
     g.fig.suptitle('Total trial type count across LICK+laser sessions')
@@ -423,9 +439,9 @@ if __name__ == '__main__':
     #total count of each trial type across all sessions for each subject
     sns.set_palette('Paired')  # good for comparing two groups (laser on vs off)
 
-    dfPlot= dfTidy.loc[(dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='x_I_NStime') | (dfTidy.eventType=='x_H_DStime'))].groupby(['RatID','trialType'])['eventTime'].count().reset_index() 
+    dfPlot= dfTidyLick.loc[(dfTidyLick.laserDur=='Lick') & ((dfTidyLick.eventType=='x_I_NStime') | (dfTidyLick.eventType=='x_H_DStime'))].groupby(['RatID','trialType'])['eventTime'].count().reset_index() 
     
-    g= sns.catplot(data=dfPlot, x='RatID', y='eventTime', hue='trialType', kind='bar')
+    g= sns.catplot(data=dfPlot, x='RatID', y='eventTime', hue='trialType', hue_order=trialOrder, kind='bar')
                     # facet_kws={'sharey': False, 'sharex': True})
     g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
     g.fig.suptitle('Total trial type count across LICK+laser sessions')
@@ -434,7 +450,7 @@ if __name__ == '__main__':
     
     #total lick count needs some kind of normalization, since we have less laser on trials
     #use trialLicks to get # of licks per trial by type, then plot distribution by trial type
-    dfPlot = dfTidy[(dfTidy.laserDur=='Lick')].copy()
+    dfPlot = dfTidyLick[(dfTidyLick.laserDur=='Lick')].copy()
         #transform keeps original index?
     lickCount=dfPlot.groupby(['fileID','trialID','trialType'])['trialLick'].transform('count')
 
@@ -678,7 +694,8 @@ if __name__ == '__main__':
 
    #Plot
     #one line per per trialType per subj would be ideal. In subplots
-    #manual control here of facetgrid and titles (i)
+    #manual control here of facetgrid and titles (i). 
+    #Manual:
     sns.set_palette('tab20')
     g = sns.FacetGrid(dfPlot, col='subject', hue='trialType', hue_order=trialOrder, col_wrap=4)
 
@@ -693,42 +710,114 @@ if __name__ == '__main__':
     g = g.fig.suptitle('Evolution of the propPE in subjects by trialType')
     
      
-    #same with relplot
+    #same with relplot:
     g= sns.relplot(data=dfPlot, x='fileID', y='propPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line')
     # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
     g.set_titles('{col_name}')
     g.fig.suptitle('Evolution of the propPE in subjects by trialType')
     g.tight_layout(w_pad=0)
 
-#%% TODO: if the individual trial PE outcomes are binary coded as 0 or 1
-#then could see entire distribution within files (variance is missing using method above)
-    
-   #%% Area chart would be nice for evolution of training over time
-   # Create a grid : initialize it
-    g = sns.FacetGrid(dfPlot, col='subject', hue='subject', col_wrap=4, )
-    
-    # Add the line over the area with the plot function
-    g = g.map(plt.plot, 'fileID', 'propPE')
-     
-    # Fill the area with fill_between
-    g = g.map(plt.fill_between, 'fileID', 'propPE', alpha=0.2).set_titles("{col_name} subject")
-     
-    # Control the title of each facet
-    g = g.set_titles("{col_name}")
-     
-    # Add a title for the whole plot
-    plt.subplots_adjust(top=0.92)
-    g = g.fig.suptitle('Evolution of the value of stuff in subjects')
-    
-    # Show the graph
-    plt.show()
+    #%% TODO: evolution within session (typical trial progression)
     
     
-    #%% TODO: Plots by trial (or blocks of trials). What is the probabiity within-session over time
-    #over time?
-    # g=sns.relplot(data=dfPlot,x='fileID',y='outcomeProp',hue='trialType', hue_order=trialOrder, row='Virus')
+      #get data, only trials (not ITI)
+    dfPlot= dfTidy.loc[dfTidy.trialID>=0].copy()
+    
+    sns.set_palette('Paired')
+    
+    #aggregated measure, but trialIDs repeat, so just restrict to first one
+    trialAgg= dfPlot.groupby(['fileID','trialID'])['trialID'].cumcount()==0
+
+    dfPlot= dfPlot.loc[trialAgg].copy()   
+       
+   #counts of each trial type by trialID
+   #trial count seems biased? many more DS?
+    # dfPlot= dfPlot.groupby(['subject','trialID','trialType'])['laserDur'].value_counts()#.reset_index(name='count')
+    
+    dfPlot= dfPlot.groupby(['subject','trialID','laserDur'])['trialType'].value_counts()
+    
+    #for some reason value_counts() isn't giving 0 count for all categories. Fill these with 0 so we have a count for each possibility
+    dfPlot= dfPlot.unstack(fill_value=0).stack().reset_index(name='count')
+
+    sns.relplot(data=dfPlot, row='laserDur', x='trialID', y='count', hue='trialType',  hue_order= trialOrder, kind='line')
+    
+    #####repeat for behavior outcome
+      #get data, only trials (not ITI)
+    dfPlot= dfTidy.loc[dfTidy.trialID>=0].copy()
+    
+    sns.set_palette('Paired')
+    
+    #aggregated measure, but trialIDs repeat, so just restrict to first one
+    trialAgg= dfPlot.groupby(['fileID','trialID'])['trialID'].cumcount()==0
+
+    dfPlot= dfPlot.loc[trialAgg].copy()   
+       
+   #counts of each trial type by trialID
+   #trial count seems biased? many more DS?
+    # dfPlot= dfPlot.groupby(['subject','trialID','trialType'])['laserDur'].value_counts()#.reset_index(name='count')
+    
+    dfPlot= dfPlot.groupby(['subject','trialID','laserDur','trialType'])['trialOutcomeBeh'].value_counts()
+    
+    #for some reason value_counts() isn't giving 0 count for all categories. Fill these with 0 so we have a count for each possibility
+    dfPlot= dfPlot.unstack(fill_value=0).stack().reset_index(name='count')
+
+    sns.relplot(data=dfPlot, row='laserDur', x='trialID', y='count', hue='trialOutcomeBeh', style='trialType', kind='line')
+    
+    
+    ###
+   #  #get data, only trials (not ITI)
+   #  dfPlot= dfTidy.loc[dfTidy.trialID>=0].copy()
+       
+   #  #aggregated measure, but trialIDs repeat, so just restrict to first one
+   #  trialAgg= dfPlot.groupby(['fileID','trialID']).cumcount()==0    
+    
+   #  dfPlot= dfPlot.loc[trialAgg]
+    
+   #  #estimate response profile by subject and laserDur (session type), and trialType
+   #  dfPlot= dfPlot.groupby(['subject','laserDur','trialType','trialID'])['trialOutcomeBeh'].value_counts().reset_index(name='count')
 
 
+   #  sns.set_palette('tab20')
+    
+   #  g=sns.relplot(data=dfPlot, col='subject', col_wrap=4, x='trialID', y='count', hue='trialOutcomeBeh', kind='line')
+    
+   #  #TODO: UNITS should be fileID
+   #  dfPlot= dfTidy.merge(dfPlot, how='right', on=['subject','laserDur','trialType','trialID']).copy()
+    
+   #  g=sns.relplot(data=dfPlot, units='fileID', estimator=None, x='trialID', y='count', hue='trialOutcomeBeh', kind='line')
+        
+   #  for sesType in dfPlot.laserDur.unique():
+   #      g=sns.displot(data=dfPlot.loc[dfPlot.laserDur==sesType], col='subject', col_wrap=4, 
+   #                    x='trialID', hue='trialOutcomeBeh', kind='hist', 
+   #                    stat='count', multiple='dodge')
+   #      # g=sns.relplot(data=dfPlot.loc[dfPlot.laserDur==sesType], col='subject', col_wrap=4, x='trialID', y='count', hue='trialOutcomeBeh', kind='line')
+        
+   #      g.set_titles('{col_name}')
+   #      g.fig.suptitle('Evolution of behavior within sessions by trialID; laser='+sesType)
+   #      g.tight_layout(w_pad=0)
+    
+   #  sns.catplot(data=dfPlot, x='trialID', y='count', hue='trialOutcomeBeh', kind='bar')
+    
+ 
+    
+   #  #
+   #  sns.relplot(data=dfPlot,x='trialID',y='trialOutcomeBeh')
+    
+   # #count # of each outcomes?
+   #  count= dfPlot.groupby(['fileID','trialType'])['trialOutcomeBeh'].value_counts().unstack()
+    
+    
+   #  #merge 
+   #  test = dfPlot.merge(count,
+   #             left_on=['fileID','trialType'], 
+   #             right_index=True)
+    
+    
+   #  #set index for plotting
+   #  dfPlot=dfPlot.set_index(['fileID','trialType'])
+    
+   #  sns.catplot(data=dfPlot, x='fileID', y=count,hue='trialOutcomeBeh', kind='bar')
+    
     # %% Effect of laser on current trial lick behavior
        #select data corresponding to first lick from valid trials
     dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.trialLick == 0)].copy()
@@ -804,7 +893,7 @@ if __name__ == '__main__':
     #TODO: consider alternate reshaping df for plotting different aggregations. Not sure what is most convenient
     
     #need an index for aggregated trial variables- since trialID repeats we need to restrict observations to first otherwise we'll plot redundant data and stats will be off
-    trialAgg= (dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0).copy()
+    trialAgg= (dfPlot.groupby(['fileID','trialID'])['trialID'].cumcount()==0).copy()
     #transform keeps original index
     lickCount= dfPlot.groupby(['fileID','trialID','trialType'])['trialLick'].transform('count').copy()
     
