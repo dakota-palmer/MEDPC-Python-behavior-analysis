@@ -24,6 +24,7 @@ if __name__ == '__main__':
     sns.set_style("darkgrid")
 
 
+
 #%% define a function to open file with gui
     def openFile():
         global matContents #global var so we can access later
@@ -375,28 +376,29 @@ if __name__ == '__main__':
     dfTidy= dfTidy.reset_index().set_index(['eventID'])
     
       #%% Remove Lick+Laser trials without PE+Lick
-      #TODO: what is the best way to deal with this? 
-      #could make a new column or trialType labels for just lick+laser sessions? 
-      #or, could also just remove "laser off" trials without PE+lick- easier, doing this
       
-      #However, instead of changing dfTidy itself just do it locally later where necessary
+    #   #TODO: what is the best way to deal with this? 
+    #   #could make a new column or trialType labels for just lick+laser sessions? 
+    #   #or, could also just remove "laser off" trials without PE+lick- easier, doing this
       
-    #Correct comparison between laser ON and laser OFF trials for lick-paired should only include trials with PE+Lick
+    #   #However, instead of changing dfTidy itself just do it locally later where necessary
+      
+    # #Correct comparison between laser ON and laser OFF trials for lick-paired should only include trials with PE+Lick
     
-    #noPE+lick laser trials exist, probably from first bad session without PE gate?
-    print(dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialType=='x_E_laserDStrial_1')].trialOutcomeBeh.unique())
-    print(dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialType=='x_F_laserNStrial_1')].trialOutcomeBeh.unique())
+    # #noPE+lick laser trials exist, probably from first bad session without PE gate?
+    # print(dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialType=='x_E_laserDStrial_1')].trialOutcomeBeh.unique())
+    # print(dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialType=='x_F_laserNStrial_1')].trialOutcomeBeh.unique())
     
     
-    #for overall pe and lick probability, make a copy to keep all trials
-    dfTidy2= dfTidy.copy()
+    # #for overall pe and lick probability, make a copy to keep all trials
+    # dfTidy2= dfTidy.copy()
 
     
-    # #retain only trials with PE+lick for comparison
-    # #instead of making new df, just remove from dfTidy
-    # dfTidy.loc[dfTidy.laserDur=='Lick',:]= dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialOutcomeBeh=='PE+lick')]
+    # # #retain only trials with PE+lick for comparison
+    # # #instead of making new df, just remove from dfTidy
+    # # dfTidy.loc[dfTidy.laserDur=='Lick',:]= dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialOutcomeBeh=='PE+lick')]
     
-    
+
     # %% Analysis & visualization
 
     # visualize using seaborn
@@ -683,7 +685,8 @@ if __name__ == '__main__':
     
     #assign back to df by merging
     #TODO: can probably be optimized
-    dfTidy= dfTidy.merge(test8,'right', on=['fileID','trialType','trialOutcomeBeh'])
+    dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
+    dfTidy= dfTidy.merge(test8,'left', on=['fileID','trialType','trialOutcomeBeh']).copy()
     
     #%% visualize peProp
     
@@ -953,6 +956,30 @@ if __name__ == '__main__':
     g.fig.suptitle('First lick latency by trial type; laser + CUE')
     g.set_ylabels('First lick latency from epoch start (s)')
     
+    # %% TODO: Laser effect on subsequent trial(s)
+    
+    #df.shift might help here
+    
+    dfGroup= dfTidy.copy()
+    
+    #include only valid trials (remove ITIs)
+    dfGroup= dfGroup.loc[dfGroup.trialID>=0].copy()
+    
+   #aggregated measure, but trialIDs repeat, so just restrict to first one
+    trialAgg= dfGroup.groupby(['fileID','trialID'])['trialID'].cumcount()==0
+    
+    dfGroup= dfGroup.loc[trialAgg]
+    
+    trials= dfGroup.trialID.unique()
+    
+    #index by file, trial
+    dfGroup.set_index(['fileID','trialID'], inplace=True)
+    # test= dfGroup.shift()
+    
+    #use df.shift() 
+    #getting an error for strings?
+    #need to sort by timestamp
+    test= dfGroup.groupby(level=0)['eventLatency'].shift(1)
     # %% examine lick+laser on licks
     
      #subset data and save as intermediate variable dfGroup
