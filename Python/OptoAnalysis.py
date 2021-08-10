@@ -64,6 +64,9 @@ if __name__ == '__main__':
     data_raw = []  # will hold the raw data for each column
     # since our struct contains multiple data types/classes, make this np array of object type
     data_raw = np.empty([mdata.shape[0], len(mtype.names)], dtype=object)
+    
+    #fill with nan (easier to work with in pandas than empty arrays)
+    data_raw[:]= np.nan
 
     # now simply loop through each variable type and get the corresponding data. Probably a better way to do this
     for var in range(len(mtype.names)):
@@ -72,10 +75,20 @@ if __name__ == '__main__':
 
         for ses in range(data_raw.shape[0]):
             data_raw[ses, var] = ndata[mtype.names[var]].flatten()[ses]
-
+            
+            # #if missing data in form of empty np.array [], replace w nan
+            # if  data_raw[ses, var].shape == [0,]:
+            #     data_raw[ses,var]= np.nan
+                
     # save the data as a pandas dataframe
     df = pd.DataFrame(data_raw, columns=data_headline)
 
+    #fill empty data (empty np.arrays []) with nan. Easier to work with in Pandas.
+    #the empty arrays are == '[]' if converted to strings    
+    df[df.astype(str)=='[]']= np.nan
+    
+
+    
     # %% Exclude data
     # %% Add other events if necessary before tidying
     
@@ -415,7 +428,7 @@ if __name__ == '__main__':
 
   #%% Exploratory data vis & profiling
    #visualize the raw data, identify patterns and outliers
-    dfTidy.date= dfTidy.date.astype('string')
+    dfTidy.date= dfTidy.date.astype('str')
    #%% Check for outlier sessions/event counts
     # convert ratID to categorical data type so seaborn uses divergent color hues
     dfTidy.RatID = dfTidy.RatID.astype('category')
@@ -977,9 +990,26 @@ if __name__ == '__main__':
     # test= dfGroup.shift()
     
     #use df.shift() 
-    #getting an error for strings?
-    #need to sort by timestamp
-    test= dfGroup.groupby(level=0)['eventLatency'].shift(1)
+    dfPlot= dfGroup.groupby(level=0).shift(1).copy()
+
+    #Plots
+        # PE latency: virus x laserDur
+    g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
+                    col='laserDur', row='Virus', kind='ecdf', hue_order= trialOrder)
+    g.fig.suptitle('Trial+1 First PE latency by trial type')
+    g.set_ylabels('Trial+1 First PE latency from epoch start (s)')
+    
+    #PE latency: virus individual subj
+    g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='RatID', kind='bar', hue_order=trialOrder)
+    g.fig.suptitle('Trial+1 First PE latency by trial type')
+    g.set_ylabels('Trial+1 First PE latency from epoch start (s)')
+    
+      #PE latency:  individual subj CUE+laser
+    g=sns.displot(data=dfPlot.loc[dfPlot.laserDur=='10'], col='subject', col_wrap=4, x='eventLatency',hue='trialType', kind='ecdf', hue_order=trialOrder)
+    g.fig.suptitle('Trial+1 First PE latency by trial type; laser + CUE')
+    g.set_ylabels('Trial+1 First PE latency from epoch start (s)')
+    
+    
     # %% examine lick+laser on licks
     
      #subset data and save as intermediate variable dfGroup
