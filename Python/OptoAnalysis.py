@@ -701,7 +701,7 @@ if __name__ == '__main__':
     dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
     dfTidy= dfTidy.merge(test8,'left', on=['fileID','trialType','trialOutcomeBeh']).copy()
     
-    #%% visualize peProp
+    #% visualize peProp
     
     
     #subset data and save as intermediate variable dfGroup
@@ -828,9 +828,7 @@ if __name__ == '__main__':
     g= sns.relplot(data=dfPlot, x='date', y='propPE', row='Virus', hue='trialType', style='laserDur', kind='line')
     g.map(plt.axhline, y=0.6, color=".2", dashes=(2, 1), zorder=0, linewidth=4)
 
-
-
-    
+        
     #%% Above gives us one value per session of PE probability
     # #would be good to have individual trials for variance?
     
@@ -854,8 +852,7 @@ if __name__ == '__main__':
 
 
     #%% TODO: evolution within session (typical trial progression)
-    
-    
+        
       #get data, only trials (not ITI)
     dfPlot= dfTidy.loc[dfTidy.trialID>=0].copy()
     
@@ -969,46 +966,105 @@ if __name__ == '__main__':
     g.fig.suptitle('First lick latency by trial type; laser + CUE')
     g.set_ylabels('First lick latency from epoch start (s)')
     
-    # %% TODO: Laser effect on subsequent trial(s)
+    # %% Laser effect on subsequent trial(s)
+    #TODO: currently this approach is blind to the next trial type. Data is only grouped by the preceding trialType.
+    #Depending on how trial types are drawn in the code, it may be that certain trial types are selected in biased order which could 
+    #be reflected in response probability (e.g. maybe DS trials are more likely to be followed by an NS trial)
     
-    #df.shift might help here
-    
+    shiftNum= -1 #number of trials backward (-) to shift data. Expect highest effect at most recent preceding trial -1
+        
     dfGroup= dfTidy.copy()
     
     #include only valid trials (remove ITIs)
     dfGroup= dfGroup.loc[dfGroup.trialID>=0].copy()
     
-   #aggregated measure, but trialIDs repeat, so just restrict to first one
+   #aggregated measures, but trialIDs repeat, so just restrict to first one
     trialAgg= dfGroup.groupby(['fileID','trialID'])['trialID'].cumcount()==0
     
     dfGroup= dfGroup.loc[trialAgg]
     
-    trials= dfGroup.trialID.unique()
+    # trials= dfGroup.trialID.unique()
     
     #index by file, trial
     dfGroup.set_index(['fileID','trialID'], inplace=True)
-    # test= dfGroup.shift()
     
-    #use df.shift() 
-    dfPlot= dfGroup.groupby(level=0).shift(1).copy()
+    #use df.shift() on measures of interest
+    # dfPlot= dfGroup.copy()
+
+    #shift data within file (level=0)
+    dfGroup.loc[:,'trialOutcomeBehShift']= dfGroup.groupby(level=0)['trialOutcomeBeh'].shift(shiftNum).copy()
+    dfGroup.loc[:,'trialTypeShift']= dfGroup.groupby(level=0)['trialType'].shift(shiftNum).copy()
+
+    
+    #will need to recalculate prop & latency (or other measures) based on shifted df
+    
+
+    #transform keeps original index
+    # dfPlot['outcomeCount']= dfPlot.groupby(['fileID','trialType','trialOutcomeBehShift']).
+    
+    #count of each trial type, followed by count of each behavioral outcome for each trial type
+    # trialCount= dfPlot.groupby(['fileID','trialType'])['trialOutcomeBehShift'].value_counts()
+    
+    
+    # #count of each outcome for each trialType
+    trialCount= dfGroup.groupby(['fileID','trialType'])['trialOutcomeBehShift'].value_counts()
+    #for some reason value_counts() isn't giving 0 count for all categories. Fill these with 0 so we have a count for each possibility
+    # trialCount= trialCount.unstack(fill_value=0).stack().reset_index(name='count')
+    
+    #divide count of each outcome by total count for this trial type
+    #calculate proportion for each trial type: num trials/total num trials
+    trialCount= trialCount.unstack(fill_value=0)
+    
+        #from prior code
+      ##calculate proportion for each trial type: num trials/total num trials
+    outcomeProp= trialCount.divide(trialCount.sum(axis=1),axis=0)
+    
+    #melt() into single column w label
+    dfPlot= outcomeProp.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBehShift',value_name='outcomePropShift')
+    
+    #assign back to df by merging
+    #TODO: can probably be optimized
+    dfGroup.reset_index(inplace=True) #reset index so eventID index is kept
+    dfPlot= dfGroup.merge(dfPlot,'right', on=['fileID','trialType','trialOutcomeBehShift']).copy()
+    
+    
+    #aggregated measures, but trialTypes repeat, so just restrict to first one
+    trialAgg= dfPlot.groupby(['fileID','trialType','trialOutcomeBehShift']).cumcount()==0
+     
+    dfPlot= dfPlot.loc[trialAgg]
+     
+    dfPlot.set_index(['fileID','trialType'], inplace=True)     
+    
+    
+    #best to combine PE outcomes and restrict plotting to just peProp since 4 outcomes gets very busy, so calculate peProp by combining PE and PE+lick outcome prop
+    #retain  only PE and PE+lick outcomes
+    dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBehShift=='PE') | (dfPlot.trialOutcomeBehShift=='PE+lick')].copy()
+
+    #sum together both PE and PE+lick for total PE prop. Do this for each trial type
+    
+    dfPlot['propPEshift']= dfPlot.groupby(['fileID','trialType'])['outcomePropShift'].sum().copy()
+    
+    #since grouping PE and PE+lick, we still have redundant observations
+    #retain only 1 per trial type per file
+    fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
+    dfPlot= dfPlot.reset_index().loc[fileAgg]
+    
 
     #Plots
-        # PE latency: virus x laserDur
-    g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
-                    col='laserDur', row='Virus', kind='ecdf', hue_order= trialOrder)
-    g.fig.suptitle('Trial+1 First PE latency by trial type')
-    g.set_ylabels('Trial+1 First PE latency from epoch start (s)')
+    dfPlot.reset_index(inplace=True) #reset index for plotting
     
-    #PE latency: virus individual subj
-    g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='RatID', kind='bar', hue_order=trialOrder)
-    g.fig.suptitle('Trial+1 First PE latency by trial type')
-    g.set_ylabels('Trial+1 First PE latency from epoch start (s)')
+    g= sns.relplot(data=dfPlot, x='date', y='propPEshift', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
+    # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
+    g.set_titles('{col_name}')
+    g.fig.suptitle(['Evolution of the SHIFTED (', shiftNum,'trials) propPE in subjects by trialType'])
+    g.tight_layout(w_pad=0)
     
-      #PE latency:  individual subj CUE+laser
-    g=sns.displot(data=dfPlot.loc[dfPlot.laserDur=='10'], col='subject', col_wrap=4, x='eventLatency',hue='trialType', kind='ecdf', hue_order=trialOrder)
-    g.fig.suptitle('Trial+1 First PE latency by trial type; laser + CUE')
-    g.set_ylabels('Trial+1 First PE latency from epoch start (s)')
-    
+    g=sns.catplot(data= dfPlot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, col='subject', col_wrap=4, kind='bar')
+    g.fig.suptitle(['SHIFTED (', shiftNum,'trials) propPE in subjects by trialType'])
+    sns.catplot(data= dfPlot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, col='subject', col_wrap=4, kind='swarm')
+
+
+#%% TODO: shifted count & latency 
     
     # %% examine lick+laser on licks
     
