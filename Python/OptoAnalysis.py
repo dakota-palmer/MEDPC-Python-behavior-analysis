@@ -40,6 +40,10 @@ if __name__ == '__main__':
         window.destroy()
      
  
+ #%% define a function to save and close figures
+    # def saveFig():   
+        
+ 
 #%% import matlab struct from .mat
     from tkinter import *
     from tkinter import filedialog
@@ -204,7 +208,7 @@ if __name__ == '__main__':
     dfEventAll.index.name= 'eventID'
 
 
-    dfTidy = dfEventAll
+    dfTidy = dfEventAll.copy()
     
     #TODO: round decimals to point of precision. 
     # #important because floats are imprecise and can lead to compounding errors
@@ -697,11 +701,14 @@ if __name__ == '__main__':
     test8= outcomeProp.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh',value_name='outcomePropFile')
     
     #assign back to df by merging
-    #TODO: can probably be optimized
-    dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
-    dfTidy= dfTidy.merge(test8,'left', on=['fileID','trialType','trialOutcomeBeh']).copy()
+    #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
+    # dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
     
-    #% visualize peProp
+    dfTidy= dfTidy.reset_index().merge(test8,'left', on=['fileID','trialType','trialOutcomeBeh']).copy()
+    
+    dfTidy.loc[:,'outcomePropFile']= test8.outcomePropFile
+    
+    #%% visualize peProp
     
     
     #subset data and save as intermediate variable dfGroup
@@ -778,6 +785,8 @@ if __name__ == '__main__':
     # # g= sns.relplot(data=dfPlot, x='date', y='propPE', row='Virus', units='subject', estimator=None, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
 
     #subjects run different session types on same day, so can't plot by day across subjects
+    sns.set_palette('Paired')
+
     g= sns.relplot(data=dfPlot, x='date', y='propPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
     # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
     g.set_titles('{col_name}')
@@ -828,6 +837,30 @@ if __name__ == '__main__':
     g= sns.relplot(data=dfPlot, x='date', y='propPE', row='Virus', hue='trialType', style='laserDur', kind='line')
     g.map(plt.axhline, y=0.6, color=".2", dashes=(2, 1), zorder=0, linewidth=4)
 
+#%% Testing groupby()- accessing values & index of grouped data
+
+    # grouped= dfTidy.groupby(['fileID','trialType'])
+    
+    # groupedInd= grouped.indices
+    
+    # groupedExtracted=  grouped.apply(lambda x: x) 
+    # # grouped.reset_index()#dfTidy.loc[groupedInd.keys()]
+    
+    # #this gb.groups() seems to give index of all values for each group
+    # groups= grouped.groups
+    
+    
+    # #this too probably slower
+    # groups = dict(list(grouped))
+    
+    # #which returns a dictionary whose keys are your group labels and whose values are DataFrames, i.e.
+    
+    # groupedHead= grouped.head()
+    
+    # # #iterating through like this takes way too long
+    # # groupedRows= pd.DataFrame()
+    # # for row in grouped:
+    # #     groupedRows= groupedRows.append(row[1])
         
     #%% Above gives us one value per session of PE probability
     # #would be good to have individual trials for variance?
@@ -1051,17 +1084,9 @@ if __name__ == '__main__':
     
 
     #Plots
-    dfPlot.reset_index(inplace=True) #reset index for plotting
     
-    g= sns.relplot(data=dfPlot, x='date', y='propPEshift', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
-    # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
-    g.set_titles('{col_name}')
-    g.fig.suptitle(['Evolution of the SHIFTED (', shiftNum,'trials) propPE in subjects by trialType'])
-    g.tight_layout(w_pad=0)
-    
-    g=sns.catplot(data= dfPlot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, col='subject', col_wrap=4, kind='bar')
-    g.fig.suptitle(['SHIFTED (', shiftNum,'trials) propPE in subjects by trialType'])
-    sns.catplot(data= dfPlot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, col='subject', col_wrap=4, kind='swarm')
+    g=sns.catplot(data= dfPlot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, col='subject', col_wrap=4, ci=68, kind='bar')
+    g.fig.suptitle('Effect of laser on subsequent PE probability (shifted'+ str(shiftNum)+'trials)')
 
 
 #%% TODO: shifted count & latency 
