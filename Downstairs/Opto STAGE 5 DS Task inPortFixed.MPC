@@ -145,11 +145,11 @@ DIM M=31   \DSPElat \ Latency to PE following DS per trial
 DIM N=31   \NSPElat \ Latency to PE following NS per trial
 DIM O=31   \DSPE1 \ Time of first PE following DS
 DIM P=31   \NSPE1 \ Time of first PE following NS
-DIM S=9999 \ Lick timestamps in sec
-DIM V=31   \ 5-sec Licks after first PE following DS
-DIM U=31   \ 5-sec Licks after first PE following NS
+DIM S=9999 \lickTime \ LickTimestamps in sec
+DIM V=31   \lickDSpost \ 5-sec Licks after first PE following DS
+DIM U=31   \lickNSpost \ 5-sec Licks after first PE following NS
 
-DIM W=9999 \record of trial states B(3) dp added 5/30/21
+DIM W=9999 \trialState \record of trial states B(3) dp added 5/30/21
 
 
 \Z signals (within box):
@@ -233,7 +233,7 @@ S3, \Begin initial ITI
   #K21: ON ^Houselight--->S6
 
 S4, \Begin 1st half of regular ITI
-  #K21: SET B(3)=0; SET W(B(49))=B(3); ADD B(49)--->S5
+  #K21: SET B(3)=0; SET W(B(49))=B(3);  SET W(B(49)+1)=-987.987; ADD B(49)--->S5
 
 S5, \Begin 2nd half of regular ITI, and US if unpaired
   #K22: IF A(5)=1 [@T2,@F2] \A(5)=0 from S.S.2 \true only if unpaired protocol (A(5))=1
@@ -241,7 +241,7 @@ S5, \Begin 2nd half of regular ITI, and US if unpaired
           @F2:--->S6
 
 S6, \Begin Pre-DS, unless all trials have run and session is over
-  #K23: SET B(3)=1; SET W(B(49))=B(3); ADD B(49);
+  #K23: SET B(3)=1; SET W(B(49))=B(3); SET W(B(49)+1)=-987.987; ADD B(49);
         IF B(1) < A(1) [@T3,@F3]
           @T3: ADD B(1); SET I(B(1))=0, I(B(1)+1)=-987.987;
                SET J(B(1))=0, J(B(1)+1)=-987.987; Z4--->S7
@@ -251,11 +251,11 @@ S6, \Begin Pre-DS, unless all trials have run and session is over
           \If false, then end the session ---> S9
 
 S7, \Begin DS, and also US (after delay) if paired
-  #K24: SET B(3)=2; SET W(B(49))=B(3); ADD B(49); Z2; \Z2 starts the DS trial epoch within-box
+  #K24: SET B(3)=2; SET W(B(49))=B(3); SET W(B(49)+1)=-987.987; ADD B(49); Z2; \Z2 starts the DS trial epoch within-box
         IF A(5)=0 [@T4,@F4]
           @T4: Z3--->S8 \if unpaired DS-US protocol (A(5)=0), trigger Z3 signal to initiate US
           @F4:--->S8
-  #K26: SET B(3)=4; SET W(B(49))=B(3); ADD B(49); Z6 ---> S8 \Z6 starts the NS trial epoch within box
+  #K26: SET B(3)=4; SET W(B(49))=B(3); SET W(B(49)+1)=-987.987; ADD B(49); Z6 ---> S8 \Z6 starts the NS trial epoch within box
 
 S8, \Begin Post-DS
   #K25: ---> S4 \go back to state 4 and wait for a new DS or NS trial start signal
@@ -359,7 +359,7 @@ S2,
   #R^PortEntry: ON ^Pump; SET J(B(1))=B(13)/100; ADD B(5)--->S3 \if PE, turn pump on, record onset time, iterate reward count, then move to S3
 
 S3, \extra B(3)=3 here is redundant, so multiple PostDS periods are being logged
-  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3; SET W(B(49))=B(3); ADD B(49)--->S1 \following pump duration A(4), turn pump off, update B(3) and return to S1 waiting for next Z3 signal
+  A(4)*B(0)#T: OFF ^Pump; SET B(3)=3; SET W(B(49))=B(3); SET W(B(49)+1)=-987.987; ADD B(49)--->S1 \following pump duration A(4), turn pump off, update B(3) and return to S1 waiting for next Z3 signal
 
 
 
@@ -392,8 +392,8 @@ S1,
   #Z2: --->S2 \waiting for a Z2 signal saying a DS trial has started
 
 S2, \if the full cue duration (A2) time passes, save placeholder values for this trial, iterate DS trial counter, and go back to state 1 \if a PE is made before this, save PE timestamp, add to # trials with PE, and go to S3
-  A(2)*B(0)#T: SET M(B(17))=A(2), O(B(17))=0, B(3)=3; ADD B(17); SET W(B(49))=B(3); ADD B(49) --->S1
-  #R^PortEntry: ADD B(21); SET O(B(17))=B(13)/100, B(3)=3; SET W(B(49))=B(3); ADD B(49)  --->S3
+  A(2)*B(0)#T: SET M(B(17))=A(2), O(B(17))=0, B(3)=3; ADD B(17); SET W(B(49))=B(3); SET W(B(49)+1)=-987.987; ADD B(49) --->S1
+  #R^PortEntry: ADD B(21); SET O(B(17))=B(13)/100, B(3)=3; SET W(B(49))=B(3); SET W(B(49)+1)=-987.987; ADD B(49)  --->S3
 
 S3, \calculate PE latency for this trial, then iterate DS trial counter \ ?Why 5"? I feel like this should be as short as possible to gurantee the PE ratio calculation in S.S.14 is correct
   5": SET M(B(17))=O(B(17))-H(B(17)); ADD B(17); SET O(B(17)+1)=-987.987--->S1
@@ -409,7 +409,7 @@ S2,
   #R^PortEntry: ADD B(22); SET P(B(18))=B(13)/100--->S3
 
 S3, \I think 5" here is preventing B(3) from being set to 5 so some 'postNS' are not being logged
-  5": SET N(B(18))=P(B(18))-I(B(18)); ADD B(18); SET B(3)=5, P(B(18)+1)=-987.987; SET W(B(49))=B(3); ADD B(49)--->S1
+  5": SET N(B(18))=P(B(18))-I(B(18)); ADD B(18); SET B(3)=5, P(B(18)+1)=-987.987; SET W(B(49))=B(3);  SET W(B(49)+1)=-987.987;ADD B(49)--->S1
 
 
 
