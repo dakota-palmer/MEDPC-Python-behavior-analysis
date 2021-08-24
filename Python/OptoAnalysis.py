@@ -1004,12 +1004,18 @@ if __name__ == '__main__':
     #Depending on how trial types are drawn in the code, it may be that certain trial types are selected in biased order which could 
     #be reflected in response probability (e.g. maybe DS trials are more likely to be followed by an NS trial)
     
+    
     shiftNum= -1 #number of trials backward (-) to shift data. Expect highest effect at most recent preceding trial -1
         
     dfGroup= dfTidy.copy()
     
+    
     #include only valid trials (remove ITIs)
     dfGroup= dfGroup.loc[dfGroup.trialID>=0].copy()
+    
+    #if dtype is 'category',value_counts() should count all
+    dfGroup.trialType= dfGroup.trialType.astype('category')
+    dfGroup.trialOutcomeBeh=dfGroup.trialOutcomeBeh.astype('category')
     
    #aggregated measures, but trialIDs repeat, so just restrict to first one
     trialAgg= dfGroup.groupby(['fileID','trialID'])['trialID'].cumcount()==0
@@ -1040,32 +1046,77 @@ if __name__ == '__main__':
     
     
     # #count of each outcome for each trialType
-    trialCount= dfGroup.groupby(['fileID','trialType'])['trialOutcomeBehShift'].value_counts()
+    
+    # trialCount= dfGroup.groupby(['fileID','trialType'])['trialOutcomeBehShift'].count() #returns 4 values per session
+    
+    # # trialCount= dfGroup.groupby(['fileID','trialType'])['trialOutcomeBehShift'].value_counts().reindex(dfGroup.trialOutcomeBehShift.unique(),fill_value=0)
+    
+    # trialCount = dfGroup.groupby(['fileID','trialType'])['trialOutcomeBehShift'].value_counts().unstack(fill_value=0).stack() #still gives 12 for ses 258
+    
+    # trialCount = dfGroup.groupby(['fileID'])['trialOutcomeBehShift'].value_counts().unstack(fill_value=0).stack() #still gives 12 for ses 258
+
+    #Size instead of value_counts(): size() gives a count for each category, where value_counts() has issues with/skips unobserved groups
+    trialCount = dfGroup.groupby(['fileID','trialType','trialOutcomeBehShift']).size()#.unstack(fill_value=0).stack() #still gives 12 for ses 258
+
+
+    #grouping fileID alone and getting value_counts is cool, but combinging with trialType seems to be wrong.
+    #try fillna?
+    # trialCount = dfGroup.groupby(['fileID','trialType'])['trialOutcomeBehShift'].value_counts().unstack(fill_value=0).stack() #still gives 12 for ses 258
+
+    
+    test= dfGroup.loc[258,:]
+    test2= test.groupby(['trialType'])['trialOutcomeBehShift'].count()
+    # test3= test.groupby(['trialType'])['trialOutcomeBehShift'].value_counts().unstack(fill_value=0)
+   
+    test4= test.groupby(['trialType','trialOutcomeBehShift']).size()
+    
+    #only have6 endtries for ses 258...should have 16 per file (4 trial types x 4 outcomes)? 
+
+    
+    #still missing data in trialCount as of this point? e.g. check ses 258
+   
     #for some reason value_counts() isn't giving 0 count for all categories. Fill these with 0 so we have a count for each possibility
     # trialCount= trialCount.unstack(fill_value=0).stack().reset_index(name='count')
     
     #divide count of each outcome by total count for this trial type
     #calculate proportion for each trial type: num trials/total num trials
     trialCount= trialCount.unstack(fill_value=0)
+    # trialCount2= trialCount.unstack(fill_value=0)
+
+#good up til here, now outcomeProp is missing a group?
     
         #from prior code
       ##calculate proportion for each trial type: num trials/total num trials
     outcomeProp= trialCount.divide(trialCount.sum(axis=1),axis=0)
     
+    #This calculation will result in nans where trialTypes or outcomes are missing. Replace nan values with 0
+    outcomeProp.fillna(0, inplace=True)    
+
+
+    #now we need to reindex before adding columns (problem with categorical dtypes)
+    outcomeProp.columns = pd.Index(list(outcomeProp.columns))
+    
     #melt() into single column w label
+    
     dfPlot= outcomeProp.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBehShift',value_name='outcomePropShift')
+    
     
     #assign back to df by merging
     #TODO: can probably be optimized
     dfGroup.reset_index(inplace=True) #reset index so eventID index is kept
-    dfPlot= dfGroup.merge(dfPlot,'right', on=['fileID','trialType','trialOutcomeBehShift']).copy()
+    # dfPlot= dfGroup.merge(dfPlot,'right', on=['fileID','trialType','trialOutcomeBehShift']).copy()
     
-    
+    #Expect this ^ will not work now since we have calculated values for unobserved trialTypes and outcomes
+    # test= dfPlot.merge(dfGroup,'left', on=['fileID','trialType','trialOutcomeBehShift']).copy()
+
+
     #aggregated measures, but trialTypes repeat, so just restrict to first one
     trialAgg= dfPlot.groupby(['fileID','trialType','trialOutcomeBehShift']).cumcount()==0
      
     dfPlot= dfPlot.loc[trialAgg]
-     
+    
+
+    
     dfPlot.set_index(['fileID','trialType'], inplace=True)     
     
     
@@ -1077,19 +1128,35 @@ if __name__ == '__main__':
     
     dfPlot['propPEshift']= dfPlot.groupby(['fileID','trialType'])['outcomePropShift'].sum().copy()
     
-    #since grouping PE and PE+lick, we still have redundant observations
+
+        #merge after this restriction
+    #first, merge on specific outcomes
+    dfPlot= dfPlot.merge(dfGroup,'left', on=['fileID','trialType','trialOutcomeBehShift']).copy()
+
+         #since grouping PE and PE+lick, we still have redundant observations
     #retain only 1 per trial type per file
     fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
     dfPlot= dfPlot.reset_index().loc[fileAgg]
     
+    #then, fill matching session data?
+    # dfPlot= dfPlot.merge(dfGroup,'left', on=['fileID']).copy()
+    dfPlot.set_index('fileID', inplace=True)
+    dfPlot.fillna(method= 'ffill', inplace=True)
+    dfPlot.reset_index(inplace=True)
 
     #Plots
-    
     g=sns.catplot(data= dfPlot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, col='subject', col_wrap=4, ci=68, kind='bar')
     g.fig.suptitle('Effect of laser on subsequent PE probability (shifted'+ str(shiftNum)+'trials)')
 
+    #bar with overlay of individual sessions
+    g = sns.FacetGrid(data=dfPlot, col='subject', col_wrap=4) 
+    g.map_dataframe(sns.barplot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, palette='Paired', alpha=0.5, ci=None)
+    g.map_dataframe(sns.stripplot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, palette='Paired', dodge=True)
+
 
 #%% TODO: shifted count & latency 
+
+#for each event type, calculate latency from trial start to event
     
     # %% examine lick+laser on licks
     
