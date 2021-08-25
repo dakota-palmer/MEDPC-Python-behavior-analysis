@@ -1115,7 +1115,15 @@ if __name__ == '__main__':
      
     dfPlot= dfPlot.loc[trialAgg]
     
-
+    #merge after this restriction
+    #first, merge on specific outcomes
+    dfPlot= dfPlot.merge(dfGroup,'left', on=['fileID','trialType','trialOutcomeBehShift']).copy()
+     
+    #then, fill matching session data?
+    # dfPlot= dfPlot.merge(dfGroup,'left', on=['fileID']).copy()
+    dfPlot.set_index('fileID', inplace=True)
+    dfPlot.fillna(method= 'ffill', inplace=True)
+    dfPlot.reset_index(inplace=True)
     
     dfPlot.set_index(['fileID','trialType'], inplace=True)     
     
@@ -1124,26 +1132,15 @@ if __name__ == '__main__':
     #retain  only PE and PE+lick outcomes
     dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBehShift=='PE') | (dfPlot.trialOutcomeBehShift=='PE+lick')].copy()
 
-    #sum together both PE and PE+lick for total PE prop. Do this for each trial type
-    
-    dfPlot['propPEshift']= dfPlot.groupby(['fileID','trialType'])['outcomePropShift'].sum().copy()
-    
-
-        #merge after this restriction
-    #first, merge on specific outcomes
-    dfPlot= dfPlot.merge(dfGroup,'left', on=['fileID','trialType','trialOutcomeBehShift']).copy()
-
-         #since grouping PE and PE+lick, we still have redundant observations
+    #since grouping PE and PE+lick, we still have redundant observations
     #retain only 1 per trial type per file
     fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
     dfPlot= dfPlot.reset_index().loc[fileAgg]
-    
-    #then, fill matching session data?
-    # dfPlot= dfPlot.merge(dfGroup,'left', on=['fileID']).copy()
-    dfPlot.set_index('fileID', inplace=True)
-    dfPlot.fillna(method= 'ffill', inplace=True)
-    dfPlot.reset_index(inplace=True)
 
+
+    #sum together both PE and PE+lick for total PE prop. Do this for each trial type
+    dfPlot['propPEshift']= dfPlot.groupby(['fileID','trialType'])['outcomePropShift'].transform('sum').copy()
+    
     #Plots
     g=sns.catplot(data= dfPlot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, col='subject', col_wrap=4, ci=68, kind='bar')
     g.fig.suptitle('Effect of laser on subsequent PE probability (shifted'+ str(shiftNum)+'trials)')
