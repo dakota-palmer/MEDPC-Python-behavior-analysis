@@ -1150,6 +1150,9 @@ if __name__ == '__main__':
     g.map_dataframe(sns.barplot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, palette='Paired', alpha=0.5, ci=None)
     g.map_dataframe(sns.stripplot, x='laserDur', y='propPEshift', hue='trialType', hue_order=trialOrder, palette='Paired', dodge=True)
 
+    g.set_axis_labels( 'laser duration', 'proportion of trials with PE')
+
+    g.add_legend()
 
 #%% TODO: shifted count & latency 
 
