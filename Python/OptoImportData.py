@@ -36,6 +36,8 @@ import numpy as np
 #eventVars= event type labels for recorded timestamps
 #idVars=  subject & session metadata labels for recorded timestamps 
 
+#ExperimentType= just a gate now for opto-specific code. = 'Opto' for opto specific code
+experimentType= 'Opto'
 
 #%% ID and import raw data .xlsx
 # your path to folder containing excel files 
@@ -115,8 +117,9 @@ df= df.merge(dfRaw.astype('str'), how='left', on=['subject','date'])
 
 excludeDate= ['20210604']
 
-# Exclude specific date
-df = df[df.date != excludeDate]
+# Exclude specific date(s)
+df= df[~df.date.isin(excludeDate)]
+
 
 # %% Remove parentheses from variable names 
 
@@ -167,8 +170,9 @@ idVars= ['fileID','subject', 'RatID', 'Virus', 'Sex', 'date', 'laserDur', 'note'
 #e.g. different trial types in addition to DS vs NS (e.g. laser ON vs laser OFF trials; TODO: variable reward outcome)
 
 #e.g. for Opto:
-trialVarsLaser= ['laserDStrial','laserNStrial']
-#the laserDStrial and laserNS trial variables will later be melted() into a new variable called 'laserState' with their values
+if experimentType=='Opto':
+    trialVars= ['laserDStrial','laserNStrial']
+    #the laserDStrial and laserNS trial variables will later be melted() into a new variable called 'laserState' with their values
 
 #%% Tidy df org: All events in single column, sort by time by file, with fileID column and trialID column that matches trial 1-60 through each session.
 
@@ -182,18 +186,16 @@ dfEventAll= dfEventAll[dfEventAll.eventTime.notna()]
 # TODO: seem to be removing legitimate port exits with peDur==0, not sure how to deal with this so just excluding
 dfEventAll = dfEventAll[dfEventAll.eventTime != 0]
 
-dfEventAll.index.name= 'eventID'
+# dfEventAll.index.name= 'eventID'
 
 # sort all event times by file and timestamp
 # set index name so we can sort by it easily
 # dfEventAll.index.name= 'fileID'
-dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
+# dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
 
- # need to reset_index before assigning values back to dfEventAll (this is because the fileID index repeats so assignment is ambiguous)
-dfEventAll.reset_index(drop=True,inplace=False) #dropping old unsorted eventID
-dfEventAll.index.name= 'eventID'
-
-
+#  # need to reset_index before assigning values back to dfEventAll (this is because the fileID index repeats so assignment is ambiguous)
+# dfEventAll.reset_index(drop=True,inplace=False) #dropping old unsorted eventID
+# dfEventAll.index.name= 'eventID'
 
  # add trialID column by cumulative counting each DS or NS within each file
  # now we have ID for trials 0-59 matching DS or NS within each session, nan for other events
@@ -203,151 +205,71 @@ dfEventAll['trialID'] = dfEventAll[(dfEventAll.eventType == 'DStime') | (
  #add trialType label using eventType (which will be DS or NS for valid trialIDs)
 dfEventAll['trialType']= dfEventAll[dfEventAll.trialID.notna()].eventType
 
- #%% 
-#sort again by file & event timestamp before saving to new df
-dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
+# #%% 
+# #sort again by file & event timestamp before saving to new df
+# dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
  
-# #reset index so that eventIDs are in chronological order
-# #for some reason inplace=true isn't working here so just reassign
-# dfEventAll= dfEventAll.reset_index(drop=True)
-# dfEventAll.index.name= 'eventID'
+# # #reset index so that eventIDs are in chronological order
+# # #for some reason inplace=true isn't working here so just reassign
+# # dfEventAll= dfEventAll.reset_index(drop=True)
+# # dfEventAll.index.name= 'eventID'
 
 
-dfTidy = dfEventAll.copy()
+# dfTidy = dfEventAll.copy()
 
 
-#%% Assign trialTypes (OPTO ONLY specific for now)
-
-#goal in this section will be to assign trialType (using trialVars) to each trial using trialIDs within session
-
-#match up using unsorted eventIDs
-#should melt to individual events retaining all columns and then melt again for trialVars
-
-#want to keep all other columns as id_vars
-# allIDvars= df.drop(eventVars,axis=1).columns
-allIDvars= idVars+trialVars
+#%% Assign more specific trialTypes based on trialVars (OPTO ONLY specific for now)
 
 #First, am melting columns of behavioral events into single column of event label and column of individual timestamps (value_vars= want to melt)
-# dfEventAll = df.melt(id_vars=allIDvars, value_vars=eventVars, var_name='eventType', value_name='eventTime',ignore_index=False) 
-dfEventAll = df.melt(id_vars=idVars, value_vars=eventVars, var_name='eventType', value_name='eventTime',ignore_index=False) 
+# dfEventAll = df.melt(id_vars=idVars, value_vars=eventVars, var_name='eventType', value_name='eventTime',ignore_index=False) 
 
 
 #save index as new column with unique eventID
-dfEventAll.index.name= 'eventID'
-dfEventAll.reset_index(inplace=True)
+# dfEventAll.index.name= 'eventID'
+# dfEventAll.reset_index(inplace=True)
 
 #Remove all rows with NaN eventTimes (these are just placeholders, not valid observations) 
-dfEventAll= dfEventAll[dfEventAll.eventTime.notna()]
+# dfEventAll= dfEventAll[dfEventAll.eventTime.notna()]
 
 # remove invalid/placeholder 0s
 # TODO: seem to be removing legitimate port exits with peDur==0, not sure how to deal with this so just excluding
-dfEventAll = dfEventAll[dfEventAll.eventTime != 0]
+# dfEventAll = dfEventAll[dfEventAll.eventTime != 0]
 
 # #trialID= cumcount of trials within mpc file
-dfEventAll['trialID'] = dfEventAll[(dfEventAll.eventType == 'DStime') | (
-dfEventAll.eventType == 'NStime')].groupby('fileID').cumcount()  # .index
+# dfEventAll['trialID'] = dfEventAll[(dfEventAll.eventType == 'DStime') | (
+# dfEventAll.eventType == 'NStime')].groupby('fileID').cumcount()  # .index
 
-# before any removal/sorting is done, next issue is to match up laser state (trialVars) with cues.
-# dfTrial= dfEventAll[(dfEventAll.eventType == 'DStime') | (dfEventAll.eventType == 'NStime')].copy()
-dfTrial = df.melt(id_vars= idVars, value_vars=trialVars, var_name='laserType', value_name='laserState')#, ignore_index=False)
-#remove nan placeholders
-dfTrial= dfTrial[dfTrial.laserState.notna()]
+if experimentType=='Opto':
+    # melt() trialVars, get trialID for each trial and use this to merge label back to df 
+    dfTrial = df.melt(id_vars= idVars, value_vars=trialVars, var_name='laserType', value_name='laserState')#, ignore_index=False)
+    #remove nan placeholders
+    dfTrial= dfTrial[dfTrial.laserState.notna()]
+    
+    #get trialID
+    dfTrial['trialID'] = dfTrial.groupby('fileID').cumcount() 
+    
+    #merge trialType data back into df on matching fileID & trialID
+    dfEventAll= dfEventAll.merge(dfTrial[['trialID', 'fileID', 'laserType', 'laserState']], on=[
+        'fileID', 'trialID'], how='left')#.drop('trialID', axis=1)
+    
+    #combine laserState and laserType into one variable for labelling each trial: trialType
+    #Exclude the Lick-paired laser sessions. We will label those using a different method below  
+    dfEventAll.loc[dfEventAll.laserDur!='Lick', 'trialType'] = dfEventAll.laserType + \
+        '_'+dfEventAll.laserState.astype(str).copy()
+    
+    #now drop redundant columns
+    dfEventAll= dfEventAll.drop(['laserType','laserState'], axis=1)
+     
 
-#get trialID
-dfTrial['trialID'] = dfTrial.groupby('fileID').cumcount() 
-
-#merge trialType data back into df on matching fileID & trialID
-dfEventAll= dfEventAll.merge(dfTrial[['trialID', 'fileID', 'laserType', 'laserState']], on=[
-    'fileID', 'trialID'], how='left')#.drop('trialID', axis=1)
-
-#combine laserState and laserType into one variable for labelling each trial: trialType
-#Exclude the Lick-paired laser sessions. We will label those using a different method below  
-dfEventAll.loc[dfEventAll.laserDur!='Lick', 'trialType'] = dfEventAll.laserType + \
-    '_'+dfEventAll.laserState.astype(str).copy()
-
- 
-#sort again by file & event timestamp before saving to new df
-dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
-
-
-#%% Reassign eventIDs in chronological order
-#reset index so that eventIDs are in chronological order
+#%% Sort events by chronological order within-file and save as dfTidy
 #for some reason inplace=true isn't working here so just reassign
-dfEventAll= dfEventAll.reset_index(drop=True)
-dfEventAll.index.name= 'eventID'
+dfTidy = dfEventAll.sort_values(by=['fileID', 'eventTime'])
 
-# %% Tidy df org: All events in single column, sort by time by file, with fileID column and trialID column that matches trial 1-60 through each session.
-#also want a trialType column           
-      
-#FOR OPTO
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-#First, am melting columns of behavioral events into single column of event label and column of individual timestamps (value_vars= want to melt)
-dfEventAll = df.melt(id_vars=idVars, value_vars=eventVars, var_name='eventType', value_name='eventTime', ignore_index=False)
-dfEventAll = df.melt(value_vars=eventVars, var_name='eventType', value_name='eventTime', ignore_index=False)
+dfTidy= dfTidy.reset_index(drop=True)
+dfTidy.index.name= 'eventID'
 
+#%% Add trialID & trialType labels to other events (events during trials and ITIs) 
 
-# remove invalid/placeholder 0s
-# TODO: seem to be removing legitimate port exits with peDur==0, not sure how to deal with this so just excluding
-dfEventAll = dfEventAll[dfEventAll.eventTime != 0]
-
-
-# before any removal/sorting is done, next issue is to match up laser state (trialVars) with cues.
-dfTrial= dfEventAll[(dfEventAll.eventType == 'DStime') | (dfEventAll.eventType == 'NStime')].copy()
-dfTrial = dfTrial.melt(id_vars= idVars, value_vars=trialVars, var_name='laserType', value_name='laserState')#, ignore_index=False)
-
-# dfTrial = df.melt(id_vars= idVars, value_vars=trialVars, var_name='laserType', value_name='laserState')#, ignore_index=False)
-
-
-# use cumcount() of DS & NS to match up laser status with cue time (redundant since we have a timestamp of laser on, but good verification still and easy grouping by trial)
-# dfEventAll.index.name = 'fileID'
-# dfEventAll.reset_index(inplace=True)
-dfEventAll.index.name= 'eventID'
-#cumulative count of each trial start (cue onset) within files 
-dfEventAll['trialCount'] = dfEventAll[(dfEventAll.eventType == 'DStime') | (
-dfEventAll.eventType == 'NStime')].groupby('fileID').cumcount()  # .index
-
-
-# dfTrial.index.name = 'fileID'
-# dfTrial.reset_index(inplace=True)
-dfTrial['trialCount'] = dfTrial[(dfTrial.laserType == 'laserDStrial') | (
-dfTrial.laserType == 'laserNStrial')].groupby('fileID').cumcount()
-
-print(dfTrial['trialCount'].shape, dfTrial['trialCount'].max(), dfEventAll['trialCount'].shape, dfEventAll['trialCount'].max())
-
-dfEventAll = pd.merge(dfEventAll, dfTrial[['trialCount', 'fileID', 'laserType', 'laserState']], on=[
-    'fileID', 'trialCount'], how='left').drop('trialCount', axis=1)
-
-# sort all event times by file and timestamp
-# set index name so we can sort by it easily
-# dfEventAll.index.name= 'fileID'
-dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
-
-  # need to reset_index before assigning values back to dfEventAll (this is because the fileID index repeats so assignment is ambiguous)
-dfEventAll.reset_index(drop=True,inplace=False) #dropping old unsorted eventID
-dfEventAll.index.name= 'eventID'
-
-
-  # add trialID column by cumulative counting each DS or NS within each file
-  # now we have ID for trials 0-59 matching DS or NS within each session, nan for other events
-dfEventAll['trialID'] = dfEventAll[(dfEventAll.eventType == 'DStime') | (
-    dfEventAll.eventType == 'NStime')].groupby('fileID').cumcount()
-
-# combine laserState and laserType into one variable for labelling each trial: trialType
-#Exclude the Lick-paired laser sessions. We will label those using a different method below  
-dfEventAll.loc[dfEventAll.laserDur!='Lick', 'trialType'] = dfEventAll.laserType + \
-    '_'+dfEventAll.laserState.astype(str).copy()
-
- 
-#sort again by file & event timestamp before saving to new df
-dfEventAll = dfEventAll.sort_values(by=['fileID', 'eventTime'])
- 
-#reset index so that eventIDs are in chronological order
-#for some reason inplace=true isn't working here so just reassign
-dfEventAll= dfEventAll.reset_index(drop=True)
-dfEventAll.index.name= 'eventID'
-
-
-dfTidy = dfEventAll.copy()
 
 
 #%% Save dfTidy as .csv so it can be loaded quickly for subesequent analysis
