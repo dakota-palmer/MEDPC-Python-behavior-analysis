@@ -350,10 +350,22 @@ if experimentType== 'Opto':
         dfTidy = dfTidy.drop(columns=['laserType', 'laserState']).copy()
 
 
-#%% Save dfTidy as .csv so it can be loaded quickly for subesequent analysis
+#%% Save dfTidy so it can be loaded quickly for subesequent analysis
+
+savePath= r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw'
+
+savePath= r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python'
+
+savePath= './'
+
 print('saving dfTidy to file')
 
-dfTidy.to_csv('dfTidy.csv')
+#Save as pickel
+dfTidy.to_pickle(savePath+'dfTidy.pkl')
+
+#Could save as .csv, but should also save dtypes because they should be manually defined when imported
+# dfTidy.to_csv('dfTidy.csv')
+
 
 
 

@@ -2,3 +2,4 @@
 *.html
 *.pdf
 Python/dfTidy.csv
+*.pkl
