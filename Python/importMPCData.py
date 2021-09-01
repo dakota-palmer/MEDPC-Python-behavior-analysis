@@ -9,6 +9,7 @@ import pandas as pd
 import glob
 import os
 import numpy as np
+import shelve
 
 #%% About:
 
@@ -362,6 +363,26 @@ print('saving dfTidy to file')
 
 #Save as pickel
 dfTidy.to_pickle(savePath+'dfTidy.pkl')
+
+#also save other variables e.g. eventVars, idVars, trialVars for later recall (without needing to run this script again)
+# pickle.dump([idVars, eventVars, trialVars], savePath+'dfTidyMeta.pkl')
+
+#TODO: cueDur should probably have its own column in dfTidy for each fileID, since it will vary based on training stage (could just have in session metadata .xlsx)
+saveVars= ['idVars', 'eventVars', 'trialVars', 'cueDur']
+
+#use shelve module to save variables as dict keys
+my_shelf= shelve.open('dfTidyMeta', 'n') #start new file
+
+for key in saveVars:
+    try:
+        my_shelf[key]= globals()[key] 
+    except TypeError:
+        #
+        # __builtins__, my_shelf, and imported modules can not be shelved.
+        #
+        print('ERROR shelving: {0}'.format(key))
+my_shelf.close()
+
 
 #Could save as .csv, but should also save dtypes because they should be manually defined when imported
 # dfTidy.to_csv('dfTidy.csv')

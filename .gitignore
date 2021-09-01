@@ -3,3 +3,6 @@
 *.pdf
 Python/dfTidy.csv
 *.pkl
+Python/dfTidyMeta.bak
+Python/dfTidyMeta.dat
+Python/dfTidyMeta.dir
