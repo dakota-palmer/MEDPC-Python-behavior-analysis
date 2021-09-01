@@ -46,10 +46,10 @@ dfTidy.loc[dfTidy.trialID== -0.5, 'eventLatency']= np.nan
 
 #Count events in each trial 
 #use cumcount() of event times within file & trial 
-dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'x_K_PEtime')].groupby([
+dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
 'fileID', 'trialID'])['eventTime'].cumcount().copy()
 
-dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'x_S_lickTime')].groupby([
+dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'lickTime')].groupby([
     'fileID', 'trialID']).cumcount().copy()
 
 #Define behavioral (pe,lick) outcome for each trial. For my lick+laser sessions I need 
@@ -84,3 +84,43 @@ dfTidy.loc[trialOutcomeBeh.index,'trialOutcomeBeh']= trialOutcomeBeh
 
 #reset index to eventID
 dfTidy= dfTidy.reset_index().set_index(['eventID'])
+
+
+#%% Check for outlier sessions/event counts
+# convert ratID to categorical data type so seaborn uses divergent color hues
+sns.set_palette('tab20')  #good for plotting by many subj
+
+
+#I know that lick count was absurdly high (>9000) due to liquid shorting lickometer on at least 1 session
+#visualize event counts by session to ID outliers
+#not interested in some events (e.g. # cues is fixed), remove those
+dfPlot= dfTidy.loc[(dfTidy.eventType!='NStime') & (dfTidy.eventType!='DStime') & (dfTidy.eventType!='PExEst') & (dfTidy.eventType!='laserOffTime')] 
+
+#count of each event type by date and subj
+dfPlot= dfPlot.groupby(['RatID','date', 'eventType'])['eventTime'].count().reset_index()
+
+
+g= sns.relplot(data=dfPlot, col='eventType', x='date', y='eventTime', hue='RatID', kind='line',
+                facet_kws={'sharey': False, 'sharex': True})
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('Total event count across sessions by type- check for outliers')
+g.set_ylabels('# of events')
+g.set_ylabels('session')
+
+#%% Use pandas profiling on event counts
+##This might be a decent way to quickly view behavior session results/outliers if automated
+## note- if you are getting errors with ProfileReport() and you installed using conda, remove and reinstall using pip install
+
+# from pandas_profiling import ProfileReport
+
+# #Unstack() the groupby output for a dataframe we can profile
+# dfPlot= dfTidy.copy()
+# dfPlot= dfPlot.groupby(['RatID','date','eventType'])['eventTime'].count().unstack()
+# #add trialType counts
+# dfPlot= dfPlot.merge(dfTidy.loc[(dfTidy.eventType=='NStime') | (dfTidy.eventType=='DStime')].groupby(['RatID','date','trialType'])['eventTime'].count().unstack(),left_index=True,right_index=True)
+
+
+# profile = ProfileReport(dfPlot, title='Event Count by Session Pandas Profiling Report', explorative = True)
+
+# # save profile report as html
+# profile.to_file('pandasProfileEventCounts.html')
