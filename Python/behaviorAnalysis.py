@@ -13,16 +13,32 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-#%% Load previously saved dfTidy (and other vars) from pickle
-dataPath= r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\dfTidy.pkl'
+#%$ Things to change manually for your data:
+    
+#dataPath= path to folder containing dfTidy.pkl
+#
 
-dfTidy= pd.read_pickle(dataPath)
+#%% Load previously saved dfTidy (and other vars) from pickle
+dataPath= r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
+
+dfTidy= pd.read_pickle(dataPath+'dfTidy.pkl')
 
 #load any other variables saved during the import process ('dfTidymeta' shelf)
-my_shelf = shelve.open(r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\dfTidymeta')
+my_shelf = shelve.open(dataPath+'dfTidymeta')
 for key in my_shelf:
     globals()[key]=my_shelf[key]
 my_shelf.close()
+
+
+#%% Plot settings
+sns.set_style("darkgrid")
+
+#fixed order of trialType to plot (so consistent between figures)
+#for comparison of trial types (e.g. laser on vs laser off, good to have these in paired order for paired color palettes)
+trialOrder= ['DStime','NStime','ITI']
+
+if experimentType=='Opto':
+    trialOrder= ['laserDStrial_0', 'laserDStrial_1', 'laserNStrial_0', 'laserNStrial_1','ITI']
 
 
 # %% Preliminary data analyses
@@ -87,7 +103,6 @@ dfTidy= dfTidy.reset_index().set_index(['eventID'])
 
 
 #%% Check for outlier sessions/event counts
-# convert ratID to categorical data type so seaborn uses divergent color hues
 sns.set_palette('tab20')  #good for plotting by many subj
 
 
@@ -106,6 +121,92 @@ g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('Total event count across sessions by type- check for outliers')
 g.set_ylabels('# of events')
 g.set_ylabels('session')
+
+# %% Plot individual subject ILIs
+
+#trial-based, ignoring ITI
+# dfPlot = dfTidy[(dfTidy.trialID >= 0)].copy()
+#trial-based, including ITI
+dfPlot = dfTidy.copy()
+
+#All subj distribution of ILI (inter-lick interval)
+#only include trialLick~=nan
+dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
+#calculate ILI by taking diff() of latencies
+ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
+
+#ecdf- all subj
+g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='ecdf', hue_order=trialOrder)
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('ILI by trial type; all subj')
+g.set_xlabels('ILI (s)')
+g.set(xlim=(0,1))
+
+
+#Individual distribution of ILI (inter-lick interval)
+#only include trialLick~=nan
+dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
+#calculate ILI by taking diff() of latencies
+ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
+#bar- individual subj
+g= sns.catplot(data=dfPlot, y=ili, x='RatID', hue='trialType',  kind='bar', hue_order=trialOrder)
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('ILI by trial type; individual subj')
+g.set_ylabels('ILI (s)')
+g.set(ylim=(0,1))
+
+#%% Plot individual subject First lick latencies (time from cue or trialEnd if ITI events)
+# should represent "baseline" behavior  without laser
+      
+#trial-based, ignoring ITI
+# dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur=="Off")].copy()
+#trial-based, including ITI
+dfPlot = dfTidy[(dfTidy.laserDur=="Off")].copy()
+
+#All subj distribution of ILI (inter-lick interval)
+#only include first trialLick ==0
+dfPlot = dfPlot[dfPlot.trialLick==0].copy()
+
+
+#bar- all subj
+#median here takes awhile
+g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType', kind='bar', order=trialOrder)
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('first lick latencies by trial type; laser OFF; all subj')
+g.set_ylabels('lick latency from epoch start (s)')
+
+
+# #hist- all subj
+# ili= ili.astype('float') #allows KDE, but kde here takes awhile
+# g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='hist', stat="density", common_norm=False, kde=True, multiple='layer', hue_order=np.sort(dfPlot.trialType.unique()))
+# g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+# g.fig.suptitle('ILI by trial type; laser OFF; all subj')
+# g.set_xlabels('ILI (s)')
+# g.set(xlim=(0,1))
+
+#box- all subj
+g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType',  kind='box', order=trialOrder)
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('First Lick latencies by trial type; laser OFF; all subj')
+g.set_ylabels('lick latency from epoch start (s)')
+
+
+#ecdf- all subj'[]
+g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue_order=trialOrder)
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('First Lick latencies by trial type; laser OFF; all subj')
+g.set_xlabels('lick latency from epoch start (s)')
+
+
+#Individual distribution of ILI (inter-lick interval)
+#only include trialLick~=nan 
+#bar- individual subj
+g= sns.catplot(data=dfPlot, y='eventLatency', x='RatID', hue='trialType',  kind='bar', hue_order=trialOrder)
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('First Lick latencies by trial type; laser OFF; individual subj')
+g.set_ylabels('lick latency from epoch start (s)')
+
+    
 
 #%% Use pandas profiling on event counts
 ##This might be a decent way to quickly view behavior session results/outliers if automated

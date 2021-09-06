@@ -37,7 +37,7 @@ import shelve
 #eventVars= event type labels for recorded timestamps
 #idVars=  subject & session metadata labels for recorded timestamps 
 
-#ExperimentType= just a gate now for opto-specific code. = 'Opto' for opto specific code
+#experimentType= just a gate now for opto-specific code. = 'Opto' for opto specific code
 experimentType= 'Opto'
 
 #%% ID and import raw data .xlsx
@@ -133,16 +133,24 @@ for col in df.columns:
 #rename columns to labels
 df.columns= labels
 
+#%% Add unique fileID for each session (subject & date )
+
+df.loc[:,'fileID'] = df.groupby(['date', 'subject']).ngroup()
+
 # %% Add other variables if necessary before tidying
 
 # calculate port exit time estimate using PEtime and peDur, save this as a new variable
 df = df.assign(PExEst=df.PEtime + df.PEdur)
 
+# save cue duration (in DS task this is A(2))
+#TODO: may be better to put this in session metadata.xlsx? just to keep things parallel with photometry TDT data analysis (assume we won't import MPC as well)
+
+#group by fileID then retrieve the 2nd value in stageParams
+grouped= df.groupby('fileID')
+
+df.loc[:,'cueDur']= grouped.stageParams.transform('nth',2)
 
 
-#%% Add unique fileID for each session (subject & date )
-
-df.loc[:,'fileID'] = df.groupby(['date', 'subject']).ngroup()
 
 #%% Define Event variables for your experiment 
 #make a list of all of the Event Types so that we can melt them together into one variable
@@ -368,7 +376,7 @@ dfTidy.to_pickle(savePath+'dfTidy.pkl')
 # pickle.dump([idVars, eventVars, trialVars], savePath+'dfTidyMeta.pkl')
 
 #TODO: cueDur should probably have its own column in dfTidy for each fileID, since it will vary based on training stage (could just have in session metadata .xlsx)
-saveVars= ['idVars', 'eventVars', 'trialVars', 'cueDur']
+saveVars= ['idVars', 'eventVars', 'trialVars', 'cueDur', 'experimentType']
 
 #use shelve module to save variables as dict keys
 my_shelf= shelve.open('dfTidyMeta', 'n') #start new file
