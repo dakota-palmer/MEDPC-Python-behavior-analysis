@@ -1,8 +1,6 @@
-\STAGE 5 WN DS
+\STAGE 4 WhiteNoise DS
 \In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
 \based on white noise DS code*
-
-\TTL outputs are based on Plexon ephys system
 
 \CONSTANTS
 \^leftLever = 1
@@ -37,26 +35,18 @@ DIM R=8 \soundParams
 
 
 \INPUTS
-^PortEntry = 5 \this is the transient port entry sensor
-^PortEntrySus= = 6 \this is the sustained port entry sensor
+
+^PortEntry = 5
+^PortEntrySus=6
 ^Lick = 7
 \^leftLeverPress = 1
 \^rightLeverPress = 3
 
-\OUTPUTS
-^nsTTL = 42 \sends signal to TTL, Plexon, etc.
-^dsTTL=41 \sends signal to TTL, Plexon, etc.
-^portInTTL=43    \sends signal to TTL, Plexon, etc.
-^portOutTTL=44    \sends signal to TTL, Plexon, etc.
-^lickTTL=45 \sends signal to TTL, Plexon, etc.
-
 \ Inter-trial intervals in seconds
-LIST X = 10, 20, 30, 40, 50, 10, 20, 30, 40, 50  \ITI
-
+LIST X =   70, 80, 90, 100,110, 70, 80, 90 , 100,110  \ITI
 
 \ Choose DS
-LIST Y = 0,0,0,0,0,1,1,1,1,1
-
+LIST Y = 1,1,1,1,1
 
 
 
@@ -345,6 +335,7 @@ s3,
 
 S.S.6, \ DS control
 S1,
+  \#Z2: Z12; SET H(B(17))=B(13)/100--->S2
  #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100--->S2
 
 S2,
@@ -352,7 +343,6 @@ S2,
 A(2)*B(0)#T: OFF^NSwhiteNoise ---> S1
   \#R^PortEntry: Z13 --->S1
  #R^PortEntry: OFF^NSwhiteNoise--->S1
-
 
 
 S.S.7, \ DS US control
@@ -378,7 +368,6 @@ S2,
  A(2)*B(0)#T: Z13--->S1
 
 
-
 S.S.9, \ Record PE times and durations
 S1,
   #K21:--->S2
@@ -390,12 +379,9 @@ S2,
 
 S3, \In this state, PE has occurred and duration is being recorded
   #R^PortEntrySus:--->S3
-    #Z9 ! .01": SET L(B(6))=(B(13)-1)/100-K(B(6));
-               SHOW 6, PeDuration, L(B(6));\dp added trying to debug
-               ON ^portOutTTL--->S4 \TTL PULSE FOR PORT EXIT \This is only recording Pexits after the program starts (should be fine)
+  #Z9 ! .01": SET L(B(6))=(B(13)-1)/100-K(B(6))--->S2
 
-S4, \ turn off the TTL Pulse after small delay
-   .01": OFF ^portOutTTL--->S2
+
 
 S.S.10, \ Latency to enter port after DS
 S1,
@@ -435,7 +421,7 @@ S1,
     #K21:--->S2
 
 S2, \ Begin ITI period count of PE time
-  #R^PortEntrySus: ADD B(29); ADD B(30+B(3));
+     #R^PortEntrySus: ADD B(29); ADD B(30+B(3));
                   SHOW 2, PEtime, B(29);
                   SHOW 3, PEtime2, B(30+B(3));
                   SHOW 4, PEtime3, B(30);
@@ -646,39 +632,3 @@ S2,
     20,NS PE,B(11),
     21,PostNS PT,B(35),
     22,PostNS PE,B(12)--->SX
-
-S.S.23, \NS TTL Signal
-S1,
-    #K21:--->S2
-S2,
-    #Z6: ON ^nsTTL--->S3
-S3,
-    0.01": OFF ^nsTTL--->S2
-
-
-S.S.24, \DS TTL Signal
-S1,
-    #K21: --->S2
-S2,
-    #Z2: ON ^dsTTL ---> S3
-S3,
-    .01": OFF ^dsTTL---> S2
-
-
-S.S.25, \Port Entry TTL Signal     (Port exit TTL signal is higher up in code, where PE and PE duration are recorded)
-S1,
-    #K21: ---> S2
-S2,
-    #R^PortEntry: ON ^PortInTTL ---> S3
-S3,
-    #R^PortEntry: ---> S3 \done like this b/c sustained PE sensor is being used (must turn the TTL off after entering or it will stay active)- if there's a continuous PE stay here
-   .01": OFF ^PortInTTL ---> S2
-
-S.S.26, \Lick TTL Signal
-S1,
-    #K21: ---> S2
-S2,
-    #R^Lick: ON ^LickTTL ---> S3
-S3,
-    .01": OFF ^LickTTL--->S2
-

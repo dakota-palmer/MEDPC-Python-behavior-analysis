@@ -23,7 +23,7 @@
 \Sound stuff from Jocelyn's old code\
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 \Sound frequencies and other parameters
-DIM R=8
+DIM R=8 \soundParams
      ^ToneDur=10000         \R(0) Length of tone's on time, in ms
      ^ToneFreq=2600         \R(1) freq of tone
      ^SirenBaseFreq=6000    \R(2) starting (low) freq of the siren (Hz)
@@ -46,8 +46,7 @@ DIM R=8
 \^rightLeverPress = 3
 
 \ Inter-trial intervals in seconds
-LIST X = 50, 60, 70, 80, 90,
-         50, 60, 70, 80, 90   \ Inter-trial intervals in seconds - average ITI is 70 seconds
+LIST X = 50, 60, 70, 80, 90, 50, 60, 70, 80, 90  \ITI
 
 
 \ Choose DS

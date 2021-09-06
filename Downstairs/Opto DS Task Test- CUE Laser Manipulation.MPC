@@ -26,7 +26,7 @@
 \Sound stuff from Jocelyn's old code\
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 \Sound frequencies and other parameters
-DIM R=8 \soundParams
+DIM R=8 \soundParams \soundParams
      ^ToneDur=10000         \R(0) Length of tone's on time, in ms
      ^ToneFreq=2600         \R(1) freq of tone
      ^SirenBaseFreq=6000    \R(2) starting (low) freq of the siren (Hz)
