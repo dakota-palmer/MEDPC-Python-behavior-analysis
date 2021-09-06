@@ -147,7 +147,7 @@ DIM N=31 \NSPElat   \ Latency to PE following NS per trial
 DIM O=31 \DSPE1   \ Time of first PE following DS
 DIM P=31 \NSPE1   \ Time of first PE following NS
 DIM S=9999 \lickTime \ Lick timestamps in sec
-DIM V=30   \ 5-sec Licks after first PE following DS
+DIM V=31 \lickDSpost   \ 5-sec Licks after first PE following DS
 DIM U=31 \lickNSpost   \ 5-sec Licks after first PE following NS
 
 
