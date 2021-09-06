@@ -50,7 +50,7 @@ if experimentType=='Opto':
 #Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
   # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time  
 dfTidy.loc[dfTidy.trialID>=0, 'eventLatency'] = (
-    (dfTidy.eventTime)-(dfTidy.trialEnd-cueDur)).copy()
+    (dfTidy.eventTime)-(dfTidy.trialEnd-dfTidy.cueDur)).copy()
 
 #for 'ITI' events, calculate latency based on last trial end (not cue onset)
 dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = (

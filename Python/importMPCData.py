@@ -169,10 +169,10 @@ eventVars= ['PEtime', 'PExEst', 'lickTime', 'laserTime', 'DStime', 'NStime', 'US
 #they should variables in your session and subject metadata spreadsheets
 
 #e.g. for DS task with Opto
-idVars= ['fileID','subject', 'RatID', 'Virus', 'Sex', 'date', 'laserDur', 'note']
+idVars= ['fileID','subject', 'RatID', 'Virus', 'Sex', 'date', 'cueDur', 'laserDur', 'note']
 
 ## e.g. for DS task with no Opto
-# idVars= ['fileID','subject', 'RatID', 'Virus', 'Sex', 'date', 'note']
+# idVars= ['fileID','subject', 'RatID', 'Virus', 'Sex', 'date', 'cueDur', 'note']
 
 #%% Define Trial variables for your experiment
 # If you have variables corresponding to each individual trial 
@@ -249,10 +249,6 @@ dfTidy.trialID= dfTidy[dfTidy.trialID.notna()].groupby('fileID').cumcount()
 
 #%% Add trialID & trialType labels to other events (events during trials and ITIs) 
  
-#TODO: for now assume cue duration = 10, but should get programmatically from A() array or session metadata
-
-cueDur = 10
- 
 # fill in intermediate trialID values... We have absolute trialIDs now for each Cue but other events have trialID=nan
 # we can't tell for certain if events happened during a trial or ITI at this point but we do have all of the timestamps
 # and we know the cue duration, so we can calculate and assign events to a trial using this.
@@ -286,10 +282,11 @@ dfTidy.loc[dfTidy.trialID.isnull(),'trialID']= -0.5
 
 # Can get a trial end time based on cue onset, then just check
 # event times against this
+
 dfTidy = dfTidy.sort_values(by=['fileID', 'eventTime']).copy()
 
 dfTidy.loc[:, 'trialEnd'] = dfTidy.eventTime[dfTidy.trialID >= 0].copy() + \
-    cueDur
+    dfTidy.cueDur
 
 dfTidy.loc[:, 'trialEnd'] = dfTidy.fillna(method='ffill').copy()
 
@@ -301,7 +298,7 @@ dfTidy.loc[:, 'trialEnd'] = dfTidy.fillna(method='ffill').copy()
 # remaining events with negative trialIDs must have occurred somewhere in that ITI (or 'pre/post cue')
 
 dfTidy.loc[(dfTidy.trialEnd-dfTidy.eventTime >= 0) & ((dfTidy.trialEnd -
-                                                      dfTidy.eventTime).apply(np.round) < 10.0), 'trialID'] = dfTidy.trialID.copy()*-1
+                                                      dfTidy.eventTime).apply(np.round) < dfTidy.cueDur), 'trialID'] = dfTidy.trialID.copy()*-1
 
 # remove trialType labels from events outside of cueDur (- trial ID or nan trialID)
 # for now labelling with "ITI", but could be nan
@@ -375,8 +372,7 @@ dfTidy.to_pickle(savePath+'dfTidy.pkl')
 #also save other variables e.g. eventVars, idVars, trialVars for later recall (without needing to run this script again)
 # pickle.dump([idVars, eventVars, trialVars], savePath+'dfTidyMeta.pkl')
 
-#TODO: cueDur should probably have its own column in dfTidy for each fileID, since it will vary based on training stage (could just have in session metadata .xlsx)
-saveVars= ['idVars', 'eventVars', 'trialVars', 'cueDur', 'experimentType']
+saveVars= ['idVars', 'eventVars', 'trialVars', 'experimentType']
 
 #use shelve module to save variables as dict keys
 my_shelf= shelve.open('dfTidyMeta', 'n') #start new file
