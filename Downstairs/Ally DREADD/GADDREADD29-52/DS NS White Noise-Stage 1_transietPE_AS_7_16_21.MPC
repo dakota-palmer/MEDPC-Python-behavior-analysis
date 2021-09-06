@@ -47,7 +47,7 @@ LIST X = 20, 30, 40, 50, 60,20, 30, 40, 50, 60  \ITI
 
 
 \ Choose DS
-LIST Y = 1,1,1,1,1 \listCueType
+LIST Y = 1,1,1,1,1 \listCueType \listCueType
 
 
 
@@ -132,18 +132,18 @@ DIM B=81 \workingVars
 
 \DATA ARRAYS
 DIM H=60  \DStime  \ DS onset time per trial
-DIM I=60   \NStime\ NS onset time per trial
-DIM J=60   \UStime\ US onset time per trial
+DIM I=61 \NStime   \NStime\ NS onset time per trial
+DIM J=61 \UStime   \UStime\ US onset time per trial
 
-DIM K=9999 \PEtime  \ PE timestamps in sec
-DIM L=9999 \PEdur  \ PE durations in sec
-DIM M=30 \DSPElat   \ Latency to PE following DS per trial
-DIM N=30  \NSPElat  \ Latency to PE following NS per trial
-DIM O=30   \DSPE1\ Time of first PE following DS
-DIM P=30   \NSPE1  \ Time of first PE following NS
-DIM S=9999 \lickTime \ Lick timestamps in sec
+DIM K=9999 \PEtime \PEtime  \ PE timestamps in sec
+DIM L=9999 \PEdur \PEdur  \ PE durations in sec
+DIM M=31 \DSPElat \DSPElat   \ Latency to PE following DS per trial
+DIM N=31 \NSPElat  \NSPElat  \ Latency to PE following NS per trial
+DIM O=31 \DSPE1   \DSPE1\ Time of first PE following DS
+DIM P=31 \NSPE1   \NSPE1  \ Time of first PE following NS
+DIM S=9999 \lickTime \lickTime \ Lick timestamps in sec
 DIM V=30  \lickDSpost \ 5-sec Licks after first PE following DS
-DIM U=30   \lickNSpost\ 5-sec Licks after first PE following NS
+DIM U=31 \lickNSpost   \lickNSpost\ 5-sec Licks after first PE following NS
 
 
 \Z signals (within box):

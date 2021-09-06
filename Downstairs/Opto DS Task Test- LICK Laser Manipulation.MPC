@@ -54,7 +54,7 @@ LIST X = 10, 20, 30, 40, 50, 10, 20, 30, 40, 50   \ITI
 
 
 \ Choose DS or NS for each trial
-LIST Y = 0,0,0,0,0,1,1,1,1,1 \listCueType
+LIST Y = 0,0,0,0,0,1,1,1,1,1 \listCueType\
 
 \ Choose Laser ON or OFF for each DS trial   \OFF= 0  and ON = 1
 LIST C = 0,0,0,0,0,1,1,1,1,1  \listProbDSLaser
@@ -156,20 +156,20 @@ DIM B=81 \workingVars
 
 \DATA ARRAYS
 DIM H=61   \DStime \ DS onset time per trial
-DIM I=61   \NStime \ NS onset time per trial
+DIM I=61 \NStime   \NStime \ NS onset time per trial
 DIM J=61   \UStime \ US onset time per trial
 
-DIM K=9999 \PEtime \ PE timestamps in sec
-DIM L=9999 \PEdur \ PE durations in sec
+DIM K=9999 \PEtime \PEtime \ PE timestamps in sec
+DIM L=9999 \PEdur \PEdur \ PE durations in sec
 DIM M=31   \DSPElat \ Latency to PE following DS per trial
 DIM N=31   \NSPElat \ Latency to PE following NS per trial
 DIM O=31   \DSPE1 \ Time of first PE following DS
 DIM P=31   \NSPE1 \ Time of first PE following NS
-DIM S=9999 \lickTime \ LickTimestamps in sec
+DIM S=9999 \lickTime \lickTime \ LickTimestamps in sec
 DIM V=31   \lickDSpost \ 5-sec Licks after first PE following DS
 DIM U=31   \lickNSpost \ 5-sec Licks after first PE following NS
 
-DIM W=9999 \trialState \record of trial states B(3) dp added 5/30/21
+DIM W=9999 \trialState \trialState \record of trial states B(3) dp added 5/30/21
 
 DIM E= 61 \laserDStrial \DS Laser trial array
 DIM F= 61 \laserNStrial \NS Laser trial array

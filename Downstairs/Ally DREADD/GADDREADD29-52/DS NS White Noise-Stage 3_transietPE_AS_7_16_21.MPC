@@ -47,7 +47,7 @@ LIST X =  60, 70, 80, 90, 100, 60, 70, 80, 90 , 100  \ITI
 
 
 \ Choose DS
-LIST Y = 1,1,1,1,1
+LIST Y = 1,1,1,1,1 \listCueType
 
 
 
@@ -61,7 +61,7 @@ Var_Alias Paired (0), or Unpaired (1) DS-US   = A(5)
 
 
 
-DIM A=9 \ User-editable values
+DIM A=9 \stageParams
     \A(0)=Delay before 1st ITI in seconds (default 120 sec)
     \A(1)=Number of DS trials (default 60)
     \A(2)=Duration of DS phase in seconds (default 10 sec)
@@ -73,7 +73,7 @@ DIM A=9 \ User-editable values
 
 
 \WORKING VARIABLES
-DIM B=81
+DIM B=81 \workingVars
     \B(0) = 1" in MED time units, used for time input calculations
     \B(1) = Current trial #
     \B(2) = Current ITI length in seconds
@@ -132,18 +132,18 @@ DIM B=81
 
 \DATA ARRAYS
 DIM H=60   \ DS onset time per trial
-DIM I=60   \ NS onset time per trial
-DIM J=60   \ US onset time per trial
+DIM I=61 \NStime   \ NS onset time per trial
+DIM J=61 \UStime   \ US onset time per trial
 
-DIM K=9999 \ PE timestamps in sec
-DIM L=9999 \ PE durations in sec
-DIM M=30   \ Latency to PE following DS per trial
-DIM N=30   \ Latency to PE following NS per trial
-DIM O=30   \ Time of first PE following DS
-DIM P=30   \ Time of first PE following NS
-DIM S=9999 \ Lick timestamps in sec
+DIM K=9999 \PEtime \ PE timestamps in sec
+DIM L=9999 \PEdur \ PE durations in sec
+DIM M=31 \DSPElat   \ Latency to PE following DS per trial
+DIM N=31 \NSPElat   \ Latency to PE following NS per trial
+DIM O=31 \DSPE1   \ Time of first PE following DS
+DIM P=31 \NSPE1   \ Time of first PE following NS
+DIM S=9999 \lickTime \ Lick timestamps in sec
 DIM V=30   \ 5-sec Licks after first PE following DS
-DIM U=30   \ 5-sec Licks after first PE following NS
+DIM U=31 \lickNSpost   \ 5-sec Licks after first PE following NS
 
 
 \Z signals (within box):
