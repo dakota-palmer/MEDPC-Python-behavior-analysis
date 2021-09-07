@@ -121,10 +121,10 @@ metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metad
 
 metaPath= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto
 
-dfRaw= pd.read_excel(metaPath).astype('str') 
+#ensure that date is read as string
+dfRaw= pd.read_excel(metaPath, converters={'date': str}).astype('str') 
 
 df= df.merge(dfRaw.astype('str'), how='left', on=['subject','date'])
-
 
 # %% Exclude data
 
