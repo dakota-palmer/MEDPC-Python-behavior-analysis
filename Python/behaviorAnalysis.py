@@ -62,8 +62,17 @@ dfTidy.loc[dfTidy.trialID== -0.5, 'eventLatency']= np.nan
 
 #Count events in each trial 
 #use cumcount() of event times within file & trial 
+
+#converting to float for some reason
 dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
 'fileID', 'trialID'])['eventTime'].cumcount().copy()
+
+#try transform
+dfTidy.loc[:,'trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
+'fileID', 'trialID'])['eventTime'].transform('cumcount').copy()
+
+
+
 
 dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'lickTime')].groupby([
     'fileID', 'trialID']).cumcount().copy()
@@ -112,17 +121,73 @@ sns.set_palette('tab20')  #good for plotting by many subj
 dfPlot= dfTidy.loc[(dfTidy.eventType!='NStime') & (dfTidy.eventType!='DStime') & (dfTidy.eventType!='PExEst') & (dfTidy.eventType!='laserOffTime')] 
 
 #count of each event type by date and subj
-dfPlot= dfPlot.groupby(['RatID','date', 'eventType'])['eventTime'].count().reset_index()
+dfPlot= dfPlot.groupby(['subject','date', 'eventType'])['eventTime'].count().reset_index()
 
 
-g= sns.relplot(data=dfPlot, col='eventType', x='date', y='eventTime', hue='RatID', kind='line',
+g= sns.relplot(data=dfPlot, col='eventType', x='date', y='eventTime', hue='subject', kind='line',
                 facet_kws={'sharey': False, 'sharex': True})
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('Total event count across sessions by type- check for outliers')
 g.set_ylabels('# of events')
 g.set_ylabels('session')
 
-# %% Plot individual subject ILIs
+#%% Plot port entry latency by trialType
+            
+#select data corresponding to first PE from valid trials
+dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.trialPE == 0)].copy()
+
+# PE latency: virus x laserDur
+g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
+                row='virus', kind='ecdf', hue_order= trialOrder)
+g.fig.suptitle('First PE latency by trial type')
+g.set_ylabels('First PE latency from epoch start (s)')
+
+#PE latency: virus individual subj
+g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='subject', kind='bar', hue_order=trialOrder)
+g.fig.suptitle('First PE latency by trial type')
+g.set_ylabels('First PE latency from epoch start (s)')
+
+  #PE latency:  individual subj CUE+laser
+g=sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',hue='trialType', kind='ecdf', hue_order=trialOrder)
+g.fig.suptitle('First PE latency by trial type; laser + CUE')
+g.set_ylabels('First PE latency from epoch start (s)')
+
+#%% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType
+# should represent "baseline" behavior  without laser
+      
+#trial-based, ignoring ITI
+# dfPlot = dfTidy[(dfTidy.trialID >= 0)].copy()
+#trial-based, including ITI
+dfPlot= dfTidy.copy()
+
+#All subj distribution of ILI (inter-lick interval)
+#only include first trialLick ==0
+dfPlot = dfPlot[dfPlot.trialLick==0].copy()
+
+#box- all subj
+g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType',  kind='box', order=trialOrder)
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('First Lick latencies by trial type; all subj')
+g.set_ylabels('lick latency from epoch start (s)')
+
+
+#ecdf- all subj'[]
+g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue_order=trialOrder)
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('First Lick latencies by trial type; all subj')
+g.set_xlabels('lick latency from epoch start (s)')
+
+
+#Individual distribution of ILI (inter-lick interval)
+#only include trialLick~=nan 
+#bar- individual subj
+g= sns.catplot(data=dfPlot, y='eventLatency', x='subject', hue='trialType',  kind='bar', hue_order=trialOrder)
+g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+g.fig.suptitle('First Lick latencies by trial type; individual subj')
+g.set_ylabels('lick latency from epoch start (s)')
+
+    
+# %% Plot inter-lick interval (ILI) by trialType
 
 #trial-based, ignoring ITI
 # dfPlot = dfTidy[(dfTidy.trialID >= 0)].copy()
@@ -130,8 +195,9 @@ g.set_ylabels('session')
 dfPlot = dfTidy.copy()
 
 #All subj distribution of ILI (inter-lick interval)
-#only include trialLick~=nan
+#only include trialLick~=nan (lick timestamps within trials)
 dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
+
 #calculate ILI by taking diff() of latencies
 ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
 
@@ -149,64 +215,11 @@ dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
 #calculate ILI by taking diff() of latencies
 ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
 #bar- individual subj
-g= sns.catplot(data=dfPlot, y=ili, x='RatID', hue='trialType',  kind='bar', hue_order=trialOrder)
+g= sns.catplot(data=dfPlot, y=ili, x='subject', hue='trialType',  kind='bar', hue_order=trialOrder)
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('ILI by trial type; individual subj')
 g.set_ylabels('ILI (s)')
 g.set(ylim=(0,1))
-
-#%% Plot individual subject First lick latencies (time from cue or trialEnd if ITI events)
-# should represent "baseline" behavior  without laser
-      
-#trial-based, ignoring ITI
-# dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur=="Off")].copy()
-#trial-based, including ITI
-dfPlot = dfTidy[(dfTidy.laserDur=="Off")].copy()
-
-#All subj distribution of ILI (inter-lick interval)
-#only include first trialLick ==0
-dfPlot = dfPlot[dfPlot.trialLick==0].copy()
-
-
-#bar- all subj
-#median here takes awhile
-g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType', kind='bar', order=trialOrder)
-g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-g.fig.suptitle('first lick latencies by trial type; laser OFF; all subj')
-g.set_ylabels('lick latency from epoch start (s)')
-
-
-# #hist- all subj
-# ili= ili.astype('float') #allows KDE, but kde here takes awhile
-# g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='hist', stat="density", common_norm=False, kde=True, multiple='layer', hue_order=np.sort(dfPlot.trialType.unique()))
-# g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-# g.fig.suptitle('ILI by trial type; laser OFF; all subj')
-# g.set_xlabels('ILI (s)')
-# g.set(xlim=(0,1))
-
-#box- all subj
-g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType',  kind='box', order=trialOrder)
-g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-g.fig.suptitle('First Lick latencies by trial type; laser OFF; all subj')
-g.set_ylabels('lick latency from epoch start (s)')
-
-
-#ecdf- all subj'[]
-g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue_order=trialOrder)
-g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-g.fig.suptitle('First Lick latencies by trial type; laser OFF; all subj')
-g.set_xlabels('lick latency from epoch start (s)')
-
-
-#Individual distribution of ILI (inter-lick interval)
-#only include trialLick~=nan 
-#bar- individual subj
-g= sns.catplot(data=dfPlot, y='eventLatency', x='RatID', hue='trialType',  kind='bar', hue_order=trialOrder)
-g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-g.fig.suptitle('First Lick latencies by trial type; laser OFF; individual subj')
-g.set_ylabels('lick latency from epoch start (s)')
-
-    
 
 #%% Use pandas profiling on event counts
 ##This might be a decent way to quickly view behavior session results/outliers if automated
@@ -216,9 +229,9 @@ g.set_ylabels('lick latency from epoch start (s)')
 
 # #Unstack() the groupby output for a dataframe we can profile
 # dfPlot= dfTidy.copy()
-# dfPlot= dfPlot.groupby(['RatID','date','eventType'])['eventTime'].count().unstack()
+# dfPlot= dfPlot.groupby(['subject','date','eventType'])['eventTime'].count().unstack()
 # #add trialType counts
-# dfPlot= dfPlot.merge(dfTidy.loc[(dfTidy.eventType=='NStime') | (dfTidy.eventType=='DStime')].groupby(['RatID','date','trialType'])['eventTime'].count().unstack(),left_index=True,right_index=True)
+# dfPlot= dfPlot.merge(dfTidy.loc[(dfTidy.eventType=='NStime') | (dfTidy.eventType=='DStime')].groupby(['subject','date','trialType'])['eventTime'].count().unstack(),left_index=True,right_index=True)
 
 
 # profile = ProfileReport(dfPlot, title='Event Count by Session Pandas Profiling Report', explorative = True)

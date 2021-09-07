@@ -30,6 +30,7 @@ import shelve
 #datapath= path to your folder containing excel files
 
 #colToImport= columns in your excel sheets to include (manually defined this so that I could exclude a specific variable that was huge)
+#TODO: this might need to change based on stage/MPC code (perhaps variables are introduced in different .MPCs that mess with the order of things)
 
 #metapath= paths to 1) subject metadata spreadsheet (e.g. virus type, sex) and 2) session metadata spreadsheet (e.g. laser parameters, DREADD manipulations)
 #excludeDate= specific date you might want to exclude
@@ -37,13 +38,18 @@ import shelve
 #eventVars= event type labels for recorded timestamps
 #idVars=  subject & session metadata labels for recorded timestamps 
 
+#TODO: may consider adding subjVars and sessionVars depending on your experiment 
+
 #experimentType= just a gate now for opto-specific code. = 'Opto' for opto specific code
-experimentType= 'Opto'
+experimentType= 'gadOpto'
 
 #%% ID and import raw data .xlsx
 # your path to folder containing excel files 
-datapath = r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw\\'
+datapath = r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw\\'#dp opto
 
+datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto
+
+# datapath= r'C:\Users\Dakota\Desktop\_example_gaddreadd\MED-PC Files July-TBD 2021\All\\' #ally dreadd
 
 # set all .xls files in your folder to list
 allfiles = glob.glob(datapath + "*.xls*")
@@ -52,7 +58,9 @@ allfiles = glob.glob(datapath + "*.xls*")
 dfRaw = pd.DataFrame()
 
 #define columns in your .xlsx for specific variables you want (e.g. A:Z for all)
-colToImport= 'F:S,U:X'
+colToImport= 'F:S,U:X' #dp opto 
+
+colToImport= 'A:Q' #ally dreadd
 
 #for loop to aquire all excel files in folder
 for excelfiles in allfiles:
@@ -99,7 +107,9 @@ df.subject= df.subject.astype('str')
 df.date= df.date.astype('str')
 
 # Match and insert subject metadata based on subject
-metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx"
+metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" #dp opto
+
+metaPath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
 
 dfRaw= pd.read_excel(metaPath).astype('str') 
 
@@ -107,7 +117,9 @@ df= df.merge(dfRaw.astype('str'), how='left', on=['subject'])
 
 # Match and insert session metadata based on date and subject
 
-metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx"
+metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp opto
+
+metaPath= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto
 
 dfRaw= pd.read_excel(metaPath).astype('str') 
 
@@ -158,25 +170,30 @@ df.loc[:,'cueDur']= grouped.stageParams.transform('nth',2)
 
 #these should match the labels in your .MPC file
 
-#e.g. for DS task with Opto
-eventVars= ['PEtime', 'PExEst', 'lickTime', 'laserTime', 'DStime', 'NStime', 'UStime','laserOffTime']
-
 ## e.g. for DS task with no Opto  
-# eventVars= ['PEtime', 'PExEst', 'lickTime', 'DStime', 'NStime', 'UStime']
+eventVars= ['PEtime', 'PExEst', 'lickTime', 'DStime', 'NStime', 'UStime']
+
+#e.g. for DS task with Opto
+if experimentType== 'Opto':
+    eventVars= ['PEtime', 'PExEst', 'lickTime', 'laserTime', 'DStime', 'NStime', 'UStime','laserOffTime']
 
 #%% Define ID variables for your sessions
 #these are identifying variables per sessions that should be matched up with the corresponding event variables and timestamps
 #they should variables in your session and subject metadata spreadsheets
 
-#e.g. for DS task with Opto
-idVars= ['fileID','subject', 'RatID', 'Virus', 'Sex', 'date', 'cueDur', 'laserDur', 'note']
-
 ## e.g. for DS task with no Opto
-# idVars= ['fileID','subject', 'RatID', 'Virus', 'Sex', 'date', 'cueDur', 'note']
+idVars= ['fileID','subject', 'virus', 'sex', 'date', 'cueDur', 'note']
+
+#e.g. for DS task with Opto
+if experimentType== 'Opto':
+    idVars= ['fileID','subject', 'virus', 'sex', 'date', 'cueDur', 'laserDur', 'note']
+
 
 #%% Define Trial variables for your experiment
 # If you have variables corresponding to each individual trial 
 #e.g. different trial types in addition to DS vs NS (e.g. laser ON vs laser OFF trials; TODO: variable reward outcome)
+
+trialVars= []
 
 #e.g. for Opto:
 if experimentType=='Opto':
@@ -412,7 +429,7 @@ def groupbyCustom(df, grouper):
     # dfGroup= pd.DataFrame()
     #initialize dfGroup as all nan copy of original df. Then we'll get values by group
     dfGroup= df.copy()
-    dfGroup[:]= np.nan
+    dfGroup[:]= pd.NA #np.nan
     
     #collection using loop takes too long. would be nice to vectorize (need to find a way to use the dict int64 ind as index in df I think)
     for group in groups:

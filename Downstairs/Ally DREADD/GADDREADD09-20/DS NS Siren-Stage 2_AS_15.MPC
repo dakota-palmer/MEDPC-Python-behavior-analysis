@@ -101,7 +101,7 @@ DIM B=81 \workingVars
     \B(47)= Licks in 5 sec post DS port entry
     \B(48)= Licks in 5 sec post NS port entry
 \DATA ARRAYS
-DIM H=60   \ DS onset time per trial
+DIM H=61 \DStime   \ DS onset time per trial
 DIM I=61 \NStime   \ NS onset time per trial
 DIM J=61 \UStime   \ US onset time per trial
 DIM K=9999 \PEtime \ PE timestamps in sec
