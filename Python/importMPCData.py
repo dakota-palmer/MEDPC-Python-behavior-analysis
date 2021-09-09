@@ -162,6 +162,8 @@ grouped= df.groupby('fileID')
 
 df.loc[:,'cueDur']= grouped.stageParams.transform('nth',2)
 
+grouped.stageParams.nth(2)
+
 
 
 #%% Define Event variables for your experiment 

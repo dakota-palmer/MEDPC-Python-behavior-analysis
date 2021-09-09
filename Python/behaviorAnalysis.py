@@ -111,7 +111,75 @@ dfTidy.loc[trialOutcomeBeh.index,'trialOutcomeBeh']= trialOutcomeBeh
 dfTidy= dfTidy.reset_index().set_index(['eventID'])
 
 
-#%% Check for outlier sessions/event counts
+#%% Calculate Probability of behavioral outcome for each trial type. 
+#This is normalized so is more informative than simple count of trials. 
+
+#calculate Proportion of trials with PE out of all trials for each trial type
+#can use nunique() to get count of unique trialIDs with specific PE outcome per file
+#given this, can calculate Probortion as #PE/#PE+#noPE
+   
+#subset data and save as intermediate variable dfGroup
+dfGroup= dfTidy.copy()
+
+#for Lick+laser sessions, retain only trials with PE+lick for comparison (OPTO specific)
+# dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh=='PE+lick')].copy()
+   
+dfPlot= dfGroup.copy() 
+
+#get unique outcomes. excluded trials are all nan- don't include them
+# outcomes= dfTidy.loc[dfTidy.trialOutcomeBeh.notnull()].trialOutcomeBeh.unique()
+
+#TODO: optimize this- combine outcomes here into one variable
+#using apply() might help? or pivot?
+
+# tester[outcomes]= dfPlot[(dfPlot.trialOutcomeBeh==outcomes)].reset_index().groupby(
+#     ['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
+
+
+# tester=pd.DataFrame()
+# tester2= tester.copy()
+# for outcome in outcomes:
+#     # tester.loc[:,outcome]= dfPlot.loc[(dfPlot.trialOutcomeBeh==outcome)].reset_index().groupby(
+#     #     ['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
+#     tester.loc[:,outcome]= dfPlot.loc[(dfPlot.trialOutcomeBeh==outcome)].groupby(
+#         ['fileID','trialType'],dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0).stack()
+#     tester2.loc[:,outcome]= dfPlot.loc[(dfPlot.trialOutcomeBeh==outcome)].groupby(
+#       ['fileID','trialType'],dropna=False, as_index=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)#.stack()
+#     groups= dfPlot.groupby(
+#         ['fileID','trialType'],dropna=False)['trialID'].groups
+#     groups2= dfPlot.loc[(dfPlot.trialOutcomeBeh==outcome)].groupby(
+#         ['fileID','trialType'],dropna=False)['trialID'].groups
+#     #seems that indexing conditionallyh with .loc before groupby constrains groups?
+#     groups3= dfPlot.groupby(
+#         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].groups
+# tester.fillna(0,inplace=True)
+
+ #still missing some sessions somehow...
+
+#for each unique behavioral outcome, loop through and get count of trials in file
+#fill null counts with 0
+dfTemp=dfPlot.groupby(
+        ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
+
+##calculate proportion for each trial type: num trials with outcome/total num trials of this type
+outcomeProb= dfTemp.divide(dfTemp.sum(axis=1),axis=0)
+
+#melt() into single column w label
+dfTemp= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh',value_name='outcomeProbFile')
+
+#assign back to df by merging
+#TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
+# dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
+
+dfTidy= dfTidy.reset_index().merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh']).copy()
+
+dfTidy.loc[:,'outcomeProbFile']= dfTemp.outcomeProbFile
+
+
+
+
+#%% PLOTS:
+#%% Plot event counts across sessions (check for outlier sessions/event counts)
 sns.set_palette('tab20')  #good for plotting by many subj
 
 
@@ -147,9 +215,9 @@ g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='subject', kind='b
 g.fig.suptitle('First PE latency by trial type')
 g.set_ylabels('First PE latency from epoch start (s)')
 
-  #PE latency:  individual subj CUE+laser
+  #PE latency:  individual subj 
 g=sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',hue='trialType', kind='ecdf', hue_order=trialOrder)
-g.fig.suptitle('First PE latency by trial type; laser + CUE')
+g.fig.suptitle('First PE latency by trial type')
 g.set_ylabels('First PE latency from epoch start (s)')
 
 #%% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType
