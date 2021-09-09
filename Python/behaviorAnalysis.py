@@ -126,36 +126,6 @@ dfGroup= dfTidy.copy()
    
 dfPlot= dfGroup.copy() 
 
-#get unique outcomes. excluded trials are all nan- don't include them
-# outcomes= dfTidy.loc[dfTidy.trialOutcomeBeh.notnull()].trialOutcomeBeh.unique()
-
-#TODO: optimize this- combine outcomes here into one variable
-#using apply() might help? or pivot?
-
-# tester[outcomes]= dfPlot[(dfPlot.trialOutcomeBeh==outcomes)].reset_index().groupby(
-#     ['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
-
-
-# tester=pd.DataFrame()
-# tester2= tester.copy()
-# for outcome in outcomes:
-#     # tester.loc[:,outcome]= dfPlot.loc[(dfPlot.trialOutcomeBeh==outcome)].reset_index().groupby(
-#     #     ['fileID','trialType','trialOutcomeBeh'])['trialID'].nunique()
-#     tester.loc[:,outcome]= dfPlot.loc[(dfPlot.trialOutcomeBeh==outcome)].groupby(
-#         ['fileID','trialType'],dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0).stack()
-#     tester2.loc[:,outcome]= dfPlot.loc[(dfPlot.trialOutcomeBeh==outcome)].groupby(
-#       ['fileID','trialType'],dropna=False, as_index=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)#.stack()
-#     groups= dfPlot.groupby(
-#         ['fileID','trialType'],dropna=False)['trialID'].groups
-#     groups2= dfPlot.loc[(dfPlot.trialOutcomeBeh==outcome)].groupby(
-#         ['fileID','trialType'],dropna=False)['trialID'].groups
-#     #seems that indexing conditionallyh with .loc before groupby constrains groups?
-#     groups3= dfPlot.groupby(
-#         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].groups
-# tester.fillna(0,inplace=True)
-
- #still missing some sessions somehow...
-
 #for each unique behavioral outcome, loop through and get count of trials in file
 #fill null counts with 0
 dfTemp=dfPlot.groupby(
@@ -174,8 +144,6 @@ dfTemp= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='
 dfTidy= dfTidy.reset_index().merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh']).copy()
 
 dfTidy.loc[:,'outcomeProbFile']= dfTemp.outcomeProbFile
-
-
 
 
 #%% PLOTS:
