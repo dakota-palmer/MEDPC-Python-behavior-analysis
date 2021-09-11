@@ -8,6 +8,7 @@ Created on Tue Aug 31 16:09:42 2021
 #%% Load dependencies
 import pandas as pd
 import shelve
+import os
 
 import numpy as np
 import seaborn as sns
@@ -15,11 +16,11 @@ import matplotlib.pyplot as plt
 
 #%$ Things to change manually for your data:
     
-#dataPath= path to folder containing dfTidy.pkl
 #plot settings in section below
 
+
 #%% Load previously saved dfTidy (and other vars) from pickle
-dataPath= r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
+dataPath= r'./_output/' #'r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
 
 dfTidy= pd.read_pickle(dataPath+'dfTidy.pkl')
 

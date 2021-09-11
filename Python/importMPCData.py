@@ -377,11 +377,7 @@ if experimentType== 'Opto':
 
 #%% Save dfTidy so it can be loaded quickly for subesequent analysis
 
-savePath= r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw'
-
-savePath= r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python'
-
-savePath= './'
+savePath= r'./_output/' #r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python' 
 
 print('saving dfTidy to file')
 
@@ -394,7 +390,7 @@ dfTidy.to_pickle(savePath+'dfTidy.pkl')
 saveVars= ['idVars', 'eventVars', 'trialVars', 'experimentType']
 
 #use shelve module to save variables as dict keys
-my_shelf= shelve.open('dfTidyMeta', 'n') #start new file
+my_shelf= shelve.open(savePath+'dfTidyMeta', 'n') #start new file
 
 for key in saveVars:
     try:

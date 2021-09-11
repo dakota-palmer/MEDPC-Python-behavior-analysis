@@ -6,3 +6,6 @@ Python/dfTidy.csv
 Python/dfTidyMeta.bak
 Python/dfTidyMeta.dat
 Python/dfTidyMeta.dir
+Python/_output/dfTidyMeta.bak
+Python/_output/dfTidyMeta.dat
+Python/_output/dfTidyMeta.dir
