@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
  #%% define a function to save and close figures
 def saveFigCustom(figure, figName):
-    plt.savefig(r'./_output/'+figName+'.PDF')
+    plt.savefig(r'./_output/_behaviorAnalysis/'+figName+'.PDF')
     plt.close()
          
          
