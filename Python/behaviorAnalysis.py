@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 #%$ Things to change manually for your data:
     
 #dataPath= path to folder containing dfTidy.pkl
-#
+#plot settings in section below
 
 #%% Load previously saved dfTidy (and other vars) from pickle
 dataPath= r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
@@ -36,6 +36,9 @@ sns.set_style("darkgrid")
 #fixed order of trialType to plot (so consistent between figures)
 #for comparison of trial types (e.g. laser on vs laser off, good to have these in paired order for paired color palettes)
 trialOrder= ['DStime','NStime','ITI']
+
+#DS PE probability criteria (for visualization)
+criteriaDS= 0.6
 
 if experimentType=='Opto':
     trialOrder= ['laserDStrial_0', 'laserDStrial_1', 'laserNStrial_0', 'laserNStrial_1','ITI']
@@ -143,10 +146,9 @@ dfTemp= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='
 
 dfTidy= dfTidy.reset_index().merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh']).copy()
 
-dfTidy.loc[:,'outcomeProbFile']= dfTemp.outcomeProbFile
-
 
 #%% PLOTS:
+    
 #%% Plot event counts across sessions (check for outlier sessions/event counts)
 sns.set_palette('tab20')  #good for plotting by many subj
 
@@ -167,7 +169,48 @@ g.fig.suptitle('Total event count across sessions by type- check for outliers')
 g.set_ylabels('# of events')
 g.set_ylabels('session')
 
-#%% Plot port entry latency by trialType
+#%% Plot PE probability by trialType
+ 
+#subset data and save as intermediate variable dfGroup
+dfGroup= dfTidy.copy()
+ 
+#select data
+#all trials excluding ITI     
+dfPlot = dfGroup[(dfGroup.trialID >= 0)].copy()
+ 
+#get only PE outcomes
+# dfPlot.reset_index(inplace=True)
+dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh=='PE') | (dfPlot.trialOutcomeBeh=='PE+lick')].copy()
+ 
+#since we calculated aggregated proportion across all trials in session,
+#take only first index. Otherwise repeated observations are redundant
+dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh']).first().copy()
+ 
+ 
+#sum together both PE and PE+lick for total overall PE prob
+# dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
+ 
+dfPlot['probPE']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile'].sum().copy()
+
+#get an aggregated x axis for files per subject
+fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
+ 
+#since grouping PE and PE+lick, we still have redundant observations
+#retain only 1 per trial type per file
+dfPlot= dfPlot.reset_index().loc[fileAgg]
+
+#subjects may run different session types on same day (e.g. different laserDur), so shouldn't plot simply by date across subjects
+#individual plots by date is ok
+sns.set_palette('Paired')
+
+g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line')
+g.map(plt.axhline, y=criteriaDS, color=".7", dashes=(2, 1), zorder=0)
+g.set_titles('{col_name}')
+g.fig.suptitle('Evolution of the probPE in subjects by trialType')
+g.tight_layout(w_pad=0)
+  
+
+#%% Plot PE latency by trialType
             
 #select data corresponding to first PE from valid trials
 dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.trialPE == 0)].copy()
