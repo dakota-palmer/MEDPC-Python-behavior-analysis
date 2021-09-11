@@ -19,6 +19,13 @@ import matplotlib.pyplot as plt
 #plot settings in section below
 
 
+ #%% define a function to save and close figures
+def saveFigCustom(figure, figName):
+    plt.savefig(r'./_output/'+figName+'.PDF')
+    plt.close()
+         
+         
+
 #%% Load previously saved dfTidy (and other vars) from pickle
 dataPath= r'./_output/' #'r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
 
@@ -170,6 +177,8 @@ g.fig.suptitle('Total event count across sessions by type- check for outliers')
 g.set_ylabels('# of events')
 g.set_ylabels('session')
 
+saveFigCustom(g, 'individual_eventCounts_line')
+
 #%% Plot PE probability by trialType
  
 #subset data and save as intermediate variable dfGroup
@@ -209,6 +218,8 @@ g.map(plt.axhline, y=criteriaDS, color=".7", dashes=(2, 1), zorder=0)
 g.set_titles('{col_name}')
 g.fig.suptitle('Evolution of the probPE in subjects by trialType')
 g.tight_layout(w_pad=0)
+
+saveFigCustom(g, 'individual_peProb')
   
 
 #%% Plot PE latency by trialType
@@ -216,21 +227,20 @@ g.tight_layout(w_pad=0)
 #select data corresponding to first PE from valid trials
 dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.trialPE == 0)].copy()
 
-# PE latency: virus x laserDur
+# PE latency: virus
 g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
                 row='virus', kind='ecdf', hue_order= trialOrder)
 g.fig.suptitle('First PE latency by trial type')
 g.set_ylabels('First PE latency from epoch start (s)')
-
-#PE latency: virus individual subj
-g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='subject', kind='bar', hue_order=trialOrder)
-g.fig.suptitle('First PE latency by trial type')
-g.set_ylabels('First PE latency from epoch start (s)')
+saveFigCustom(g, 'virus_peLatency_ecdf')
 
   #PE latency:  individual subj 
 g=sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',hue='trialType', kind='ecdf', hue_order=trialOrder)
 g.fig.suptitle('First PE latency by trial type')
 g.set_ylabels('First PE latency from epoch start (s)')
+saveFigCustom(g, 'individual_peLatency_ecdf')
+
+
 
 #%% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType
 # should represent "baseline" behavior  without laser
@@ -249,6 +259,8 @@ g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType',  kind='box', order=
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('First Lick latencies by trial type; all subj')
 g.set_ylabels('lick latency from epoch start (s)')
+saveFigCustom(g, 'all_lickLatency_box')
+
 
 
 #ecdf- all subj'[]
@@ -256,6 +268,8 @@ g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('First Lick latencies by trial type; all subj')
 g.set_xlabels('lick latency from epoch start (s)')
+saveFigCustom(g, 'all_lickLatency_ecdf')
+
 
 
 #Individual distribution of ILI (inter-lick interval)
@@ -265,6 +279,8 @@ g= sns.catplot(data=dfPlot, y='eventLatency', x='subject', hue='trialType',  kin
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('First Lick latencies by trial type; individual subj')
 g.set_ylabels('lick latency from epoch start (s)')
+saveFigCustom(g, 'individual_lickLatency_bar')
+
 
     
 # %% Plot inter-lick interval (ILI) by trialType
@@ -287,6 +303,8 @@ g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('ILI by trial type; all subj')
 g.set_xlabels('ILI (s)')
 g.set(xlim=(0,1))
+saveFigCustom(g, 'all_ILI_ecdf')
+
 
 
 #Individual distribution of ILI (inter-lick interval)
@@ -300,6 +318,8 @@ g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('ILI by trial type; individual subj')
 g.set_ylabels('ILI (s)')
 g.set(ylim=(0,1))
+saveFigCustom(g, 'individual_ILI_bar')
+
 
 #%% Use pandas profiling on event counts
 ##This might be a decent way to quickly view behavior session results/outliers if automated
