@@ -85,19 +85,23 @@ for subject in dfRaw.columns:
     print('loading'+subject)
     for file in range(len(dfRaw)):
         # print(allfiles[file]+subject)
-        
-        #add file label to each nested raw_excel before appending
-        #assume fileName is yyyymmdd.xlsx (total of 13 characters at end of path. 5 are '.xlsx')
-        dfRaw.loc[file,subject]['file']=allfiles[file][-13:]
-        
-        #add date too
-        dfRaw.loc[file,subject]['date']= allfiles[file][-13:-5]
-        
-        
-        #add subject label before appending
-        dfRaw.loc[file,subject]['subject']=subject
-        
-        df= df.append(dfRaw.loc[file,subject])
+        # if pd.isnull(dfRaw.loc[file,subject]).all()==False:
+        try:
+            #add file label to each nested raw_excel before appending
+            #assume fileName is yyyymmdd.xlsx (total of 13 characters at end of path. 5 are '.xlsx')
+            dfRaw.loc[file,subject]['file']=allfiles[file][-13:]
+            
+            #add date too
+            dfRaw.loc[file,subject]['date']= allfiles[file][-13:-5]
+            
+            
+            #add subject label before appending
+            dfRaw.loc[file,subject]['subject']=subject
+            
+            df= df.append(dfRaw.loc[file,subject])
+            
+        except: 
+            print(allfiles[file]+'_'+subject+' has no data')
 
 #%% ID and import metadata .xlsx
 #TODO: for now assuming separate excel files for these data
