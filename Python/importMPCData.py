@@ -85,7 +85,6 @@ for subject in dfRaw.columns:
     print('loading'+subject)
     for file in range(len(dfRaw)):
         # print(allfiles[file]+subject)
-        # if pd.isnull(dfRaw.loc[file,subject]).all()==False:
         try:
             #add file label to each nested raw_excel before appending
             #assume fileName is yyyymmdd.xlsx (total of 13 characters at end of path. 5 are '.xlsx')
@@ -161,13 +160,15 @@ df = df.assign(PExEst=df.PEtime + df.PEdur)
 # save cue duration (in DS task this is A(2))
 #TODO: may be better to put this in session metadata.xlsx? just to keep things parallel with photometry TDT data analysis (assume we won't import MPC as well)
 
-#group by fileID then retrieve the 2nd value in stageParams
+#group by fileID then retrieve the 2nd value in stageParams 
 grouped= df.groupby('fileID')
 
 df.loc[:,'cueDur']= grouped.stageParams.transform('nth',2)
 
 grouped.stageParams.nth(2)
 
+#convert 'date' to datetime format
+df.date= pd.to_datetime(df.date)
 
 
 #%% Define Event variables for your experiment 
@@ -188,11 +189,11 @@ if experimentType== 'Opto':
 #they should variables in your session and subject metadata spreadsheets
 
 ## e.g. for DS task with no Opto
-idVars= ['fileID','subject', 'virus', 'sex', 'date', 'cueDur', 'note']
+idVars= ['fileID','subject', 'virus', 'sex', 'date', 'stage', 'cueDur', 'note']
 
 #e.g. for DS task with Opto
 if experimentType== 'Opto':
-    idVars= ['fileID','subject', 'virus', 'sex', 'date', 'cueDur', 'laserDur', 'note']
+    idVars= ['fileID','subject', 'virus', 'sex', 'date', 'stage', 'cueDur', 'laserDur', 'note']
 
 
 #%% Define Trial variables for your experiment
@@ -310,8 +311,44 @@ dfTidy = dfTidy.sort_values(by=['fileID', 'eventTime']).copy()
 
 dfTidy.loc[:, 'trialEnd'] = dfTidy.eventTime[dfTidy.trialID >= 0].copy() + \
     dfTidy.cueDur
-
+    
 dfTidy.loc[:, 'trialEnd'] = dfTidy.fillna(method='ffill').copy()
+
+#also get start of next trial (by indexing by file,trial and then shifting by 1)
+#will be used to define preCue trialTypes
+dfGroup= dfTidy.loc[dfTidy.trialID>=0].copy()
+#index by file, trial
+dfGroup.set_index(['fileID','trialID'], inplace=True)
+#get time of next trial start by shifting by 1 trial #shift data within file (level=0)
+dfGroup.loc[:, 'nextTrialStart'] = dfGroup.groupby(level=0)['eventTime'].shift(-1).copy()
+dfGroup.reset_index(inplace=True) #reset index so eventID index is kept
+dfGroup.set_index('eventID', inplace=True)
+#merge back on eventID
+dfTidy.set_index('eventID',inplace=True,drop=False)
+dfTidy= dfTidy.merge(dfGroup, 'left').copy()
+
+#ffill for negative trialIDs
+dfTidy.nextTrialStart= dfTidy.nextTrialStart.fillna(method='ffill').copy()
+
+# Add trialType for pre-cue period 
+preCueDur= 10
+
+#this is a useful epoch to have identified; can be a good control time period vs. cue presentation epoch
+dfTidy.loc[(dfTidy.nextTrialStart-dfTidy.eventTime <= preCueDur),'trialType'] = 'Pre-'+dfTidy.trialType.copy()
+
+#make pre-cue trialIDs intervals of .5
+dfTidy.loc[(dfTidy.nextTrialStart-dfTidy.eventTime <= preCueDur),'trialID'] = dfTidy.trialID.copy()-.5
+
+#Special exceptions for events before first trial starts, need to be manually assigned (bc ffill method above won't work)
+#get the time of the first event in the first trial (equivalent to trial start time)
+dfTidy.loc[dfTidy.trialID== -0.5, 'nextTrialStart'] = dfTidy.loc[dfTidy.trialID==1].eventTime.iloc[0] 
+#make trialEnd for the first ITI the start of the recording, keeping with scheme of other ITIs which reflect "end" of last cue
+dfTidy.loc[dfTidy.trialID== -0.5, 'trialEnd'] = 0
+#ID events in the first preCue period
+dfTidy.set_index('fileID', drop=False)
+dfTidy.loc[((dfTidy.trialID== -0.5) & (dfTidy.nextTrialStart-dfTidy.eventTime <= preCueDur)),'trialType'] = 'Pre-'+dfTidy.loc[dfTidy.trialID==1].groupby('fileID').eventTime.transform('first')
+
+dfTesty= dfTidy.loc[dfTidy.trialID== -0.5]
 
 ##TODO: for first ILI, make trial end the first cue onset
 # dfTidy.loc[dfTidy.trialID== -0.5,'trialEnd']= dfTidy.loc[dfTidy.loc[dfTidy.trialID==1].groupby(['fileID','trialID'])['eventTime'].cumcount()==0]
@@ -322,10 +359,25 @@ dfTidy.loc[:, 'trialEnd'] = dfTidy.fillna(method='ffill').copy()
 
 dfTidy.loc[(dfTidy.trialEnd-dfTidy.eventTime >= 0) & ((dfTidy.trialEnd -
                                                       dfTidy.eventTime).apply(np.round) < dfTidy.cueDur), 'trialID'] = dfTidy.trialID.copy()*-1
-
+dfTest= dfTidy.loc[dfTidy.trialID==-0.5].copy()
 # remove trialType labels from events outside of cueDur (- trial ID or nan trialID)
-# for now labelling with "ITI", but could be nan
-dfTidy.loc[(dfTidy.trialID < 0) | (dfTidy.trialID.isnull()), 'trialType'] = 'ITI'
+# keep trialIDs in between integers (preCue period) by checking for nonzero modulo of 1
+# for now labelling with "ITI"
+dfTidy.loc[(((dfTidy.trialID < 0) | (dfTidy.trialID.isnull())) & (dfTidy.trialID % 1 == 0)), 'trialType'] = 'ITI'
+
+#%% Add trialType for pre-cue period 
+#this is a useful epoch to have identified; can be a good control time period vs. cue presentation epoch
+
+# #define time window in seconds
+# preCueEpoch= 10
+
+# dfTemp= dfTidy.copy()
+
+# #find events that occur before cue start within preCueEpoch
+# test= dfTidy.loc[(dfTidy.trialEnd-dfTidy.eventTime <= 0) & ((dfTidy.trialEnd -
+#                                                       dfTidy.eventTime).apply(np.round) >preCueEpoch), 'trialID']
+
+# test= dfTidy.loc[(dfTidy.trialID<=0)]-dfT
 
 #%% for lick-paired laser sessions, classify trials as laser on vs. laser off
 #since laser delivery in these sessions is contingent on lick behavior

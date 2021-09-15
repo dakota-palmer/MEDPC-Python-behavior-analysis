@@ -169,8 +169,7 @@ dfPlot= dfTidy.loc[(dfTidy.eventType!='NStime') & (dfTidy.eventType!='DStime') &
 #count of each event type by date and subj
 dfPlot= dfPlot.groupby(['subject','date', 'eventType'])['eventTime'].count().reset_index()
 
-
-g= sns.relplot(data=dfPlot, col='eventType', x='date', y='eventTime', hue='subject', kind='line',
+g= sns.relplot(data=dfPlot, col='eventType', x='date', y='eventTime', hue='subject', kind='line', style='subject', markers=True, dashes=False,
                 facet_kws={'sharey': False, 'sharex': True})
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('Total event count across sessions by type- check for outliers')
@@ -213,9 +212,15 @@ dfPlot= dfPlot.reset_index().loc[fileAgg]
 #individual plots by date is ok
 sns.set_palette('Paired')
 
-g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line')
-g.map(plt.axhline, y=criteriaDS, color=".7", dashes=(2, 1), zorder=0)
-g.set_titles('{col_name}')
+#a few examples of options here
+g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='subject', markers=True, dashes=False)
+g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True)
+g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True)
+g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True, row='stage')
+
+
+g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+g.set_titles('{row_name}')
 g.fig.suptitle('Evolution of the probPE in subjects by trialType')
 g.tight_layout(w_pad=0)
 
@@ -237,9 +242,43 @@ saveFigCustom(g, 'virus_peLatency_ecdf')
   #PE latency:  individual subj 
 g=sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',hue='trialType', kind='ecdf', hue_order=trialOrder)
 g.fig.suptitle('First PE latency by trial type')
-g.set_ylabels('First PE latency from epoch start (s)')
+g.set_ylabels('Probability: first PE latency from epoch start')
 saveFigCustom(g, 'individual_peLatency_ecdf')
 
+#%% TODO: Custom Ridge Plot to show changes in distribution over time
+
+# # Initialize the FacetGrid object
+# pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
+# # g = sns.FacetGrid(dfPlot, row="date", hue="date", col='subject', aspect=15, height=10, palette=pal)
+# g = sns.FacetGrid(dfPlot, row="date", hue="date", col='subject')#, aspect=15, height=10, palette=pal)
+
+
+# # Draw the densities in a few steps
+# g.map(sns.kdeplot, "eventLatency",
+#       bw_adjust=.5, clip_on=False,
+#       fill=True, alpha=1, linewidth=1.5)
+# # g.map(sns.kdeplot, "eventLatency", clip_on=False, color="w", lw=2, bw_adjust=.5)
+
+# # passing color=None to refline() uses the hue mapping
+# # g.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
+
+
+# # Define and use a simple function to label the plot in axes coordinates
+# def label(x, color, label):
+#     ax = plt.gca()
+#     ax.text(0, .2, label, fontweight="bold", color=color,
+#             ha="left", va="center", transform=ax.transAxes)
+
+
+# g.map(label, "eventLatency")
+
+# # Set the subplots to overlap
+# # g.figure.subplots_adjust(hspace=-.25)
+
+# # Remove axes details that don't play well with overlap
+# g.set_titles("")
+# g.set(yticks=[], ylabel="")
+# g.despine(bottom=True, left=True)
 
 
 #%% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType
