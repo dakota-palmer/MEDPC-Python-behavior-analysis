@@ -309,10 +309,15 @@ dfTidy.loc[dfTidy.trialID.isnull(),'trialID']= -0.5
 
 dfTidy = dfTidy.sort_values(by=['fileID', 'eventTime']).copy()
 
+# dfTidy.loc[:, 'trialStart'] = dfTidy.eventTime[dfTidy.trialID >= 0].copy()
+    
+# dfTidy.loc[:, 'trialStart'] = dfTidy.fillna(method='ffill').copy()
+
 dfTidy.loc[:, 'trialEnd'] = dfTidy.eventTime[dfTidy.trialID >= 0].copy() + \
     dfTidy.cueDur
     
 dfTidy.loc[:, 'trialEnd'] = dfTidy.fillna(method='ffill').copy()
+
 
 #also get start of next trial (by indexing by file,trial and then shifting by 1)
 #will be used to define preCue trialTypes
@@ -330,25 +335,65 @@ dfTidy= dfTidy.merge(dfGroup, 'left').copy()
 #ffill for negative trialIDs
 dfTidy.nextTrialStart= dfTidy.nextTrialStart.fillna(method='ffill').copy()
 
-# Add trialType for pre-cue period 
-preCueDur= 10
+#remove nextTrialStart from the final trial (since there is no next trial)
+# dfTidy.set_index(['fileID','trialID'])
+# dfTidy2= dfTidy.copy()
+# dfTidy2.set_index(['fileID'],drop=False)
 
+# test= dfTidy2.groupby('fileID').trialID.max()
+# testgood= dfTidy.groupby(['fileID']).trialID.transform('max')
+# testgood= dfTidy.groupby(['fileID','trialID'])['trialID','eventTime','nextTrialStart'].transform('max')
+
+# test= dfTidy.groupby(['fileID','trialID']).count()
+
+#SIMPLE GROUPBY INDEXING!
+idx = dfTidy.groupby(['fileID'])['trialID'].transform(max).copy() == dfTidy['trialID'].copy()
+dfTidy.loc[idx,'nextTrialStart']= pd.NA
+# Add trialType for pre-cue period 
+preCueDur= 10 ######
+
+
+#~~in progress trialTYpe
 #this is a useful epoch to have identified; can be a good control time period vs. cue presentation epoch
 dfTidy.loc[(dfTidy.nextTrialStart-dfTidy.eventTime <= preCueDur),'trialType'] = 'Pre-'+dfTidy.trialType.copy()
 
 #make pre-cue trialIDs intervals of .5
 dfTidy.loc[(dfTidy.nextTrialStart-dfTidy.eventTime <= preCueDur),'trialID'] = dfTidy.trialID.copy()-.5
+dfTest= dfTidy.loc[dfTidy.trialID==29.5]
 
 #Special exceptions for events before first trial starts, need to be manually assigned (bc ffill method above won't work)
 #get the time of the first event in the first trial (equivalent to trial start time)
 dfTidy.loc[dfTidy.trialID== -0.5, 'nextTrialStart'] = dfTidy.loc[dfTidy.trialID==1].eventTime.iloc[0] 
 #make trialEnd for the first ITI the start of the recording, keeping with scheme of other ITIs which reflect "end" of last cue
 dfTidy.loc[dfTidy.trialID== -0.5, 'trialEnd'] = 0
-#ID events in the first preCue period
-dfTidy.set_index('fileID', drop=False)
-dfTidy.loc[((dfTidy.trialID== -0.5) & (dfTidy.nextTrialStart-dfTidy.eventTime <= preCueDur)),'trialType'] = 'Pre-'+dfTidy.loc[dfTidy.trialID==1].groupby('fileID').eventTime.transform('first')
 
+##ID events in the first preCue period
+# dfTidy.set_index('fileID', drop=False)
+# dfTidy.loc[((dfTidy.trialID== -0.5) & (dfTidy.nextTrialStart-dfTidy.eventTime <= preCueDur)),'trialType'] =dfTidy.loc[dfTidy.trialID==1].groupby('fileID').eventTime.transform('first')
+
+# test = 'pre-'+dfTidy.loc[dfTidy.trialID==1].groupby('fileID').trialType.first()#.transform('first')
+
+# dfTidy.loc[((dfTidy.trialID== -0.5) & (dfTidy.nextTrialStart-dfTidy.eventTime <= preCueDur))].groupby('fileID').transform('cumcount') =dfTidy.groupby('fileID','trialID').eventTime.transform('first').loc['trialID'==1]
+
+# testr= dfTidy.groupby(['fileID','trialID']).eventTime.first().reset_index()
+# testr= testr[((testr.trialID==1) | (testr.trialID==-0.5))]
+
+# testr= dfTidy.groupby(['fileID','trialID']).eventTime.transform('first').reset_index()
+
+# testr= dfTidy.loc[dfTidy.trialID==1].groupby(['fileID','trialID']).eventTime.transform('first')
+
+
+# dfTesty= dfTidy.loc[dfTidy.trialID== -0.5]
+
+# dfMerged= dfTesty.merge(test, 'inner', on='fileID')
+
+#try indexing by fileID then using bfill???!!!###$
+dfTidy.set_index('fileID', drop=False)
+
+testFill= dfTidy.loc[(dfTidy.trialID==1) | (dfTidy.trialID==-0.5)].fillna(method='bfill').copy()
+dfTidy.loc[((dfTidy.trialID== -0.5) & (dfTidy.nextTrialStart-dfTidy.eventTime <= preCueDur)),'trialType']= 'Pre-'+ dfTidy.loc[(dfTidy.trialID==1) | (dfTidy.trialID==-0.5)].trialType.fillna(method='bfill').copy()
 dfTesty= dfTidy.loc[dfTidy.trialID== -0.5]
+dfTesty2= dfTidy.loc[dfTidy.trialType=='Pre-DStime']
 
 ##TODO: for first ILI, make trial end the first cue onset
 # dfTidy.loc[dfTidy.trialID== -0.5,'trialEnd']= dfTidy.loc[dfTidy.loc[dfTidy.trialID==1].groupby(['fileID','trialID'])['eventTime'].cumcount()==0]
@@ -363,7 +408,13 @@ dfTest= dfTidy.loc[dfTidy.trialID==-0.5].copy()
 # remove trialType labels from events outside of cueDur (- trial ID or nan trialID)
 # keep trialIDs in between integers (preCue period) by checking for nonzero modulo of 1
 # for now labelling with "ITI"
-dfTidy.loc[(((dfTidy.trialID < 0) | (dfTidy.trialID.isnull())) & (dfTidy.trialID % 1 == 0)), 'trialType'] = 'ITI'
+# test1= dfTidy.loc[((dfTidy.trialID < 0) | (dfTidy.trialID.isnull()))]
+# test2= dfTidy.loc[(dfTidy.trialID % 1 == 0)]
+# test3= dfTidy.loc[(((dfTidy.trialID < 0) | (dfTidy.trialID.isnull())) & (dfTidy.trialID % 1 == 0))]
+
+# dfTidy.loc[(((dfTidy.trialID < 0) & (dfTidy.trialType.isnull())) & (dfTidy.trialID % 1 == 0)), 'trialType'] = 'ITI'
+dfTidy.loc[(((dfTidy.trialID < 0) & (dfTidy.trialType.isnull()))), 'trialType'] = 'ITI'
+
 
 #%% Add trialType for pre-cue period 
 #this is a useful epoch to have identified; can be a good control time period vs. cue presentation epoch
