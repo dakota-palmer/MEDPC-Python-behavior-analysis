@@ -43,7 +43,7 @@ sns.set_style("darkgrid")
 
 #fixed order of trialType to plot (so consistent between figures)
 #for comparison of trial types (e.g. laser on vs laser off, good to have these in paired order for paired color palettes)
-trialOrder= ['DStime','NStime','ITI']
+trialOrder= ['DStime','NStime','Pre-Cue', 'ITI']
 
 #DS PE probability criteria (for visualization)
 criteriaDS= 0.6
@@ -130,7 +130,8 @@ dfTidy= dfTidy.reset_index().set_index(['eventID'])
 #given this, can calculate Probortion as #PE/#PE+#noPE
    
 #subset data and save as intermediate variable dfGroup
-dfGroup= dfTidy.copy()
+#get only one entry per trial
+dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
 
 #for Lick+laser sessions, retain only trials with PE+lick for comparison (OPTO specific)
 # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh=='PE+lick')].copy()
@@ -141,8 +142,23 @@ dfPlot= dfGroup.copy()
 #fill null counts with 0
 dfTemp=dfPlot.groupby(
         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
+# dfTemp=dfPlot.groupby(
+#         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].unique().unstack(fill_value=0)
+# dfTemp=dfPlot.groupby(
+#         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].groups
+# dfTemp=dfPlot.groupby(
+#         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].unique().nth(0).unstack(fill_value=0)
+
 
 ##calculate proportion for each trial type: num trials with outcome/total num trials of this type
+
+#%TODO: for pre- cue trialTypes, can't curently just divide by count since their current definition is contingent on behavior.
+# should divide by # of total trials of the corresponding cue...or create dummy pre-cue entries for every trial
+#I guess this theoretically applies to ITIs as well, if there's no event in the ITI it won't be included in the count
+trialCount= dfTemp.sum(axis=1)
+# trialCount
+
+
 outcomeProb= dfTemp.divide(dfTemp.sum(axis=1),axis=0)
 
 #melt() into single column w label
@@ -184,8 +200,8 @@ saveFigCustom(g, 'individual_eventCounts_line')
 dfGroup= dfTidy.copy()
  
 #select data
-#all trials excluding ITI     
-dfPlot = dfGroup[(dfGroup.trialID >= 0)].copy()
+#all trialTypes excluding ITI     
+dfPlot = dfGroup[(dfGroup.trialType != 'ITI')].copy()
  
 #get only PE outcomes
 # dfPlot.reset_index(inplace=True)
@@ -213,9 +229,9 @@ dfPlot= dfPlot.reset_index().loc[fileAgg]
 sns.set_palette('Paired')
 
 #a few examples of options here
-g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='subject', markers=True, dashes=False)
-g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True)
-g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True)
+# g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='subject', markers=True, dashes=False)
+# g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True)
+# g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True)
 g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True, row='stage')
 
 
