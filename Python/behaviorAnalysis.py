@@ -152,11 +152,7 @@ dfTemp=dfPlot.groupby(
 
 ##calculate proportion for each trial type: num trials with outcome/total num trials of this type
 
-#%TODO: for pre- cue trialTypes, can't curently just divide by count since their current definition is contingent on behavior.
-# should divide by # of total trials of the corresponding cue...or create dummy pre-cue entries for every trial
-#I guess this theoretically applies to ITIs as well, if there's no event in the ITI it won't be included in the count
 trialCount= dfTemp.sum(axis=1)
-# trialCount
 
 
 outcomeProb= dfTemp.divide(dfTemp.sum(axis=1),axis=0)
@@ -230,9 +226,9 @@ sns.set_palette('Paired')
 
 #a few examples of options here
 # g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='subject', markers=True, dashes=False)
-# g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True)
+g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True)
 # g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True)
-g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True, row='stage')
+# g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True, row='stage')
 
 
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
@@ -301,9 +297,9 @@ saveFigCustom(g, 'individual_peLatency_ecdf')
 # should represent "baseline" behavior  without laser
       
 #trial-based, ignoring ITI
-# dfPlot = dfTidy[(dfTidy.trialID >= 0)].copy()
+dfPlot = dfTidy[(dfTidy.trialID >= 0)].copy()
 #trial-based, including ITI
-dfPlot= dfTidy.copy()
+# dfPlot= dfTidy.copy()
 
 #All subj distribution of ILI (inter-lick interval)
 #only include first trialLick ==0
@@ -341,9 +337,9 @@ saveFigCustom(g, 'individual_lickLatency_bar')
 # %% Plot inter-lick interval (ILI) by trialType
 
 #trial-based, ignoring ITI
-# dfPlot = dfTidy[(dfTidy.trialID >= 0)].copy()
+dfPlot = dfTidy[(dfTidy.trialID >= 0)].copy()
 #trial-based, including ITI
-dfPlot = dfTidy.copy()
+# dfPlot = dfTidy.copy()
 
 #All subj distribution of ILI (inter-lick interval)
 #only include trialLick~=nan (lick timestamps within trials)

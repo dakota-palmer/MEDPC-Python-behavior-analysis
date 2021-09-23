@@ -257,12 +257,16 @@ if experimentType=='Opto':
     #now drop redundant columns
     # dfEventAll= dfEventAll.drop(['laserType','laserState'], axis=1)
      
-#%% DS training code error fix
+#%% Exclude false first cue times
 #need to get rid of false first cue onsets
-#code error caused final cue time to overwrite first cue time (dim of array needed to be +1)
+#DS training code error caused final cue time to overwrite first cue time (dim of array needed to be +1)
+#TODO: I think we do have the US times so could still do analyses of those
 
-#simply exclude very high values
-dfEventAll.loc[((dfEventAll.trialID==0) & (dfEventAll.eventTime>=2500)),'eventTime']= pd.NA
+#simply exclude very high first cue values
+idx= dfEventAll.loc[((dfEventAll.trialID==0) & (dfEventAll.eventTime>=2500))].index
+dfEventAll.loc[idx,'eventTime']=pd.NA
+dfEventAll= dfEventAll.loc[dfEventAll.eventTime.notnull()]
+# dfEventAll.loc[idx,'trialID']=pd.NA
 
 # idx = (dfTidy.groupby(['fileID'])['trialID'].transform('cumcount').copy() == dfTidy['trialID'].copy())
 # # dfTidy.loc[idx,'nextTrialStart']= pd.NA
