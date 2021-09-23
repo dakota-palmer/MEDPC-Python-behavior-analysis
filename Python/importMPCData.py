@@ -257,6 +257,54 @@ if experimentType=='Opto':
     #now drop redundant columns
     # dfEventAll= dfEventAll.drop(['laserType','laserState'], axis=1)
      
+#%% DS training code error fix
+#need to get rid of false first cue onsets
+#code error caused final cue time to overwrite first cue time (dim of array needed to be +1)
+
+#simply exclude very high values
+dfEventAll.loc[((dfEventAll.trialID==0) & (dfEventAll.eventTime>=2500)),'eventTime']= pd.NA
+
+# idx = (dfTidy.groupby(['fileID'])['trialID'].transform('cumcount').copy() == dfTidy['trialID'].copy())
+# # dfTidy.loc[idx,'nextTrialStart']= pd.NA
+# dfTest= dfTidy.loc[idx]
+
+# #for last trial set next trial start to nan
+# idx = (dfTidy.groupby(['fileID'])['trialID'].transform(max).copy() == dfTidy['trialID'].copy()) 
+
+# dfTest=dfTidy.copy()
+# dfTest.loc[idx,'nextTrialStart']= pd.NA
+# # dfTest= dfTidy.loc[idx]
+
+
+# # test= dfTidy.set_index('fileID')
+# # test.loc[((test.eventType=='DStime') | (test.eventType=='NStime'))]
+
+# # dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0]
+
+# test= dfEventAll.set_index('fileID')
+# test2= test.loc[test.loc[test.trialID==0].eventTime >= test.loc[test.trialID==1].eventTime]
+
+# dfEventAll= dfEventAll.set_index('fileID')
+
+# dfTemp= dfEventAll.loc[dfEventAll.trialID==0].eventTime >= dfEventAll.loc[dfEventAll.trialID==1].eventTime
+# dfTemp= dfTemp.reset_index()
+
+# # dfEventAll.reset_index(inplace=True,drop=False)
+
+# #remove this cue's timestamp (we don't know when the cue came on)
+# dfEventAll.loc[(dfEventAll.fileID==dfTemp.fileID) & (dfEventAll.trialID==0)]= pd.NA
+
+# #
+# dfGroup= dfEventAll.groupby(['fileID','trialID'], as_index=False).first()
+# idx= dfGroup.loc[dfGroup.trialID==0].eventTime >= dfGroup.loc[dfGroup.trialID==1].eventTime
+
+# #
+# dfTemp= dfEventAll.set_index('fileID')
+# test= dfTemp.loc[(dfTemp.loc[dfTemp.trialID==0].eventTime)>= (dfTemp.loc[dfTemp.trialID==1].eventTime)]
+# test.reset_index(inplace=True, drop=False)
+
+# dfTemp.loc[dfTemp.fileID==test.fileID]
+
 
 #%% Sort events by chronological order within-file, correct trialID, and save as dfTidy
 dfTidy = dfEventAll.sort_values(by=['fileID', 'eventTime'])
@@ -521,10 +569,6 @@ dfTemp=dfCat.groupby(
 # dfTemp.loc[:,'outcomeProb']= dfTemp.trialID.divide(dfTemp.trialID.sum(),axis=0)
 
 # trialOrder= ['DStime','NStime','ITI','Pre-Cue']
-sns.relplot(data=dfTemp, x='fileID', y='trialID', row='trialType', hue='trialType')
-
-
-sns.relplot(data=dfCat, x='fileID', y='trialID', row='trialType', hue='trialType')
 
 test= dfCat.groupby('fileID')['trialID'].nunique()
 
@@ -540,8 +584,6 @@ dfTidy= dfCat.copy()
 
 # dfTidy.reset_index(inplace=True,drop=False)
 # # test= dfTidy.merge(dfTemp,'left',on='fileID') 
-
-sns.relplot(data=dfTidy, x='fileID', y='trialID', row='trialType', hue='trialType')
 
 test= dfTidy.groupby('fileID')['trialID'].unique().explode()
 
