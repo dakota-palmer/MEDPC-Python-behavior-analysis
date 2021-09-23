@@ -2,6 +2,8 @@
 \In this code, the DS will trigger a white noise. The NS will trigger a siren noise. Rewards will be delivered in Port1 by Pump1. Pump duration increased to 2 sec.
 \based on white noise DS code*
 
+\dp 9/22/2021 fixed event array DIM; added cue light indicators for duration of cue
+
 \CONSTANTS
 \^leftLever = 1
 \^rightLever = 2
@@ -13,7 +15,9 @@
 ^Boxlight = 28
 ^Pump = 9
 ^Houselight = 7
-
+^yellowLight = 25
+^greenLight = 26 \DS
+^redLight = 27 \NS
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 \Sound stuff from Jocelyn's old code\
@@ -35,19 +39,18 @@ DIM R=8 \soundParams
 
 
 \INPUTS
-^PortEntry = 5
-^PortEntrySus=6
+^PortEntry= 5 \this is the transient port entry sensor
+^PortEntrySus= 6 \this is the sustained port entry sensor
 ^Lick = 7
 \^leftLeverPress = 1
 \^rightLeverPress = 3
 
-
 \ Inter-trial intervals in seconds
-LIST X = 10, 20, 30, 40, 50, 10, 20, 30, 40, 50  \ITI
+LIST X = 10, 20, 30, 40, 50, 10, 20, 30, 40, 50 \ITI
 
 
-\ Choose DS
-LIST Y = 0,0,0,0,0,1,1,1,1,1
+\ Choose DS or NS
+LIST Y = 0,0,0,0,0,1,1,1,1,1 \listCueType
 
 
 
@@ -201,9 +204,9 @@ S1,
 S2,
   #R^PortEntry: Z12; on ^Pump ;~setFreq(MG,BOX,R[1]);~; ~setDur(MG,BOX,R[0]);~; ~onAmp(MG, BOX, R[6]);~; --->S3
 S3,
-   2": Z13; on ^NSWhiteNoise ---> S4
+   2": Z13; on ^NSWhiteNoise; ON ^greenLight, ^yellowLight, ^redLight ---> S4
 S4,
-   2": OFF ^HouseLight, ^NSWhiteNoise, ^Pump--->S5
+   2": OFF ^HouseLight, ^NSWhiteNoise, ^Pump; OFF ^greenLight, ^yellowLight, ^redLight--->S5
 S5,
   .1": SHOW 1, Ready,A(1); Z10--->S6
 S6,
@@ -337,13 +340,13 @@ s3,
 S.S.6, \ DS control
 S1,
   \#Z2: Z12; SET H(B(17))=B(13)/100--->S2
- #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100--->S2
+ #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100;  ON ^greenLight--->S2
 
 S2,
-  \A(2)*B(0)#T: Z13 ---> S1
-A(2)*B(0)#T: OFF^NSwhiteNoise ---> S1
+  \A(2)*B(0)#T: Z13;  ---> S1
+A(2)*B(0)#T: OFF^NSwhiteNoise; OFF ^greenLight ---> S1
   \#R^PortEntry: Z13 --->S1
- #R^PortEntry: OFF^NSwhiteNoise--->S1
+ #R^PortEntry: OFF^NSwhiteNoise; OFF ^greenLight--->S1
 
 
 S.S.7, \ DS US control
@@ -362,11 +365,11 @@ S3,
 S.S.8, \ NS control
 S1,
  \ #Z6: ON ^NSwhiteNoise; SET I(B(18))=B(13)/100--->S2
-#Z6: Z12; SET I(B(18))=B(13)/100--->S2
+#Z6: Z12; SET I(B(18))=B(13)/100;  ON ^redLight--->S2
 
 S2,
  \ A(2)*B(0)#T: OFF ^NSwhiteNoise--->S1
- A(2)*B(0)#T: Z13--->S1
+ A(2)*B(0)#T: Z13;  OFF^redLight--->S1
 
 
 
