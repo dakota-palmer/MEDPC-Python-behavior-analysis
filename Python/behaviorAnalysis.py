@@ -67,9 +67,8 @@ dfTidy.loc[dfTidy.trialID>=0, 'eventLatency'] = (
 dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = (
     (dfTidy.eventTime)-(dfTidy.trialEnd)).copy()
 
-#TODO: exception needs to be made for first ITI
-#for now fill w nan
-dfTidy.loc[dfTidy.trialID== -0.5, 'eventLatency']= np.nan
+#TODO: exception needs to be made for first ITI; for now fill w nan
+dfTidy.loc[dfTidy.trialID== -999, 'eventLatency']= np.nan
 
 #Count events in each trial 
 #use cumcount() of event times within file & trial 
@@ -78,17 +77,26 @@ dfTidy.loc[dfTidy.trialID== -0.5, 'eventLatency']= np.nan
 dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
 'fileID', 'trialID'])['eventTime'].cumcount().copy()
 
-#try transform
-dfTidy.loc[:,'trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
-'fileID', 'trialID'])['eventTime'].transform('cumcount').copy()
-
-
+# #try transform
+# dfTidy.loc[:,'trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
+# 'fileID', 'trialID'])['eventTime'].transform('cumcount').copy()
 
 
 dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'lickTime')].groupby([
     'fileID', 'trialID']).cumcount().copy()
 
-#Define behavioral (pe,lick) outcome for each trial. For my lick+laser sessions I need 
+#%% TODO: count events within 10s of cue onset (cue duration in final stage)  
+#this is mainly for comparing progression/learning between stages since cueDuration varies by stage
+
+dfTemp=  dfTidy.loc[((dfTidy.eventLatency<= 10) & (dfTidy.eventLatency>0))].copy()
+
+dfTidy['trialPE10s'] = dfTemp.loc[(dfTemp.eventType == 'PEtime')].groupby([
+'fileID', 'trialID'])['eventTime'].cumcount().copy()
+
+dfTidy['trialLick10s'] = dfTemp.loc[(dfTemp.eventType == 'lickTime')].groupby([
+'fileID', 'trialID'])['eventTime'].cumcount().copy()
+
+#%% Define behavioral (pe,lick) outcome for each trial. For my lick+laser sessions I need 
 #to isolate trials with both a PE+lick to measure effect of laser
 
 #For each trial (trialID >=0),
@@ -228,11 +236,12 @@ sns.set_palette('Paired')
 # g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='subject', markers=True, dashes=False)
 g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True)
 # g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True)
+
 # g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True, row='stage')
+# g.set_titles('{row_name}')
 
 
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-g.set_titles('{row_name}')
 g.fig.suptitle('Evolution of the probPE in subjects by trialType')
 g.tight_layout(w_pad=0)
 
