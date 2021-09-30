@@ -58,14 +58,19 @@ if experimentType=='Opto':
 #TODO: Lick 'cleaning' to eliminate invalid licks (are they in port, is ILI within reasonable range)
 
 
-#Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
-  # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time  
-dfTidy.loc[dfTidy.trialID>=0, 'eventLatency'] = (
-    (dfTidy.eventTime)-(dfTidy.trialEnd-dfTidy.cueDur)).copy()
+# #Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
+#   # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time  
+# dfTidy.loc[dfTidy.trialID>=0, 'eventLatency'] = (
+#     (dfTidy.eventTime)-(dfTidy.trialEnd-dfTidy.cueDur)).copy()
 
-#for 'ITI' events, calculate latency based on last trial end (not cue onset)
-dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = (
-    (dfTidy.eventTime)-(dfTidy.trialEnd)).copy()
+#DP 9/28/21:
+#have trial start now, subtract trialStart from eventTime to get latency per trial
+#no need for -trialID exception
+dfTidy.loc[:,'eventLatency']= ((dfTidy.eventTime)-(dfTidy.trialStart)).copy()
+# 
+# dfTidy.loc[dfTidy.trialID>=0,'eventLatency']= ((dfTidy.eventTime)-(dfTidy.trialStart))
+
+# dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = ((dfTidy.eventTime)-(dfTidy.trialStart)).copy()
 
 #TODO: exception needs to be made for first ITI; for now fill w nan
 dfTidy.loc[dfTidy.trialID== -999, 'eventLatency']= np.nan
@@ -129,6 +134,31 @@ dfTidy.loc[trialOutcomeBeh.index,'trialOutcomeBeh']= trialOutcomeBeh
 #reset index to eventID
 dfTidy= dfTidy.reset_index().set_index(['eventID'])
 
+#%% same as above but behavioral outcome within first 10s of each trial
+outcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialPE10s'].nunique()
+
+#naming "trialOutcomeBeh" for now to distinguish between behavioral outcome and reward outcome if needed later
+trialOutcomeBeh= outcome.copy()
+
+trialOutcomeBeh.loc[outcome>0]='PE'
+trialOutcomeBeh.loc[outcome==0]='noPE'
+
+#now do the same for licks
+outcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialLick10s'].nunique()
+
+#add lick outcome + PE outcome for clarity #if it doesn't say '+lick', then none was counted
+trialOutcomeBeh.loc[outcome>0]=trialOutcomeBeh.loc[outcome>0]+ '+' + 'lick'
+
+#set index to file,trial and
+#fill in matching file,trial with trialOutcomeBeh
+#TODO: I think there is a more efficient way to do this assignment, doens't take too long tho
+
+dfTidy= dfTidy.reset_index().set_index(['fileID','trialID'])
+
+dfTidy.loc[trialOutcomeBeh.index,'trialOutcomeBeh10s']= trialOutcomeBeh
+
+#reset index to eventID
+dfTidy= dfTidy.reset_index().set_index(['eventID'])
 
 #%% Calculate Probability of behavioral outcome for each trial type. 
 #This is normalized so is more informative than simple count of trials. 
@@ -150,12 +180,6 @@ dfPlot= dfGroup.copy()
 #fill null counts with 0
 dfTemp=dfPlot.groupby(
         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
-# dfTemp=dfPlot.groupby(
-#         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].unique().unstack(fill_value=0)
-# dfTemp=dfPlot.groupby(
-#         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].groups
-# dfTemp=dfPlot.groupby(
-#         ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].unique().nth(0).unstack(fill_value=0)
 
 
 ##calculate proportion for each trial type: num trials with outcome/total num trials of this type
@@ -174,6 +198,43 @@ dfTemp= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='
 
 dfTidy= dfTidy.reset_index().merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh']).copy()
 
+#%% Same as above but probability of behavioral outcome within first 10s of trial 
+#This is normalized so is more informative than simple count of trials. 
+
+#calculate Proportion of trials with PE out of all trials for each trial type
+#can use nunique() to get count of unique trialIDs with specific PE outcome per file
+#given this, can calculate Probortion as #PE/#PE+#noPE
+   
+#subset data and save as intermediate variable dfGroup
+#get only one entry per trial
+dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
+
+#for Lick+laser sessions, retain only trials with PE+lick for comparison (OPTO specific)
+# dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh=='PE+lick')].copy()
+   
+dfPlot= dfGroup.copy() 
+
+#for each unique behavioral outcome, loop through and get count of trials in file
+#fill null counts with 0
+dfTemp=dfPlot.groupby(
+        ['fileID','trialType','trialOutcomeBeh10s'],dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
+
+
+##calculate proportion for each trial type: num trials with outcome/total num trials of this type
+
+trialCount= dfTemp.sum(axis=1)
+
+
+outcomeProb= dfTemp.divide(dfTemp.sum(axis=1),axis=0)
+
+#melt() into single column w label
+dfTemp= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbFile10s')
+
+#assign back to df by merging
+#TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
+# dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
+
+dfTidy= dfTidy.reset_index().merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh10s']).copy()
 
 #%% PLOTS:
     
@@ -198,7 +259,7 @@ g.set_ylabels('session')
 
 saveFigCustom(g, 'individual_eventCounts_line')
 
-#%% Plot PE probability by trialType
+#%% Plot PE probability by trialType (within 10s of trial start)
  
 #subset data and save as intermediate variable dfGroup
 dfGroup= dfTidy.copy()
@@ -213,13 +274,13 @@ dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh=='PE') | (dfPlot.trialOutcomeBeh=='PE
  
 #since we calculated aggregated proportion across all trials in session,
 #take only first index. Otherwise repeated observations are redundant
-dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh']).first().copy()
+dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh10s']).first().copy()
  
  
 #sum together both PE and PE+lick for total overall PE prob
 # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
  
-dfPlot['probPE']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile'].sum().copy()
+dfPlot['probPE']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile10s'].sum().copy()
 
 #get an aggregated x axis for files per subject
 fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
@@ -245,7 +306,7 @@ g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0
 g.fig.suptitle('Evolution of the probPE in subjects by trialType')
 g.tight_layout(w_pad=0)
 
-saveFigCustom(g, 'individual_peProb')
+saveFigCustom(g, 'individual_peProb_10s')
   
 
 #%% Plot PE latency by trialType

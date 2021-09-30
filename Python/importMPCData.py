@@ -591,6 +591,57 @@ dfTidy= dfCat.copy()
 
 test= dfTidy.groupby('fileID')['trialID'].unique().explode()
 
+#%% Add trialStart time (this is helpful when calculating latencies later on)
+# dfGroup= dfTidy.groupby(['fileID','trialID']).transform('cumcount')==0
+
+dfGroup= dfTidy.groupby(['fileID','trialID']).cumcount().copy()
+#index of first event in each trial
+dfGroup= dfTidy.loc[dfGroup==0].copy()
+
+#ITIs
+dfTemp= dfGroup.loc[dfGroup.trialType=='ITI'].copy()
+dfGroup.loc[dfGroup.trialType=='ITI','trialStart']= dfTemp.trialEnd.copy()
+
+#pre-cue
+dfTemp= dfGroup.loc[dfGroup.trialType=='Pre-Cue'].copy()
+dfGroup.loc[dfGroup.trialType=='Pre-Cue','trialStart']= (dfTemp.nextTrialStart-preCueDur).copy()
+
+#real + trials
+dfTemp= dfGroup.loc[dfGroup.trialID>0].copy()
+dfGroup.loc[dfGroup.trialID>0,'trialStart']= dfTemp.eventTime.copy()
+
+#first ITI
+dfGroup.loc[dfGroup.trialID==-999,'trialStart']= 0
+
+# #merge back into dfTidy
+# dfGroup.reset_index(inplace=True) #reset index so eventID index is kept
+# dfGroup.set_index('eventID', inplace=True)
+# #merge back on eventID
+# dfTidy.set_index('eventID',inplace=True,drop=False)
+
+
+dfTidy= dfTidy.merge(dfGroup[['fileID','trialID','trialStart']],'left',on=['fileID','trialID'])
+
+# #index of actual +trial starts
+# dfTemp= dfGroup.loc[dfGroup.trialID>=0]
+
+
+# dfGroup.loc[dfGroup.trialID>=0,'trialStart']= dfTemp.eventTime.copy()
+
+# dfGroup.loc[dfGroup.trialType=='ITI','trialStart']= dfTemp.eventTime+dfGroup.cueDur.copy()
+
+# dfGroup.loc[dfGroup.trialID==-999,'trialStart']= 0
+
+# # dfGroup.loc[dfGroup.trialID>=0,'trialStart']= dfGroup.loc[dfGroup.trialID>=0,'eventTime']
+
+# dfGroup.loc[:,'trialStart']= dfGroup.loc[:,'eventTime']
+
+
+
+# dfGroup= dfGroup.loc[dfGroup.trialID>=0]
+
+# dfTidy.loc[dfGroup,'trialStart']= dfTidy.loc[dfGroup,'eventTime']
+
 
 #%% Add trialType for pre-cue period 
 #this is a useful epoch to have identified; can be a good control time period vs. cue presentation epoch
