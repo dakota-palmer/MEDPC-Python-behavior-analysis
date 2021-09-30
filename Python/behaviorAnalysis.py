@@ -138,6 +138,7 @@ dfTidy= dfTidy.reset_index().set_index(['eventID'])
 outcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialPE10s'].nunique()
 
 #naming "trialOutcomeBeh" for now to distinguish between behavioral outcome and reward outcome if needed later
+#10s = within 10s of epoch start
 trialOutcomeBeh= outcome.copy()
 
 trialOutcomeBeh.loc[outcome>0]='PE'
@@ -270,7 +271,7 @@ dfPlot = dfGroup[(dfGroup.trialType != 'ITI')].copy()
  
 #get only PE outcomes
 # dfPlot.reset_index(inplace=True)
-dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh=='PE') | (dfPlot.trialOutcomeBeh=='PE+lick')].copy()
+dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE') | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
  
 #since we calculated aggregated proportion across all trials in session,
 #take only first index. Otherwise repeated observations are redundant
@@ -311,8 +312,8 @@ saveFigCustom(g, 'individual_peProb_10s')
 
 #%% Plot PE latency by trialType
             
-#select data corresponding to first PE from valid trials
-dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.trialPE == 0)].copy()
+#select data corresponding to first PE from valid trials, excluding ITI
+dfPlot = dfTidy[(dfTidy.trialType!='ITI') & (dfTidy.trialPE10s == 0)].copy()
 
 # PE latency: virus
 g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
@@ -323,9 +324,9 @@ saveFigCustom(g, 'virus_peLatency_ecdf')
 
   #PE latency:  individual subj 
 g=sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',hue='trialType', kind='ecdf', hue_order=trialOrder)
-g.fig.suptitle('First PE latency by trial type')
+g.fig.suptitle('First PE latency by trial type (within 10s)')
 g.set_ylabels('Probability: first PE latency from epoch start')
-saveFigCustom(g, 'individual_peLatency_ecdf')
+saveFigCustom(g, 'individual_peLatency_10s_ecdf')
 
 #%% TODO: Custom Ridge Plot to show changes in distribution over time
 
@@ -363,24 +364,24 @@ saveFigCustom(g, 'individual_peLatency_ecdf')
 # g.despine(bottom=True, left=True)
 
 
-#%% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType
+#%% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType (within 10s)
 # should represent "baseline" behavior  without laser
       
 #trial-based, ignoring ITI
-dfPlot = dfTidy[(dfTidy.trialID >= 0)].copy()
+dfPlot = dfTidy[(dfTidy.trialType !='ITI')].copy()
 #trial-based, including ITI
 # dfPlot= dfTidy.copy()
 
 #All subj distribution of ILI (inter-lick interval)
 #only include first trialLick ==0
-dfPlot = dfPlot[dfPlot.trialLick==0].copy()
+dfPlot = dfPlot[dfPlot.trialLick10s==0].copy()
 
 #box- all subj
 g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType',  kind='box', order=trialOrder)
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('First Lick latencies by trial type; all subj')
 g.set_ylabels('lick latency from epoch start (s)')
-saveFigCustom(g, 'all_lickLatency_box')
+saveFigCustom(g, 'all_lickLatency_10s_box')
 
 
 
@@ -389,7 +390,7 @@ g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('First Lick latencies by trial type; all subj')
 g.set_xlabels('lick latency from epoch start (s)')
-saveFigCustom(g, 'all_lickLatency_ecdf')
+saveFigCustom(g, 'all_lickLatency_10s_ecdf')
 
 
 
@@ -400,20 +401,20 @@ g= sns.catplot(data=dfPlot, y='eventLatency', x='subject', hue='trialType',  kin
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('First Lick latencies by trial type; individual subj')
 g.set_ylabels('lick latency from epoch start (s)')
-saveFigCustom(g, 'individual_lickLatency_bar')
+saveFigCustom(g, 'individual_lickLatency_10s_bar')
 
 
     
-# %% Plot inter-lick interval (ILI) by trialType
+# %% Plot inter-lick interval (ILI) by trialType (within 10s)
 
 #trial-based, ignoring ITI
-dfPlot = dfTidy[(dfTidy.trialID >= 0)].copy()
+dfPlot = dfTidy[(dfTidy.trialType!= 'ITI')].copy()
 #trial-based, including ITI
 # dfPlot = dfTidy.copy()
 
 #All subj distribution of ILI (inter-lick interval)
 #only include trialLick~=nan (lick timestamps within trials)
-dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
+dfPlot = dfPlot[dfPlot.trialLick10s.notnull()].copy()
 
 #calculate ILI by taking diff() of latencies
 ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
@@ -430,7 +431,7 @@ saveFigCustom(g, 'all_ILI_ecdf')
 
 #Individual distribution of ILI (inter-lick interval)
 #only include trialLick~=nan
-dfPlot = dfPlot[dfPlot.trialLick.notnull()].copy()
+dfPlot = dfPlot[dfPlot.trialLick10s.notnull()].copy()
 #calculate ILI by taking diff() of latencies
 ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
 #bar- individual subj
@@ -439,7 +440,7 @@ g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('ILI by trial type; individual subj')
 g.set_ylabels('ILI (s)')
 g.set(ylim=(0,1))
-saveFigCustom(g, 'individual_ILI_bar')
+saveFigCustom(g, 'individual_ILI_10s_bar')
 
 
 #%% Use pandas profiling on event counts
