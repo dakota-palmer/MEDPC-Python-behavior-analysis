@@ -57,24 +57,24 @@
 
 \ Arrays
 
-DIM A = 20000    \ active np timestamps
-DIM B = 400    \ inactive np timestamps
-DIM C = 10000    \ stimulation timestamps
+DIM A = 20000 \activeNP    \ active np timestamps
+DIM B = 400    \inactiveNP \ inactive np timestamps
+DIM C = 10000  \laserTime  \ stimulation timestamps
 
-DIM D = 200     \ cumulative active nosepokes (1 min increments)
-DIM E = 200    \ cumulative inactive nosepokes (1 min increments)
+DIM D = 200   \activeNPcum1 \ \ cumulative active nosepokes (1 min increments)
+DIM E = 200    \inactiveNPcum1 \ cumulative inactive nosepokes (1 min increments)
 
-DIM F = 75     \ cumulative active nosepokes (5 min increments)
-DIM G = 75     \ cumulative inactive nosepokes (5 min increments)
+DIM F = 75     \activeNPcum5 \ cumulative active nosepokes (5 min increments)
+DIM G = 75     \inactiveNPcum5 \ cumulative inactive nosepokes (5 min increments)
 
-DIM N = 4
+DIM N = 4 \NPvars
 \ N(0) = number of active nosepokes
 \ N(1) = number of inactive nosepokes
 \ N(2) = total length of active nosepokes (session)
 \ N(3) = total length of inactive nosepokes (session)
 \ N(4) = total stimulation presentations
 
-DIM X = 7
+DIM X = 7 \counterVars
 \ X(0) = length of cue light
 \ X(1) = counter 1 for active np length
 \ X(2) = counter 2 for active np length

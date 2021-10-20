@@ -42,13 +42,16 @@ import seaborn as sns
 #TODO: may consider adding subjVars and sessionVars depending on your experiment 
 
 #experimentType= just a gate now for opto-specific code. = 'Opto' for opto specific code
-experimentType= 'gadOpto'
+experimentType= 'Opto'
+# experimentType= 'photometry'
+
 
 #%% ID and import raw data .xlsx
 # your path to folder containing excel files 
-datapath = r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw\\'#dp opto
+# datapath = r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw\\'#dp vp-vta-stgtacr opto
 
 datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto
+# datapath= r'J:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
 
 # datapath= r'C:\Users\Dakota\Desktop\_example_gaddreadd\MED-PC Files July-TBD 2021\All\\' #ally dreadd
 
@@ -59,9 +62,9 @@ allfiles = glob.glob(datapath + "*.xls*")
 dfRaw = pd.DataFrame()
 
 #define columns in your .xlsx for specific variables you want (e.g. A:Z for all)
-colToImport= 'F:S,U:X' #dp opto 
+colToImport= 'A:W'# 'F:S,U:X' #dp opto 
 
-colToImport= 'A:Q' #ally dreadd
+# colToImport= 'A:Q' #ally dreadd
 
 #for loop to aquire all excel files in folder
 for excelfiles in allfiles:
@@ -111,7 +114,7 @@ df.subject= df.subject.astype('str')
 df.date= df.date.astype('str')
 
 # Match and insert subject metadata based on subject
-metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" #dp opto
+metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" #dp vp-vta-stgtacr opto
 
 metaPath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
 
@@ -121,14 +124,16 @@ df= df.merge(dfRaw.astype('str'), how='left', on=['subject'])
 
 # Match and insert session metadata based on date and subject
 
-metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp opto
+metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp vp-vta-stgtacr opto
 
 metaPath= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto
 
 #ensure that date is read as string
-dfRaw= pd.read_excel(metaPath, converters={'date': str}).astype('str') 
+dfRaw= pd.read_excel(metaPath, converters={'date': str})#.astype('str') 
 
-df= df.merge(dfRaw.astype('str'), how='left', on=['subject','date'])
+# df= df.merge(dfRaw.astype('str'), how='left', on=['subject','date'])
+df= df.merge(dfRaw, how='left', on=['subject','date'])
+
 
 # %% Exclude data
 
@@ -183,7 +188,7 @@ eventVars= ['PEtime', 'PExEst', 'lickTime', 'DStime', 'NStime', 'UStime']
 
 #e.g. for DS task with Opto
 if experimentType== 'Opto':
-    eventVars= ['PEtime', 'PExEst', 'lickTime', 'laserTime', 'DStime', 'NStime', 'UStime','laserOffTime']
+    eventVars= ['PEtime', 'PExEst', 'lickTime', 'laserTime', 'DStime', 'NStime', 'UStime']#,'laserOffTime']
 
 #%% Define ID variables for your sessions
 #these are identifying variables per sessions that should be matched up with the corresponding event variables and timestamps
@@ -194,7 +199,7 @@ idVars= ['fileID','subject', 'virus', 'sex', 'date', 'stage', 'cueDur', 'note']
 
 #e.g. for DS task with Opto
 if experimentType== 'Opto':
-    idVars= ['fileID','subject', 'virus', 'sex', 'date', 'stage', 'cueDur', 'laserDur', 'note']
+    idVars= ['fileID','subject', 'virus', 'sex', 'date', 'stage', 'cueDur', 'laserDur', 'laserFreq', 'note']
 
 
 #%% Define Trial variables for your experiment
@@ -251,8 +256,16 @@ if experimentType=='Opto':
     
     #combine laserState and laserType into one variable for labelling each trial: trialType
     #Exclude the Lick-paired laser sessions. We will label those using a different method below  
-    dfEventAll.loc[dfEventAll.laserDur!='Lick', 'trialType'] = dfEventAll.laserType + \
-        '_'+dfEventAll.laserState.astype(str).copy()
+    # dfEventAll.loc[((dfEventAll.laserDur!='Lick')&(dfEventAll.laserDur.notnull()&(dfEventAll.trialID.notnull()))), 'trialType'] = dfEventAll.trialType.copy() + \
+    #     '_'+dfEventAll.laserState.astype(str).copy()
+    # dfTemp= dfEventAll.loc[((dfEventAll.laserDur!='Lick')&(dfEventAll.laserDur.notnull())&(dfEventAll.trialID.notnull()))] .copy()
+    
+    dfTemp= dfEventAll.loc[((dfEventAll.laserDur!='Lick')&(dfEventAll.laserState.notnull())&(dfEventAll.trialID.notnull()))].copy()
+    
+    # dfEventAll.loc[((dfEventAll.laserDur!='Lick')&(dfEventAll.laserState.notnull()&(dfEventAll.trialID.notnull()))), 'trialType'] = dfTemp.trialType.copy() + \
+    #     '_'+dfTemp.laserState.astype(str).copy()
+    dfEventAll.loc[((dfEventAll.laserDur!='Lick') & (dfEventAll.laserState==1) & (dfEventAll.trialID.notnull())), 'trialType'] = dfTemp.trialType.copy() + \
+        '_'+'laser'#dfTemp.laserState.astype(str).copy()
     
     #now drop redundant columns
     # dfEventAll= dfEventAll.drop(['laserType','laserState'], axis=1)
@@ -325,7 +338,6 @@ dfTidy.trialID= dfTidy[dfTidy.trialID.notna()].groupby('fileID').cumcount()
 
 
 #%% Add trialID & trialType labels to other events (events during trials and ITIs) 
- 
 # fill in intermediate trialID values... We have absolute trialIDs now for each Cue but other events have trialID=nan
 # we can't tell for certain if events happened during a trial or ITI at this point but we do have all of the timestamps
 # and we know the cue duration, so we can calculate and assign events to a trial using this.
@@ -583,7 +595,7 @@ dfTidy= dfCat.copy()
 # # #concat back into dfTidy
 # dfTidy.set_index('fileID',inplace=True)
 # dfTemp.set_index('fileID', inplace=True)
-# # test= test.merge(dfTemp, 'left').copy()
+# # test= test.merge(dfTemp, 'left').copy(
 # dfTidy= pd.concat([dfTidy, dfTemp], axis=0)
 
 # dfTidy.reset_index(inplace=True,drop=False)
@@ -658,56 +670,84 @@ dfTidy= dfTidy.merge(dfGroup[['fileID','trialID','trialStart']],'left',on=['file
 # test= dfTidy.loc[(dfTidy.trialID<=0)]-dfT
 
 #%% for lick-paired laser sessions, classify trials as laser on vs. laser off
-#since laser delivery in these sessions is contingent on lick behavior
-#use actual laser on & off times to define trials where laser delivered
+# #since laser delivery in these sessions is contingent on lick behavior
+# #use actual laser on & off times to define trials where laser delivered
    
-if experimentType== 'Opto': 
-    #cumcount each laser onsets per trial
-    dfTidy['trialLaser'] = dfTidy[(dfTidy.laserDur=='Lick') & (dfTidy.eventType == 'laserTime')].groupby([
-        'fileID', 'trialID']).cumcount().copy()
+# if experimentType== 'Opto': 
+#     #cumcount each laser onsets per trial
+#     dfTidy['trialLaser'] = dfTidy[(dfTidy.laserDur=='Lick') & (dfTidy.eventType == 'laserTime')].groupby([
+#         'fileID', 'trialID']).cumcount().copy()
     
-    #relabel trialType based on presence or absence of laser onset
-    laserCount= dfTidy[dfTidy.laserDur=='Lick'].groupby(['fileID','trialID'],dropna=False)['trialLaser'].nunique()
+#     #relabel trialType based on presence or absence of laser onset
+#     laserCount= dfTidy[dfTidy.laserDur=='Lick'].groupby(['fileID','trialID'],dropna=False)['trialLaser'].nunique()
     
-    #make 0 or 1 to match trialType labels of Cue laser sessions
-    laserCount.loc[laserCount>0]='1' 
-    laserCount.loc[laserCount==0]='0'
+#     #make 0 or 1 to match trialType labels of Cue laser sessions
+#     laserCount.loc[laserCount>0]='1' 
+#     laserCount.loc[laserCount==0]='0'
     
-    #so  we have a laser state for each trial, but dfTidy has many entries for each trial.
-    #get the first value, then we'll use ffill to fill in other entries later
-    #using  reset_index() then set_index() keeps the original named index as a column
+#     #so  we have a laser state for each trial, but dfTidy has many entries for each trial.
+#     #get the first value, then we'll use ffill to fill in other entries later
+#     #using  reset_index() then set_index() keeps the original named index as a column
     
-    laserCount= laserCount.loc[laserCount.index.get_level_values(1)>=0]
+#     laserCount= laserCount.loc[laserCount.index.get_level_values(1)>=0]
     
-    ## index by file, trial and get total count of lasers onsets per trial
-    #we will use this to match up values with the original dfTidy
-    dfLaser= dfTidy[((dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='DStime') | (dfTidy.eventType=='NStime')))].reset_index().set_index(['fileID','trialID'])
+#     ## index by file, trial and get total count of lasers onsets per trial
+#     #we will use this to match up values with the original dfTidy
+#     dfLaser= dfTidy[((dfTidy.laserDur=='Lick') & ((dfTidy.eventType=='DStime') | (dfTidy.eventType=='NStime')))].reset_index().set_index(['fileID','trialID'])
     
-    # combine laserState and laserType into one variable for labelling each trial: trialType
-    # #only include the laser sessions
-    dfLaser.trialType= dfLaser.laserType + '_' + laserCount.astype(str).copy()
+#     # combine laserState and laserType into one variable for labelling each trial: trialType
+#     # #only include the laser sessions
+#     dfLaser.trialType= dfLaser.laserType + '_' + laserCount.astype(str).copy()
     
-    #set index to eventID before assignment
-    # dfLaser= dfLaser.reset_index().set_index('eventID')
-    # dfLaser= dfLaser.set_index('fileID','trialID')s
+#     #set index to eventID before assignment
+#     # dfLaser= dfLaser.reset_index().set_index('eventID')
+#     # dfLaser= dfLaser.set_index('fileID','trialID')s
     
-    #index by fileID, trialID and overwrite previous trialType labels
-    dfTidy.set_index(['fileID','trialID'],inplace=True)
+#     #index by fileID, trialID and overwrite previous trialType labels
+#     dfTidy.set_index(['fileID','trialID'],inplace=True)
     
-    dfTidy.loc[dfLaser.index, 'trialType']= dfLaser.trialType
+#     dfTidy.loc[dfLaser.index, 'trialType']= dfLaser.trialType
     
-    dfTidy.reset_index(inplace=True)    
+#     dfTidy.reset_index(inplace=True)    
 
-    #insert trialTypes using eventID as index
+#     #insert trialTypes using eventID as index
     
-    #ffill trialType for each trial
-    #already filled nan so fillna wont work
-    # dfTidy.loc[dfTidy.trialID>=0,'trialType']= dfTidy[dfTidy.trialID>=0].groupby('fileID')['trialType'].fillna(method='ffill').copy()
+#     #ffill trialType for each trial
+#     #already filled nan so fillna wont work
+#     # dfTidy.loc[dfTidy.trialID>=0,'trialType']= dfTidy[dfTidy.trialID>=0].groupby('fileID')['trialType'].fillna(method='ffill').copy()
     
-    #%%  drop any redundant columns remaining
-    if experimentType== 'Opto':
-        dfTidy = dfTidy.drop(columns=['laserType', 'laserState']).copy()
 
+#%% TODO: ffill idVars for empty trials
+# dfTidy.loc[:,idVars]= dfTidy.groupby('fileID')['trialType'][idVars].fillna(method='ffill').copy()
+# test= dfTidy.copy()
+dfTidy.loc[:,idVars]= dfTidy.groupby(['fileID'], as_index=False)[idVars].fillna(method='ffill').copy()
+# test2= dfTidy.copy()
+# test2[idVars]= dfTidy.groupby(['fileID'], as_index=False)[idVars].transform('fillna',method='ffill').copy()
+
+# test3= dfTidy.set_index(['fileID'],drop=False).copy()
+# test3.loc[:,idVars] = test3[idVars].fillna(method='ffill').copy()
+
+#%% redefine eventID now that we have empty placeholder 'events' 
+
+#make sure sorted by timestamp within fileID
+dfTidy = dfTidy.sort_values(by=['fileID', 'eventTime'])
+
+#drop old eventID and replace with new sorted index
+dfTidy.drop(columns=['eventID'])
+dfTidy.eventID= dfTidy.index.copy()
+
+#%%  drop any redundant columns remaining
+if experimentType== 'Opto':
+    #cat together dur and freq of laser
+    dfTidy.laserDur= dfTidy.loc[dfTidy.laserDur!='nan'].laserDur.astype(str)+' @ '+dfTidy.laserFreq.astype(str)
+
+    dfTidy = dfTidy.drop(columns=['laserType', 'laserState', 'laserFreq']).copy()
+
+#%% Change dtypes for categorical vars (good for plotting & analysis later)
+dfTidy.trialType= dfTidy.trialType.astype('category')
+
+if experimentType== 'Opto':
+   dfTidy.laserDur= dfTidy.laserDur.astype('category')
 
 #%% Save dfTidy so it can be loaded quickly for subesequent analysis
 

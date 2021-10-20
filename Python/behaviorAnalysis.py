@@ -21,7 +21,11 @@ import matplotlib.pyplot as plt
 
  #%% define a function to save and close figures
 def saveFigCustom(figure, figName):
-    plt.savefig(r'./_output/_behaviorAnalysis/'+figName+'.PDF')
+    plt.gcf().set_size_inches((20,10), forward=False) # ~monitor size
+    plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0) #creates legend ~right of the last subplot
+    
+    plt.gcf().tight_layout()
+    plt.savefig(r'./_output/_behaviorAnalysis/'+figName+'.png', bbox_inches='tight')
     plt.close()
          
          
@@ -40,6 +44,7 @@ my_shelf.close()
 
 #%% Plot settings
 sns.set_style("darkgrid")
+sns.set_context('notebook')
 
 #fixed order of trialType to plot (so consistent between figures)
 #for comparison of trial types (e.g. laser on vs laser off, good to have these in paired order for paired color palettes)
@@ -49,8 +54,9 @@ trialOrder= ['DStime','NStime','Pre-Cue', 'ITI']
 criteriaDS= 0.6
 
 if experimentType=='Opto':
-    trialOrder= ['laserDStrial_0', 'laserDStrial_1', 'laserNStrial_0', 'laserNStrial_1','ITI']
-
+    # trialOrder= ['laserDStrial_0', 'laserDStrial_1', 'laserNStrial_0', 'laserNStrial_1', 'Pre-Cue', 'ITI']
+    # trialOrder= [trialOrder, 'laserDStrial_0', 'laserDStrial_1', 'laserNStrial_0', 'laserNStrial_1']
+    trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue','ITI'])
 
 # %% Preliminary data analyses
 # Event latency, count, and behavioral outcome for each trial
@@ -237,6 +243,7 @@ dfTemp= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='
 
 dfTidy= dfTidy.reset_index().merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh10s']).copy()
 
+
 #%% PLOTS:
     
 #%% Plot event counts across sessions (check for outlier sessions/event counts)
@@ -246,7 +253,7 @@ sns.set_palette('tab20')  #good for plotting by many subj
 #I know that lick count was absurdly high (>9000) due to liquid shorting lickometer on at least 1 session
 #visualize event counts by session to ID outliers
 #not interested in some events (e.g. # cues is fixed), remove those
-dfPlot= dfTidy.loc[(dfTidy.eventType!='NStime') & (dfTidy.eventType!='DStime') & (dfTidy.eventType!='PExEst') & (dfTidy.eventType!='laserOffTime')] 
+dfPlot= dfTidy.loc[(dfTidy.eventType!='NStime') & (dfTidy.eventType!='DStime') & (dfTidy.eventType!='PExEst') & (dfTidy.eventType!='laserOffTime')].copy()
 
 #count of each event type by date and subj
 dfPlot= dfPlot.groupby(['subject','date', 'eventType'])['eventTime'].count().reset_index()
@@ -261,7 +268,7 @@ g.set_ylabels('session')
 saveFigCustom(g, 'individual_eventCounts_line')
 
 #%% Plot PE probability by trialType (within 10s of trial start)
- 
+sns.set_palette('Paired') #default  #tab10
 #subset data and save as intermediate variable dfGroup
 dfGroup= dfTidy.copy()
  
@@ -292,23 +299,67 @@ dfPlot= dfPlot.reset_index().loc[fileAgg]
 
 #subjects may run different session types on same day (e.g. different laserDur), so shouldn't plot simply by date across subjects
 #individual plots by date is ok
-sns.set_palette('Paired')
+# sns.set_palette('Paired')
 
 #a few examples of options here
 # g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='subject', markers=True, dashes=False)
-g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True)
+# g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', size='stage')
 # g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True)
 
 # g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True, row='stage')
 # g.set_titles('{row_name}')
-
-
+g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 g.fig.suptitle('Evolution of the probPE in subjects by trialType')
-g.tight_layout(w_pad=0)
+saveFigCustom(g, 'training_peProb_10s_individual')
 
-saveFigCustom(g, 'individual_peProb_10s')
-  
+
+#virus , sex facet 
+#only DS and NS
+g= sns.relplot(data=dfPlot, x='date', y='probPE', col='sex', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+saveFigCustom(g, 'training_peProb_10s_virus+sex')
+
+g= sns.relplot(data=dfPlot, x='date', y='probPE', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+saveFigCustom(g, 'training_peProb_10s_virus')
+
+#training across stages
+#define specific stages to plot!
+stagesToPlot= pd.Series(dfTidy.loc[dfTidy.stage.notnull(),'stage'].unique())
+stagesToPlot= stagesToPlot.loc[((stagesToPlot.str.contains('5')) | (stagesToPlot.str.contains('Manipulation')))]
+
+dfPlot= dfPlot.loc[dfPlot.stage.isin(stagesToPlot)]
+
+# #define specific trialTypes to plot!
+# trialTypesToPlot= pd.Series(dfTidy.loc[dfTidy.trialType.notnull(),'trialType'].unique())
+# trialTypesToPlot= trialTypesToPlot.loc[((trialTypesToPlot.str.contains('DS')) | (trialTypesToPlot.str.contains('NS')))]
+
+# dfPlot= dfPlot.loc[dfPlot.trialType.isin(trialTypesToPlot)]
+# dfPlot.trialType= dfTidy.trialType.cat.remove_unused_categories()
+
+#late stages only
+g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+g.fig.suptitle('Evolution of the probPE in subjects by trialType')
+saveFigCustom(g, 'training_peProb_10s_lateStages_individual')
+
+
+g= sns.relplot(data=dfPlot, x='date', y='probPE', row='stage', col='virus', hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
+g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+saveFigCustom(g, 'training_peProb_10s_lateStages_virus')
+
+
+# g= sns.relplot(data=dfPlot, x='date', y='probPE', row='trialType', hue='virus', kind='line', style='virus', markers=True, dashes=False)
+# g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+
+#individual subj lines
+# g= sns.relplot(data=dfPlot, x='date', y='probPE', row='trialType', units='subject', estimator=None, hue='virus', kind='line', style='stage', markers=True, dashes=False, palette='tab10')
+# g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+# g.fig.suptitle('Evolution of the probPE in subjects by trialType')
+
+
+#% TODO: ECDF of behavioral outcome (PE) would be nice to view compared to latency ECDFs?
 
 #%% Plot PE latency by trialType
             
@@ -320,13 +371,44 @@ g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
                 row='virus', kind='ecdf', hue_order= trialOrder)
 g.fig.suptitle('First PE latency by trial type')
 g.set_ylabels('First PE latency from epoch start (s)')
-saveFigCustom(g, 'virus_peLatency_ecdf')
+saveFigCustom(g, 'virus_peLatency_10s_ecdf')
 
   #PE latency:  individual subj 
 g=sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',hue='trialType', kind='ecdf', hue_order=trialOrder)
 g.fig.suptitle('First PE latency by trial type (within 10s)')
 g.set_ylabels('Probability: first PE latency from epoch start')
 saveFigCustom(g, 'individual_peLatency_10s_ecdf')
+
+
+ #training across stages
+dfPlot.eventLatency= dfPlot.eventLatency.astype('float') #TODO: correct dtypes early in code
+
+g= sns.relplot(data=dfPlot, x='date', y='eventLatency', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g.fig.suptitle('Evolution of first PE latency by trialType')
+saveFigCustom(g, 'training_peLatency_10s_individual')
+
+
+g= sns.relplot(data=dfPlot, x='date', y='eventLatency', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g.fig.suptitle('Evolution of first PE latency by trialType')
+saveFigCustom(g, 'training_peLatency_10s_virus+sex')
+
+
+# late stages plots
+dfPlot= dfPlot.loc[dfPlot.stage.isin(stagesToPlot)]
+
+g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
+                row='virus', col='stage', kind='ecdf', hue_order= trialOrder)
+g.fig.suptitle('First PE latency by trial type, late stages')
+g.set_ylabels('Probability: first PE latency from epoch start')
+saveFigCustom(g, 'dist_peLatency_10s_lateStages_virus_ecdf')
+
+
+g= sns.relplot(data=dfPlot, x='date', y='eventLatency', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g.fig.suptitle('Evolution of first PE latency by trialType, late stages')
+saveFigCustom(g, 'training_peLatency_10s_lateStages_virus')
+
+
+
 
 #%% TODO: Custom Ridge Plot to show changes in distribution over time
 
@@ -460,3 +542,6 @@ saveFigCustom(g, 'individual_ILI_10s_bar')
 
 # # save profile report as html
 # profile.to_file('pandasProfileEventCounts.html')
+
+#%% all done
+print('all done')
