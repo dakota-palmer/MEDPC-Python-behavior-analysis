@@ -10,3 +10,7 @@ Python/_output/dfTidyMeta.bak
 Python/_output/dfTidyMeta.dat
 Python/_output/dfTidyMeta.dir
 *.png
+*.bak
+*.dat
+*.dir
+Python/.pylint.d/behaviorAnalysis1.stats

@@ -329,7 +329,9 @@ saveFigCustom(g, 'training_peProb_10s_virus')
 stagesToPlot= pd.Series(dfTidy.loc[dfTidy.stage.notnull(),'stage'].unique())
 stagesToPlot= stagesToPlot.loc[((stagesToPlot.str.contains('5')) | (stagesToPlot.str.contains('Manipulation')))]
 
-dfPlot= dfPlot.loc[dfPlot.stage.isin(stagesToPlot)]
+dfPlot= dfPlot.loc[dfPlot.stage.isin(stagesToPlot)].copy()
+dfPlot.stage= dfPlot.stage.cat.remove_unused_categories()
+
 
 # #define specific trialTypes to plot!
 # trialTypesToPlot= pd.Series(dfTidy.loc[dfTidy.trialType.notnull(),'trialType'].unique())
@@ -523,6 +525,83 @@ g.fig.suptitle('ILI by trial type; individual subj')
 g.set_ylabels('ILI (s)')
 g.set(ylim=(0,1))
 saveFigCustom(g, 'individual_ILI_10s_bar')
+
+
+#%% trying stuff with data hierarchy grouping
+
+  # by_many<- group_by(py_data, virus, sex, stage, laserDur, subject, fileID, trialType, trialOutcomeBeh10s)
+
+groupers= ['virus','sex','stage','laserDur', 'subject', 'date', 'trialType']
+
+#hierarchy should be something like groupVars -> stageVars -> subjVars-> sessionVars -> date -> fileID -> trialType/trialVars -> trialID -> eventVars
+
+#seems that the grouping here is using all possible combos (e.g. creating entries for F Sex even for subjects that are M)
+dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
+
+#observed=True parameter only includes observed categories
+# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'], observed=True)
+
+
+dfGroupComp= pd.DataFrame()
+dfGroupComp['trialCount']= dfGroup['trialID'].nunique()
+dfGroupComp.reset_index(inplace=True)
+
+# dfGroupComp2= dfTidy.copy()
+# dfGroupComp2['trialCount']= dfGroup['trialID'].transform('nunique')
+
+
+sns.catplot(data= dfGroupComp, row='virus', col='sex', x='stage', y='trialCount', hue='trialType', hue_order=trialOrder, kind='bar')
+
+
+#^this was just example, now do something more relevant to behavior analysis
+
+dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
+
+dfGroupComp= pd.DataFrame()
+dfGroupComp['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].value_counts()
+dfGroupComp.reset_index(inplace=True)
+
+
+sns.catplot(data= dfGroupComp, row='virus', col='sex', x='trialOutcomeBeh10s', y='outcomeBehCount', hue='trialType', hue_order=trialOrder, kind='bar')
+
+
+#^ can calculate proportion more efficiently?
+dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
+
+
+dfGroupComp= pd.DataFrame()
+dfGroupComp['trialCount']= dfGroup['trialID'].nunique()
+dfGroupComp= dfGroupComp.reset_index().set_index(groupers)
+
+
+
+dfGroupComp2= pd.DataFrame()
+dfGroupComp2['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].value_counts()
+dfGroupComp2= dfGroupComp2.reset_index().set_index(groupers)
+
+#issue now would be dividing appropriately with non-unique index
+#could try using transform() operation
+# dfGroupComp2['outcomeProb']= dfGroupComp2.outcomeBehCount/dfGroupComp.trialCount
+
+
+
+#can imagine doing peri-event analyses like so
+dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType', 'eventType'])
+
+dfGroupComp= pd.DataFrame()
+dfGroupComp['eventOnsets']= dfGroup['eventTime'].value_counts()
+
+
+#%% Save dfTidy so it can be loaded quickly for subesequent analysis
+
+dfTidyAnalyzed= dfTidy.copy()
+
+savePath= r'./_output/' #r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python' 
+
+print('saving dfTidyAnalyzed to file')
+
+#Save as pickel
+dfTidyAnalyzed.to_pickle(savePath+'dfTidyAnalyzed.pkl')
 
 
 #%% Use pandas profiling on event counts

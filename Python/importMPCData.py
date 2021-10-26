@@ -114,7 +114,7 @@ df.subject= df.subject.astype('str')
 df.date= df.date.astype('str')
 
 # Match and insert subject metadata based on subject
-metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" #dp vp-vta-stgtacr opto
+# metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" #dp vp-vta-stgtacr opto
 
 metaPath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
 
@@ -124,16 +124,15 @@ df= df.merge(dfRaw.astype('str'), how='left', on=['subject'])
 
 # Match and insert session metadata based on date and subject
 
-metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp vp-vta-stgtacr opto
+# metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp vp-vta-stgtacr opto
 
 metaPath= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto
 
 #ensure that date is read as string
-dfRaw= pd.read_excel(metaPath, converters={'date': str})#.astype('str') 
+dfRaw= pd.read_excel(metaPath, converters={'date': str, 'subject': str})#.astype('str') 
 
 # df= df.merge(dfRaw.astype('str'), how='left', on=['subject','date'])
 df= df.merge(dfRaw, how='left', on=['subject','date'])
-
 
 # %% Exclude data
 
@@ -745,6 +744,7 @@ if experimentType== 'Opto':
 
 #%% Change dtypes for categorical vars (good for plotting & analysis later)
 dfTidy.trialType= dfTidy.trialType.astype('category')
+dfTidy.stage= dfTidy.stage.astype('category')
 
 if experimentType== 'Opto':
    dfTidy.laserDur= dfTidy.laserDur.astype('category')

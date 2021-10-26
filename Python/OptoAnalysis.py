@@ -22,47 +22,47 @@ if __name__ == '__main__':
  
     import shelve
 
-    # #%% Load previously saved dfTidy (and other vars) from pickle
-    # dataPath= r'./_output/' #'r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
+    # #%% Load previously saved dfTidyAnalyzed (and other vars) from pickle
+    dataPath= r'./_output/' #'r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
     
-    # dfTidy= pd.read_pickle(dataPath+'dfTidy.pkl')
+    dfTidyOpto= pd.read_pickle(dataPath+'dfTidyAnalyzed.pkl')
     
-    # #load any other variables saved during the import process ('dfTidymeta' shelf)
-    # my_shelf = shelve.open(dataPath+'dfTidymeta')
-    # for key in my_shelf:
-    #     globals()[key]=my_shelf[key]
-    # my_shelf.close()
+    #load any other variables saved during the import process ('dfTidymeta' shelf)
+    my_shelf = shelve.open(dataPath+'dfTidymeta')
+    for key in my_shelf:
+        globals()[key]=my_shelf[key]
+    my_shelf.close()
     
     #%% set opto specific plotting options
     sns.set_palette('Paired') #great for compairing laser on vs laser off trialTypes
 
     #%% exclude sessions without laser manipulations
-    dfTidy= dfTidy.loc[dfTidy.laserDur!='nan @ nan']
-    dfTidy= dfTidy.loc[dfTidy.laserDur.notnull()]
+    dfTidyOpto= dfTidyOpto.loc[dfTidyOpto.laserDur!='nan @ nan']
+    dfTidyOpto= dfTidyOpto.loc[dfTidyOpto.laserDur.notnull()]
     #redefine categories
-    dfTidy.laserDur= dfTidy.laserDur.cat.remove_unused_categories()
+    dfTidyOpto.laserDur= dfTidyOpto.laserDur.cat.remove_unused_categories()
       #%% Remove Lick+Laser trials without PE+Lick
       
     #   #TODO: what is the best way to deal with this? 
     #   #could make a new column or trialType labels for just lick+laser sessions? 
     #   #or, could also just remove "laser off" trials without PE+lick- easier, doing this
       
-    #   #However, instead of changing dfTidy itself just do it locally later where necessary
+    #   #However, instead of changing dfTidyOpto itself just do it locally later where necessary
       
     # #Correct comparison between laser ON and laser OFF trials for lick-paired should only include trials with PE+Lick
     
     # #noPE+lick laser trials exist, probably from first bad session without PE gate?
-    # print(dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialType=='laserDStrial_1')].trialOutcomeBeh10s.unique())
-    # print(dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialType=='laserNStrial_1')].trialOutcomeBeh10s.unique())
+    # print(dfTidyOpto.loc[(dfTidyOpto.laserDur=='Lick') & (dfTidyOpto.trialType=='laserDStrial_1')].trialOutcomeBeh10s.unique())
+    # print(dfTidyOpto.loc[(dfTidyOpto.laserDur=='Lick') & (dfTidyOpto.trialType=='laserNStrial_1')].trialOutcomeBeh10s.unique())
     
     
     # #for overall pe and lick probability, make a copy to keep all trials
-    # dfTidy2= dfTidy.copy()
+    # dfTidyOpto2= dfTidyOpto.copy()
 
     
     # # #retain only trials with PE+lick for comparison
-    # # #instead of making new df, just remove from dfTidy
-    # # dfTidy.loc[dfTidy.laserDur=='Lick',:]= dfTidy.loc[(dfTidy.laserDur=='Lick') & (dfTidy.trialOutcomeBeh10s=='PE+lick')]
+    # # #instead of making new df, just remove from dfTidyOpto
+    # # dfTidyOpto.loc[dfTidyOpto.laserDur=='Lick',:]= dfTidyOpto.loc[(dfTidyOpto.laserDur=='Lick') & (dfTidyOpto.trialOutcomeBeh10s=='PE+lick')]
     
 
     # %% Analysis & visualization
@@ -77,78 +77,81 @@ if __name__ == '__main__':
    # #manually defining color order so that paired color scheme looks nice
    #  trialOrder =['laserDStrial_0', 'laserDStrial_1',
    #     'laserNStrial_0', 'laserNStrial_1','ITI']
+    trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue','ITI'])
+
 
 
       #%% #For lick+laser, plot trialType counts
       #since laser delivery is contingent on animal's licking, should check to see how many trials they are actually getting laser
-
-    #subset data and save as intermediate variable dfGroup
-    dfGroup= dfTidy.copy()
-    #retain only trials with PE+lick for comparison
-    dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
-
-    #get count of each trialType by subject and date
-    dfPlot= dfGroup.loc[(dfGroup.laserDur=='Lick') & ((dfGroup.eventType=='NStime') | (dfGroup.eventType=='DStime'))].groupby(['subject','date','trialType'])['eventTime'].count().reset_index()
+    try:
+        #subset data and save as intermediate variable dfGroup
+        dfGroup= dfTidyOpto.copy()
+        #retain only trials with PE+lick for comparison
+        dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
     
+        #get count of each trialType by subject and date
+        dfPlot= dfGroup.loc[(dfGroup.laserDur=='Lick') & ((dfGroup.eventType=='NStime') | (dfGroup.eventType=='DStime'))].groupby(['subject','date','trialType'])['eventTime'].count().reset_index()
+        
+        
+        #Plot count of trial types for each session
+        g= sns.relplot(data=dfPlot, col='subject', col_wrap=4, x='date', y='eventTime', hue='trialType', hue_order=trialOrder, kind='line')
+                        # facet_kws={'sharey': False, 'sharex': True})
+        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        g.fig.suptitle('Total trial type count across LICK+laser sessions')
+        g.set_ylabels('# of events')
+        g.set_ylabels('session')
+        
+        #total count of each trial type across all sessions for each subject
+        sns.set_palette('Paired')  # good for comparing two groups (laser on vs off)
+        
+        g= sns.catplot(data=dfPlot, x='subject', y='eventTime', hue='trialType', hue_order=trialOrder, kind='bar')
+                        # facet_kws={'sharey': False, 'sharex': True})
+        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        g.fig.suptitle('Total trial type count across LICK+laser sessions')
+        g.set_ylabels('Total trial count (lick+laser sessions)')
+        g.set_xlabels('Subject')
+        
+        #Use trialLick10ss to get # of licks per trial by type, then plot distribution by trial type
+        
+        dfPlot = dfGroup[(dfGroup.laserDur=='Lick')].copy()
+            #transform keeps original index?
+        lickCount=dfPlot.groupby(['fileID','trialID','trialType'])['trialLick10s'].transform('count')
     
-    #Plot count of trial types for each session
-    g= sns.relplot(data=dfPlot, col='subject', col_wrap=4, x='date', y='eventTime', hue='trialType', hue_order=trialOrder, kind='line')
-                    # facet_kws={'sharey': False, 'sharex': True})
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('Total trial type count across LICK+laser sessions')
-    g.set_ylabels('# of events')
-    g.set_ylabels('session')
+        #aggregated measure, but trialIDs repeat, so just restrict to first one   
+        trialAgg= dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0
+        dfPlot= dfPlot.loc[trialAgg]
+        
+        g= sns.displot(data=dfPlot, x=lickCount, hue='trialType', hue_order=trialOrder, kind='hist', stat="density", common_norm=False, kde=True, multiple='dodge')
+        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        g.fig.suptitle('Lick count by trial type: LICK+laser sessions')
+        g.set_ylabels('Lick count (lick+laser sessions)')
+        
     
-    #total count of each trial type across all sessions for each subject
-    sns.set_palette('Paired')  # good for comparing two groups (laser on vs off)
+        #check inter-lick interval
+        #All subj distribution of ILI (inter-lick interval)
+        #only include trialLick10s~=nan
+        dfPlot = dfGroup[dfGroup.trialLick10s.notnull()].copy()
+        #calculate ILI by taking diff() of latencies
+        ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
     
-    g= sns.catplot(data=dfPlot, x='subject', y='eventTime', hue='trialType', hue_order=trialOrder, kind='bar')
-                    # facet_kws={'sharey': False, 'sharex': True})
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('Total trial type count across LICK+laser sessions')
-    g.set_ylabels('Total trial count (lick+laser sessions)')
-    g.set_xlabels('Subject')
-    
-    #Use trialLick10ss to get # of licks per trial by type, then plot distribution by trial type
-    
-    dfPlot = dfGroup[(dfGroup.laserDur=='Lick')].copy()
-        #transform keeps original index?
-    lickCount=dfPlot.groupby(['fileID','trialID','trialType'])['trialLick10s'].transform('count')
-
-    #aggregated measure, but trialIDs repeat, so just restrict to first one   
-    trialAgg= dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0
-    dfPlot= dfPlot.loc[trialAgg]
-    
-    g= sns.displot(data=dfPlot, x=lickCount, hue='trialType', hue_order=trialOrder, kind='hist', stat="density", common_norm=False, kde=True, multiple='dodge')
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('Lick count by trial type: LICK+laser sessions')
-    g.set_ylabels('Lick count (lick+laser sessions)')
-    
-
-    #check inter-lick interval
-    #All subj distribution of ILI (inter-lick interval)
-    #only include trialLick10s~=nan
-    dfPlot = dfGroup[dfGroup.trialLick10s.notnull()].copy()
-    #calculate ILI by taking diff() of latencies
-    ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
-
-    #bar- all subj
-    g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='bar', row='virus', order=trialOrder)
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('ILI by trial type; LICK+Laser; all subj')
-    g.set_ylabels('ILI (s)')
-    g.set(ylim=(0,0.5))
-    
-    
+        #bar- all subj
+        g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='bar', row='virus', order=trialOrder)
+        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        g.fig.suptitle('ILI by trial type; LICK+Laser; all subj')
+        g.set_ylabels('ILI (s)')
+        g.set(ylim=(0,0.5))
+        
+    except:
+        print('lick+laser exception')
     
 
     #%% Plot individual subject First lick latencies (time from cue or trialEnd if ITI events)
     # # should represent "baseline" behavior  without laser
           
     # #trial-based, ignoring ITI
-    # # dfPlot = dfTidy[(dfTidy.trialID >= 0) & (dfTidy.laserDur=="Off")].copy()
+    # # dfPlot = dfTidyOpto[(dfTidyOpto.trialID >= 0) & (dfTidyOpto.laserDur=="Off")].copy()
     # #trial-based, including ITI
-    # dfPlot = dfTidy[(dfTidy.laserDur=="off")].copy()
+    # dfPlot = dfTidyOpto[(dfTidyOpto.laserDur=="off")].copy()
 
     # #All subj distribution of ILI (inter-lick interval)
     # #only include first trialLick10s ==0
@@ -198,7 +201,7 @@ if __name__ == '__main__':
     # %% Effect of cue+laser on current trial PE latency
         
     #select data corresponding to first PE from valid trials
-    dfPlot = dfTidy[(dfTidy.trialType!='ITI') & (dfTidy.trialPE10s == 0)].copy()
+    dfPlot = dfTidyOpto[(dfTidyOpto.trialType!='ITI') & (dfTidyOpto.trialPE10s == 0)].copy()
     
     # # PE latency: virus x laserDur
     # g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
@@ -290,14 +293,14 @@ if __name__ == '__main__':
     # #given this, can calculate Probortion as #PE/#PE+#noPE
    
     # #subset data and save as intermediate variable dfGroup
-    # dfGroup= dfTidy.copy()
+    # dfGroup= dfTidyOpto.copy()
     # #for Lick+laser sessions, retain only trials with PE+lick for comparison
     # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
    
     # dfPlot= dfGroup.copy() 
     
     # #excluded trials from lick+laser sessions are all nan. don't include
-    # outcomes= dfTidy.loc[dfTidy.trialOutcomeBeh10s.notnull()].trialOutcomeBeh10s.unique()
+    # outcomes= dfTidyOpto.loc[dfTidyOpto.trialOutcomeBeh10s.notnull()].trialOutcomeBeh10s.unique()
     
     # #TODO: optimize this- combine outcomes here into one variable
     # #using apply() might help? or pivot?
@@ -329,16 +332,16 @@ if __name__ == '__main__':
     # test8= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbFile')
     
     # #assign back to df by merging
-    # #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
-    # # dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
+    # #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidyOpto
+    # # dfTidyOpto.reset_index(inplace=True) #reset index so eventID index is kept
     
-    # dfTidy= dfTidy.reset_index().merge(test8,'left', on=['fileID','trialType','trialOutcomeBeh10s']).copy()
+    # dfTidyOpto= dfTidyOpto.reset_index().merge(test8,'left', on=['fileID','trialType','trialOutcomeBeh10s']).copy()
     
-    # dfTidy.loc[:,'outcomeProbFile']= test8.outcomeProbFile
+    # dfTidyOpto.loc[:,'outcomeProbFile']= test8.outcomeProbFile
     
          
     #subset data and save as intermediate variable dfGroup
-    dfGroup= dfTidy.copy()
+    dfGroup= dfTidyOpto.copy()
      
     #select data
     #all trialTypes excluding ITI     
@@ -369,13 +372,13 @@ if __name__ == '__main__':
     
     
     # #subset data and save as intermediate variable dfGroup
-    # dfGroup= dfTidy.copy()
+    # dfGroup= dfTidyOpto.copy()
     # #for Lick+laser sessions, retain only trials with PE+lick for comparison
     # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
    
     
     # #select data     
-    # dfPlot = dfTidy[(dfGroup.trialType !='ITI')].copy()
+    # dfPlot = dfTidyOpto[(dfGroup.trialType !='ITI')].copy()
     #Plot probability of PE by trialType 
     
     # #get only PE outcomes
@@ -578,7 +581,7 @@ if __name__ == '__main__':
     #%% aggregate DS and NS trial types
     # like above but recalculating peProb for combined laser off&on
      #select data  
-    dfPlot = dfTidy[(dfTidy.trialType != 'ITI')].copy()   
+    dfPlot = dfTidyOpto[(dfTidyOpto.trialType != 'ITI')].copy()   
     
     #make a dict to swap values
     trialTypes= {'laserDStrial_0':'DS', 'laserDStrial_1':'DS', 'laserNStrial_0':'NS',
@@ -617,12 +620,12 @@ if __name__ == '__main__':
 
 #%% Testing groupby()- accessing values & index of grouped data
 
-    # grouped= dfTidy.groupby(['fileID','trialType'])
+    # grouped= dfTidyOpto.groupby(['fileID','trialType'])
     
     # groupedInd= grouped.indices
     
     # groupedExtracted=  grouped.apply(lambda x: x) 
-    # # grouped.reset_index()#dfTidy.loc[groupedInd.keys()]
+    # # grouped.reset_index()#dfTidyOpto.loc[groupedInd.keys()]
     
     # #this gb.groups() seems to give index of all values for each group
     # groups= grouped.groups
@@ -645,7 +648,7 @@ if __name__ == '__main__':
     
     # #count is same as probability so not really helpful?
     
-    # dfPlot= dfTidy.copy()
+    # dfPlot= dfTidyOpto.copy()
     
     # #aggregated measure, but trialIDs repeat, so just restrict to first one
     # trialAgg= dfPlot.groupby(['fileID','trialID'])['trialID'].cumcount()==0
@@ -659,15 +662,15 @@ if __name__ == '__main__':
     # dfPlot= dfPlot.unstack(fill_value=0).stack().reset_index(name='count')
     
     # #merge w other data
-    # dfPlot= dfTidy.merge(dfPlot,'right', on=['fileID','trialType','trialOutcomeBeh10s'])
+    # dfPlot= dfTidyOpto.merge(dfPlot,'right', on=['fileID','trialType','trialOutcomeBeh10s'])
 
 
     #%% TODO: evolution within session (typical trial progression)
         
     #get data, only trials (not ITI)
-    dfGroup= dfTidy.loc[dfTidy.trialType!='ITI'].copy()
+    dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
     #only trials
-    dfGroup= dfTidy.copy().loc[dfTidy.trialID>=0].copy()
+    dfGroup= dfTidyOpto.copy().loc[dfTidyOpto.trialID>=0].copy()
 
     
     sns.set_palette('Paired')
@@ -703,14 +706,14 @@ if __name__ == '__main__':
     dfTemp= outcomeProb.reset_index().melt(id_vars=['subject','trialID','stage','laserDur','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbSubjTrialID')
     
     #assign back to df by merging
-    #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
-    # dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
+    #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidyOpto
+    # dfTidyOpto.reset_index(inplace=True) #reset index so eventID index is kept
     
-    dfTidy= dfTidy.merge(dfTemp,'left', on=['subject','trialID','stage','laserDur','trialType','trialOutcomeBeh10s']).copy()
+    dfTidyOpto= dfTidyOpto.merge(dfTemp,'left', on=['subject','trialID','stage','laserDur','trialType','trialOutcomeBeh10s']).copy()
     #%% Plot probability of PE outcome by trialID (evolution within sessions from above)
      
     #subset data and save as intermediate variable dfGroup
-    dfGroup= dfTidy.copy()
+    dfGroup= dfTidyOpto.copy()
      
     #select data
     #all trialTypes excluding ITI     
@@ -755,7 +758,7 @@ if __name__ == '__main__':
     #old code:
        
       #get data, only trials (not ITI)
-    dfGroup= dfTidy.loc[dfTidy.trialType!='ITI'].copy()
+    dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
     
     sns.set_palette('Paired')
     
@@ -781,7 +784,7 @@ if __name__ == '__main__':
     
     #####repeat for behavior outcome
       #get data, only trials (not ITI)
-    dfGroup= dfTidy.loc[dfTidy.trialType!='ITI'].copy()
+    dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
     
     sns.set_palette('Paired')
     
@@ -805,7 +808,7 @@ if __name__ == '__main__':
     
     ###
    #  #get data, only trials (not ITI)
-   #  dfPlot= dfTidy.loc[dfTidy.trialType!='ITI'].copy()
+   #  dfPlot= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
        
    #  #aggregated measure, but trialIDs repeat, so just restrict to first one
    #  trialAgg= dfPlot.groupby(['fileID','trialID']).cumcount()==0    
@@ -821,7 +824,7 @@ if __name__ == '__main__':
    #  g=sns.relplot(data=dfPlot, col='subject', col_wrap=4, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='line')
     
    #  #TODO: UNITS should be fileID
-   #  dfPlot= dfTidy.merge(dfPlot, how='right', on=['subject','laserDur','trialType','trialID']).copy()
+   #  dfPlot= dfTidyOpto.merge(dfPlot, how='right', on=['subject','laserDur','trialType','trialID']).copy()
     
    #  g=sns.relplot(data=dfPlot, units='fileID', estimator=None, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='line')
         
@@ -859,7 +862,7 @@ if __name__ == '__main__':
     
     # %% Effect of laser on current trial lick behavior
        #select data corresponding to first lick from valid trials
-    dfPlot = dfTidy[(dfTidy.trialType!= 'ITI') & (dfTidy.trialLick10s == 0)].copy()
+    dfPlot = dfTidyOpto[(dfTidyOpto.trialType!= 'ITI') & (dfTidyOpto.trialLick10s == 0)].copy()
     
     # lick latency: virus x laserDur
     g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
@@ -914,7 +917,7 @@ if __name__ == '__main__':
     
     shiftNum= -1 #number of trials backward (-) to shift data. Expect hig`hest effect at most recent preceding trial -1
         
-    dfGroup= dfTidy.copy()
+    dfGroup= dfTidyOpto.copy()
     
     
     #include only valid trials (remove ITIs)
@@ -1076,104 +1079,117 @@ if __name__ == '__main__':
 #for each event type, calculate latency from trial start to event
     
     # %% examine lick+laser on licks
-    
-     #subset data and save as intermediate variable dfGroup
-    dfGroup= dfTidy.copy()
-    #for Lick+laser sessions, retain only trials with PE+lick for comparison
-    dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
-   
-    dfPlot = dfGroup[(dfGroup.laserDur=='Lick')].copy()
-    
-    #All subj distribution of ILI (inter-lick interval)
-    #only include trialLick10s~=nan
-    dfPlot = dfPlot[dfPlot.trialLick10s.notnull()].copy()
-    #calculate ILI by taking diff() of latencies
-    ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
-
-    #bar- all subj
-    g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='bar', order=trialOrder)
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('ILI by trial type; laser+LICK; all subj')
-    g.set_ylabels('ILI (s)')
-    g.set(ylim=(0,0.5))
-
-    
-    # #hist- all subj
-    # ili= ili.astype('float') #allows KDE, but kde here takes awhile
-    # g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='hist', stat="density", common_norm=False, kde=True, multiple='layer', hue_order=np.sort(dfPlot.trialType.unique()))
-    # g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    # g.fig.suptitle('ILI by trial type; laser OFF; all subj')
-    # g.set_xlabels('ILI (s)')
-    # g.set(xlim=(0,1))
-    
-    #box- all subj
-    g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='box', order=trialOrder)
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('ILI by trial type; laser+LICK; all subj')
-    g.set_ylabels('ILI (s)')
-    g.set(ylim=(0,0.5))
-
-    
-    #ecdf- all subj
-    g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='ecdf', hue_order=trialOrder)
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('ILI by trial type; laser+LICK; all subj')
-    g.set_xlabels('ILI (s)')
-    g.set(xlim=(0,1))
-
-    
-    #Individual distribution of ILI (inter-lick interval)
-    dfPlot = dfGroup[(dfGroup.laserDur=='Lick')].copy()
-    #only include trialLick10s~=nan
-    dfPlot = dfPlot[dfPlot.trialLick10s.notnull()].copy()
-    #calculate ILI by taking diff() of latencies
-    ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
-    #bar- individual subj
-    g= sns.catplot(data=dfPlot, y=ili, x='subject', hue='trialType',  kind='bar', hue_order=trialOrder)
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('ILI by trial type; laser+LICK; individual subj')
-    g.set_ylabels('ILI (s)')
-    g.set(ylim=(0,1))
-    
-    #lick count by trial
-    dfPlot = dfGroup[(dfGroup.laserDur=='Lick')].copy()
-    #TODO: consider alternate reshaping df for plotting different aggregations. Not sure what is most convenient
-    
-    #need an index for aggregated trial variables- since trialID repeats we need to restrict observations to first otherwise we'll plot redundant data and stats will be off
-    trialAgg= (dfPlot.groupby(['fileID','trialID'])['trialID'].cumcount()==0).copy()
-    #transform keeps original index
-    lickCount= dfPlot.groupby(['fileID','trialID','trialType'])['trialLick10s'].transform('count').copy()
-    
-    #get only one aggregated value per trial
-    lickCount= lickCount.loc[trialAgg].copy()
-    dfPlot= dfPlot.loc[trialAgg].copy()
+    try:
+         #subset data and save as intermediate variable dfGroup
+        dfGroup= dfTidyOpto.copy()
+        #for Lick+laser sessions, retain only trials with PE+lick for comparison
+        dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
+       
+        dfPlot = dfGroup[(dfGroup.laserDur=='Lick')].copy()
         
-    g= sns.catplot(data=dfPlot, y=lickCount,x='subject',hue='trialType',kind='bar',hue_order=trialOrder)
-    g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
-    g.fig.suptitle('Lick count by trial type; laser+LICK; individual subj')
-    g.set_ylabels('count of licks per trial')
-    g.set_xlabels('subject')
+        #All subj distribution of ILI (inter-lick interval)
+        #only include trialLick10s~=nan
+        dfPlot = dfPlot[dfPlot.trialLick10s.notnull()].copy()
+        #calculate ILI by taking diff() of latencies
+        ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
     
-    #bar with overlay individual trial overlay
-    plt.figure()
-    plt.subplot(1, 1, 1)
-    sns.barplot(data=dfPlot, y=lickCount,x='subject',hue='trialType',hue_order=trialOrder)
-    sns.stripplot(data=dfPlot, y=lickCount,x='subject',hue='trialType',hue_order=trialOrder, dodge=True,size=2)
+        #bar- all subj
+        g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='bar', order=trialOrder)
+        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        g.fig.suptitle('ILI by trial type; laser+LICK; all subj')
+        g.set_ylabels('ILI (s)')
+        g.set(ylim=(0,0.5))
     
-    ##Compare to CUE and laser OFF
-    ##TODO: error here
-    # dfPlot = dfTidy.copy() #all data
+        
+        # #hist- all subj
+        # ili= ili.astype('float') #allows KDE, but kde here takes awhile
+        # g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='hist', stat="density", common_norm=False, kde=True, multiple='layer', hue_order=np.sort(dfPlot.trialType.unique()))
+        # g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        # g.fig.suptitle('ILI by trial type; laser OFF; all subj')
+        # g.set_xlabels('ILI (s)')
+        # g.set(xlim=(0,1))
+        
+        #box- all subj
+        g= sns.catplot(data=dfPlot, y=ili, x='trialType',  kind='box', order=trialOrder)
+        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        g.fig.suptitle('ILI by trial type; laser+LICK; all subj')
+        g.set_ylabels('ILI (s)')
+        g.set(ylim=(0,0.5))
     
-    # #need an index for aggregated trial variables- since trialID repeats we need to restrict observations to first otherwise we'll plot redundant data and stats will be off
-    # trialAgg= (dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0).copy()
-    # #transform keeps original index
-    # lickCount= dfPlot.groupby(['fileID','trialID','trialType'])['trialLick10s'].transform('count').copy()
+        
+        #ecdf- all subj
+        g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='ecdf', hue_order=trialOrder)
+        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        g.fig.suptitle('ILI by trial type; laser+LICK; all subj')
+        g.set_xlabels('ILI (s)')
+        g.set(xlim=(0,1))
     
-    # #get only one aggregated value per trial
-    # lickCount= lickCount.loc[trialAgg].copy()
-    # dfPlot= dfPlot.loc[trialAgg].copy()
+        
+        #Individual distribution of ILI (inter-lick interval)
+        dfPlot = dfGroup[(dfGroup.laserDur=='Lick')].copy()
+        #only include trialLick10s~=nan
+        dfPlot = dfPlot[dfPlot.trialLick10s.notnull()].copy()
+        #calculate ILI by taking diff() of latencies
+        ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
+        #bar- individual subj
+        g= sns.catplot(data=dfPlot, y=ili, x='subject', hue='trialType',  kind='bar', hue_order=trialOrder)
+        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        g.fig.suptitle('ILI by trial type; laser+LICK; individual subj')
+        g.set_ylabels('ILI (s)')
+        g.set(ylim=(0,1))
+        
+        #lick count by trial
+        dfPlot = dfGroup[(dfGroup.laserDur=='Lick')].copy()
+        #TODO: consider alternate reshaping df for plotting different aggregations. Not sure what is most convenient
+        
+        #need an index for aggregated trial variables- since trialID repeats we need to restrict observations to first otherwise we'll plot redundant data and stats will be off
+        trialAgg= (dfPlot.groupby(['fileID','trialID'])['trialID'].cumcount()==0).copy()
+        #transform keeps original index
+        lickCount= dfPlot.groupby(['fileID','trialID','trialType'])['trialLick10s'].transform('count').copy()
+        
+        #get only one aggregated value per trial
+        lickCount= lickCount.loc[trialAgg].copy()
+        dfPlot= dfPlot.loc[trialAgg].copy()
+            
+        g= sns.catplot(data=dfPlot, y=lickCount,x='subject',hue='trialType',kind='bar',hue_order=trialOrder)
+        g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
+        g.fig.suptitle('Lick count by trial type; laser+LICK; individual subj')
+        g.set_ylabels('count of licks per trial')
+        g.set_xlabels('subject')
+        
+        #bar with overlay individual trial overlay
+        plt.figure()
+        plt.subplot(1, 1, 1)
+        sns.barplot(data=dfPlot, y=lickCount,x='subject',hue='trialType',hue_order=trialOrder)
+        sns.stripplot(data=dfPlot, y=lickCount,x='subject',hue='trialType',hue_order=trialOrder, dodge=True,size=2)
+        
+        ##Compare to CUE and laser OFF
+        ##TODO: error here
+        # dfPlot = dfTidyOpto.copy() #all data
+        
+        # #need an index for aggregated trial variables- since trialID repeats we need to restrict observations to first otherwise we'll plot redundant data and stats will be off
+        # trialAgg= (dfPlot.groupby(['fileID','trialID','trialType'])['trialID'].cumcount()==0).copy()
+        # #transform keeps original index
+        # lickCount= dfPlot.groupby(['fileID','trialID','trialType'])['trialLick10s'].transform('count').copy()
+        
+        # #get only one aggregated value per trial
+        # lickCount= lickCount.loc[trialAgg].copy()
+        # dfPlot= dfPlot.loc[trialAgg].copy()
+        
+        # g= sns.catplot(data=dfPlot, row='laserDur', y=lickCount,x='subject',hue='trialType',kind='bar',hue_order=trialOrder)
+        
+    except:
+        print('lick+laser exception')
     
-    # g= sns.catplot(data=dfPlot, row='laserDur', y=lickCount,x='subject',hue='trialType',kind='bar',hue_order=trialOrder)
+    #%% Save dfTidy so it can be loaded quickly for subesequent analysis
+
+savePath= r'./_output/' #r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python' 
+
+print('saving dfTidyOpto to file')
+
+#Save as pickel
+dfTidyOpto.to_pickle(savePath+'dfTidyOpto.pkl')
+    
     
   
     
@@ -1181,10 +1197,10 @@ if __name__ == '__main__':
     ##This might be a decent way to quickly view behavior session results if automated
     
     ##Unstack() the groupby output for a dataframe we can profile
-    # dfPlot= dfTidy
+    # dfPlot= dfTidyOpto
     # dfPlot= dfPlot.groupby(['subject','date','eventType'])['eventTime'].count().unstack()
     # #add trialType counts
-    # dfPlot= dfPlot.merge(dfTidy.loc[(dfTidy.eventType=='x_I_NStime') | (dfTidy.eventType=='x_H_DStime')].groupby(['subject','date','trialType'])['eventTime'].count().unstack(),left_index=True,right_index=True)
+    # dfPlot= dfPlot.merge(dfTidyOpto.loc[(dfTidyOpto.eventType=='x_I_NStime') | (dfTidyOpto.eventType=='x_H_DStime')].groupby(['subject','date','trialType'])['eventTime'].count().unstack(),left_index=True,right_index=True)
 
     # from pandas_profiling import ProfileReport
 
@@ -1198,7 +1214,7 @@ if __name__ == '__main__':
 
     # from pandas_profiling import ProfileReport
 
-    # profile = ProfileReport(dfTidy, title='Pandas Profiling Report', explorative = True)
+    # profile = ProfileReport(dfTidyOpto, title='Pandas Profiling Report', explorative = True)
 
     # # save profile report as html
     # profile.to_file('pandasProfile.html')
