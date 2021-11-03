@@ -45,7 +45,6 @@ import seaborn as sns
 experimentType= 'Opto'
 # experimentType= 'photometry'
 
-
 #%% ID and import raw data .xlsx
 # your path to folder containing excel files 
 # datapath = r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw\\'#dp vp-vta-stgtacr opto
@@ -188,6 +187,10 @@ eventVars= ['PEtime', 'PExEst', 'lickTime', 'DStime', 'NStime', 'UStime']
 #e.g. for DS task with Opto
 if experimentType== 'Opto':
     eventVars= ['PEtime', 'PExEst', 'lickTime', 'laserTime', 'DStime', 'NStime', 'UStime']#,'laserOffTime']
+
+#ICSS
+if experimentType== 'ICSS':
+    evemtVars= ['activeNP', 'inactiveNP', 'laserTime']
 
 #%% Define ID variables for your sessions
 #these are identifying variables per sessions that should be matched up with the corresponding event variables and timestamps

@@ -552,6 +552,7 @@ if __name__ == '__main__':
     g= sns.relplot(data= dfPlot, kind='line', row='virus', x='date', y='probPE', hue='trialType', hue_order=trialOrder)
     # g= sns.relplot(data= dfPlot, estimator=None, kind='line', row='virus', x='date', y='probPE', units='subject', hue='trialType', hue_order=trialOrder)
 
+
     #%% Calculate difference score between laser off and laser on trialTypes
     
     #get rid of ITI & pre cue then just use diff() to get difference

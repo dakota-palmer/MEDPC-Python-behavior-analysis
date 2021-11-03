@@ -558,30 +558,44 @@ sns.catplot(data= dfGroupComp, row='virus', col='sex', x='stage', y='trialCount'
 dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
 
 dfGroupComp= pd.DataFrame()
-dfGroupComp['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].value_counts()
-dfGroupComp.reset_index(inplace=True)
+# dfGroupComp['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].value_counts()
+# dfGroupComp['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].transform(pd.Series.mode)
+# dfGroupComp['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].transform(dfTidy.trialOutcomeBeh10s.mode)
 
 
-sns.catplot(data= dfGroupComp, row='virus', col='sex', x='trialOutcomeBeh10s', y='outcomeBehCount', hue='trialType', hue_order=trialOrder, kind='bar')
+# dfGroupComp.reset_index(inplace=True)
+
+
+# sns.catplot(data= dfGroupComp, row='virus', col='sex', x='trialOutcomeBeh10s', y='outcomeBehCount', hue='trialType', hue_order=trialOrder, kind='bar')
 
 
 #^ can calculate proportion more efficiently?
-dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
+# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
 
+#subset to one event per trial, then groupby()
+dfGroup= dfTidy.copy().loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].groupby(groupers)
 
 dfGroupComp= pd.DataFrame()
 dfGroupComp['trialCount']= dfGroup['trialID'].nunique()
-dfGroupComp= dfGroupComp.reset_index().set_index(groupers)
+dfGroupComp= dfGroupComp.reset_index(drop=False).set_index(groupers)
 
 
 
 dfGroupComp2= pd.DataFrame()
 dfGroupComp2['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].value_counts()
-dfGroupComp2= dfGroupComp2.reset_index().set_index(groupers)
+dfGroupComp2= dfGroupComp2.reset_index(drop=False).set_index(groupers)
 
 #issue now would be dividing appropriately with non-unique index
-#could try using transform() operation
+#could try using transform() operation?
 # dfGroupComp2['outcomeProb']= dfGroupComp2.outcomeBehCount/dfGroupComp.trialCount
+
+#do division while indexed by groupers, then reset index for reassignment of result
+outcomeProb= dfGroupComp2.outcomeBehCount/dfGroupComp.trialCount
+
+dfGroupComp.reset_index(inplace=True, drop=False)
+outcomeProb= outcomeProb.reset_index().copy()
+
+dfGroupComp['outcomeProb']= outcomeProb.copy()
 
 
 
@@ -602,6 +616,10 @@ print('saving dfTidyAnalyzed to file')
 
 #Save as pickel
 dfTidyAnalyzed.to_pickle(savePath+'dfTidyAnalyzed.pkl')
+
+
+# Save as .CSV
+# dfTidyAnalyzed.to_csv('dfTidyAnalyzed.csv')
 
 
 #%% Use pandas profiling on event counts
