@@ -96,6 +96,13 @@ dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
 dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'lickTime')].groupby([
     'fileID', 'trialID']).cumcount().copy()
 
+# Add trainDay variable (cumulative count of sessions within each subject)
+dfGroup= dfTidy.loc[dfTidy.groupby(['subject','fileID']).cumcount()==0]
+# test= dfGroup.groupby(['subject','fileID']).transform('cumcount')
+dfTidy.loc[:,'trainDay']= dfGroup.groupby(['subject'])['fileID'].transform('cumcount')
+dfTidy.loc[:,'trainDay']= dfTidy.groupby(['subject','fileID']).fillna(method='ffill')
+
+
 #%% TODO: count events within 10s of cue onset (cue duration in final stage)  
 #this is mainly for comparing progression/learning between stages since cueDuration varies by stage
 

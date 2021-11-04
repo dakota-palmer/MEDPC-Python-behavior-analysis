@@ -85,9 +85,11 @@ mixedEffects= ['subjCode']
 #random intercept for subject
 
 # Since the random effects structure is not specified, the default random effects structure (a random intercept for each group) is automatically used.
-
+# 
 testMixed = smf.mixedlm(data=df, formula= 'probPE ~virus + sex + laserDurCode + trialTypeCode', groups= df['subjCode'])
-#why would i get error for trialType but not laserDur?
+# testMixed = smf.mixedlm(data=df, formula= 'probPE ~virus + sex + laserDur + trialType', groups= df['subjCode'])
+
+#why would i get error for fitting trialType but not laserDur?
 
 testMixedFit= testMixed.fit() #(method=['lbfgs'])
 
