@@ -78,7 +78,9 @@ if __name__ == '__main__':
    #  trialOrder =['laserDStrial_0', 'laserDStrial_1',
    #     'laserNStrial_0', 'laserNStrial_1','ITI']
     trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue','ITI'])
-
+ 
+    #%% remove ITI trialtype
+    trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue'])
 
 
       #%% #For lick+laser, plot trialType counts

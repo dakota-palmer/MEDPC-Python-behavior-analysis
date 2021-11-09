@@ -131,7 +131,9 @@ metaPath= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #ga
 dfRaw= pd.read_excel(metaPath, converters={'date': str, 'subject': str})#.astype('str') 
 
 # df= df.merge(dfRaw.astype('str'), how='left', on=['subject','date'])
+
 df= df.merge(dfRaw, how='left', on=['subject','date'])
+
 
 # %% Exclude data
 
@@ -152,7 +154,10 @@ for col in df.columns:
 #rename columns to labels
 df.columns= labels
 
-#%% Add unique fileID for each session (subject & date )
+#%% Add unique fileID for each session (subject & date)
+
+#sort by date and subject
+test= df.sort_values(['date','subject'])
 
 df.loc[:,'fileID'] = df.groupby(['date', 'subject']).ngroup()
 

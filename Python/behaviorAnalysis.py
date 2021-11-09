@@ -279,9 +279,52 @@ sns.set_palette('Paired') #default  #tab10
 #subset data and save as intermediate variable dfGroup
 dfGroup= dfTidy.copy()
  
+
+
+#cumulative count of training day within-stage (so we can normalize between subjects appropriately)
+dfGroup= dfTidy.loc[dfTidy.groupby('fileID').transform('cumcount')==0,:].copy() #one per session
+dfTidy['trainDayThisStage']=  dfGroup.groupby(['subject', 'stage']).transform('cumcount')
+dfTidy.trainDayThisStage= dfTidy.groupby(['fileID'])['trainDayThisStage'].fillna(method='ffill').copy()
+
+
+
+
 #select data
 #all trialTypes excluding ITI     
-dfPlot = dfGroup[(dfGroup.trialType != 'ITI')].copy()
+# dfPlot = dfGroup[(dfGroup.trialType != 'ITI')].copy()
+
+#all trialTypes excluding ITI     
+# dfPlot = dfGroup[(dfGroup.trialType != 'ITI') & (dfGroup.trialType !='Pre-Cue')].copy()
+# trialOrderPlot= ['DStime','DStime_laser','NStime','NStime_laser']
+
+#Only DS & NS trialTypes
+dfGroup= dfTidy.copy()
+dfPlot = dfGroup[(dfGroup.trialType == 'DStime') | (dfGroup.trialType =='NStime')].copy()
+trialOrderPlot= ['DStime','NStime']
+
+
+#define stages for 'early' and 'late' subplotting
+#TODO: consider groupby() stage and counting day within each stage to get the first x sessions of stage 5 compared to last?
+earlyStages= ['Stage 1','Stage 2','Stage 3','Stage 4']
+lateStages= ['Stage 5', 'Stage 5+tether']
+earlyStages= ['Stage 4']
+lateStages= ['Stage 5+tether']
+testStages= ['Cue Manipulation']
+dfPlot['stageType']= pd.NA #dfPlot.stage.astype('str').copy()
+
+dfPlot.loc[dfPlot.stage.isin(earlyStages), 'stageType']= 'early'
+dfPlot.loc[dfPlot.stage.isin(lateStages), 'stageType']= 'late'
+dfPlot.loc[dfPlot.stage.isin(testStages), 'stageType']= 'test'
+
+dfGroup= dfTidy.loc[dfTidy.groupby('fileID').transform('cumcount')==0,:].copy() #one per session
+test= dfGroup.groupby(['subject', 'stage']).transform('cumcount')
+
+# dfPlot.stageType= dfPlot.stageType.astype('category')
+
+#exclude test sessions
+# dfPlot= dfPlot.loc[dfPlot.stageType != 'test',:].copy()
+
+
  
 #get only PE outcomes
 # dfPlot.reset_index(inplace=True)
@@ -290,7 +333,6 @@ dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE') | (dfPlot.trialOutcomeBeh10
 #since we calculated aggregated proportion across all trials in session,
 #take only first index. Otherwise repeated observations are redundant
 dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh10s']).first().copy()
- 
  
 #sum together both PE and PE+lick for total overall PE prob
 # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
@@ -327,12 +369,23 @@ g= sns.relplot(data=dfPlot, x='date', y='probPE', col='sex', row='virus', hue='t
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 saveFigCustom(g, 'training_peProb_10s_virus+sex')
 
+g= sns.relplot(data=dfPlot, x='trainDay', y='probPE', col='sex', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+saveFigCustom(g, 'training_peProb_10s_virus+sex_trainDay')
+
 g= sns.relplot(data=dfPlot, x='date', y='probPE', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 saveFigCustom(g, 'training_peProb_10s_virus')
 
+#facet early v late stages #for iris like christelle's opto plot
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='stageType', hue='trialType', hue_order=trialOrderPlot, kind='line', style='sex', markers=True, dashes=True
+               , facet_kws={'sharey': True, 'sharex': False}, palette= 'tab10')
+g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+saveFigCustom(g, 'training_peProb_10s_early_vs_late_trainDay')
+
+
 #training across stages
-#define specific stages to plot!
+#%% define specific stages to plot!
 stagesToPlot= pd.Series(dfTidy.loc[dfTidy.stage.notnull(),'stage'].unique())
 stagesToPlot= stagesToPlot.loc[((stagesToPlot.str.contains('5')) | (stagesToPlot.str.contains('Manipulation')))]
 
@@ -353,11 +406,20 @@ g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0
 g.fig.suptitle('Evolution of the probPE in subjects by trialType')
 saveFigCustom(g, 'training_peProb_10s_lateStages_individual')
 
+g= sns.relplot(data=dfPlot, x='trainDay', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+g.fig.suptitle('Evolution of the probPE in subjects by trialType')
+saveFigCustom(g, 'training_peProb_10s_lateStages_individual_trainDay')
+
 
 g= sns.relplot(data=dfPlot, x='date', y='probPE', row='stage', col='virus', hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 saveFigCustom(g, 'training_peProb_10s_lateStages_virus')
 
+
+g= sns.relplot(data=dfPlot, x='trainDay', y='probPE', row='stage', col='virus', hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
+g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+saveFigCustom(g, 'training_peProb_10s_lateStages_virus_trainDay')
 
 # g= sns.relplot(data=dfPlot, x='date', y='probPE', row='trialType', hue='virus', kind='line', style='virus', markers=True, dashes=False)
 # g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
