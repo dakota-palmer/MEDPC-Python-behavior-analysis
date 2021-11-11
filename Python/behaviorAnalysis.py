@@ -664,7 +664,7 @@ outcomeProb= dfGroupComp2.outcomeBehCount/dfGroupComp.trialCount
 dfGroupComp.reset_index(inplace=True, drop=False)
 outcomeProb= outcomeProb.reset_index().copy()
 
-dfGroupComp['outcomeProb']= outcomeProb.copy()
+# dfGroupComp['outcomeProb']= outcomeProb.copy()
 
 
 

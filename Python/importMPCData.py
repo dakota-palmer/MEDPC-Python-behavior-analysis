@@ -42,14 +42,17 @@ import seaborn as sns
 #TODO: may consider adding subjVars and sessionVars depending on your experiment 
 
 #experimentType= just a gate now for opto-specific code. = 'Opto' for opto specific code
+#TODO: could maybe add this as metadata column in spreadsheet?
 experimentType= 'Opto'
+experimentType= 'OptoInstrumentalTransfer'
 # experimentType= 'photometry'
 
 #%% ID and import raw data .xlsx
 # your path to folder containing excel files 
 # datapath = r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw\\'#dp vp-vta-stgtacr opto
 
-datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto
+datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
+datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\\'
 # datapath= r'J:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
 
 # datapath= r'C:\Users\Dakota\Desktop\_example_gaddreadd\MED-PC Files July-TBD 2021\All\\' #ally dreadd
@@ -62,6 +65,7 @@ dfRaw = pd.DataFrame()
 
 #define columns in your .xlsx for specific variables you want (e.g. A:Z for all)
 colToImport= 'A:W'# 'F:S,U:X' #dp opto 
+colToImport= 'A:Z'# gad-vp-opto instrumental transfer 
 
 # colToImport= 'A:Q' #ally dreadd
 
@@ -125,7 +129,8 @@ df= df.merge(dfRaw.astype('str'), how='left', on=['subject'])
 
 # metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp vp-vta-stgtacr opto
 
-metaPath= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto
+metaPath= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
+metaPath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
 
 #ensure that date is read as string
 dfRaw= pd.read_excel(metaPath, converters={'date': str, 'subject': str})#.astype('str') 
@@ -142,7 +147,6 @@ excludeDate= ['20210604']
 # Exclude specific date(s)
 df= df[~df.date.isin(excludeDate)]
 
-
 # %% Remove parentheses from variable names 
 
 import re
@@ -154,6 +158,17 @@ for col in df.columns:
 #rename columns to labels
 df.columns= labels
 
+#%% for instrumental transfer sessions, remove duplicate columnns
+#this happens when different .MPC codes share variable name labels but save to different arrays
+if experimentType== 'OptoInstrumentalTransfer':
+    # dfTemp= df.PEtime.copy()
+    # df.drop(columns=['PEtime'],inplace=True)
+    # df.loc[:,'PEtime']= dfTemp.groupby(by=dfTemp.columns, axis=1).sum()\
+    
+    #simply groupby() columns and sum across duplicates
+    df= df.groupby(by=df.columns, axis=1).sum()
+
+
 #%% Add unique fileID for each session (subject & date)
 
 #sort by date and subject
@@ -163,7 +178,7 @@ df.loc[:,'fileID'] = df.groupby(['date', 'subject']).ngroup()
 
 # %% Add other variables if necessary before tidying
 
-# calculate port exit time estimate using PEtime and peDur, save this as a new variable
+# # calculate port exit time estimate using PEtime and peDur, save this as a new variable
 df = df.assign(PExEst=df.PEtime + df.PEdur)
 
 # save cue duration (in DS task this is A(2))
@@ -187,15 +202,23 @@ df.date= pd.to_datetime(df.date)
 #these should match the labels in your .MPC file
 
 ## e.g. for DS task with no Opto  
-eventVars= ['PEtime', 'PExEst', 'lickTime', 'DStime', 'NStime', 'UStime']
+eventVars= ['PEtime',  'PExEst', 'lickTime', 'DStime', 'NStime', 'UStime']
 
 #e.g. for DS task with Opto
-if experimentType== 'Opto':
-    eventVars= ['PEtime', 'PExEst', 'lickTime', 'laserTime', 'DStime', 'NStime', 'UStime']#,'laserOffTime']
+if experimentType.__contains__('Opto'):
+    eventVars.extend(['laserTime'])
+    #eventVars= ['PEtime', 'PExEst', 'lickTime', 'laserTime', 'DStime', 'NStime', 'UStime']#,'laserOffTime']
 
 #ICSS
 if experimentType== 'ICSS':
-    evemtVars= ['activeNP', 'inactiveNP', 'laserTime']
+    eventVars= ['activeNP', 'inactiveNP', 'laserTime']
+    
+#instrumental transfer + opto
+if experimentType== 'OptoInstrumentalTransfer':
+    # eventVars= ['activelp','inactivelp','rewardtimestamps','PortEntry', 
+    #             'PEtime', 'PExEst', 'lickTime', 'DStime', 'NStime', 'UStime',
+    #             'laserTime', 'laserOffTime']
+    eventVars.extend(['activeLPtime','inactiveLPtime','rewardTime', 'laserOffTime'])
 
 #%% Define ID variables for your sessions
 #these are identifying variables per sessions that should be matched up with the corresponding event variables and timestamps
@@ -205,18 +228,18 @@ if experimentType== 'ICSS':
 idVars= ['fileID','subject', 'virus', 'sex', 'date', 'stage', 'cueDur', 'note']
 
 #e.g. for DS task with Opto
-if experimentType== 'Opto':
+if  experimentType.__contains__('Opto'):
     idVars= ['fileID','subject', 'virus', 'sex', 'date', 'stage', 'cueDur', 'laserDur', 'laserFreq', 'note']
-
 
 #%% Define Trial variables for your experiment
 # If you have variables corresponding to each individual trial 
 #e.g. different trial types in addition to DS vs NS (e.g. laser ON vs laser OFF trials; TODO: variable reward outcome)
+#TODO: consider making cueType it's own trialVar... then can use for stats easy later on
 
 trialVars= []
 
 #e.g. for Opto:
-if experimentType=='Opto':
+if  experimentType.__contains__('Opto'):
     trialVars= ['laserDStrial','laserNStrial']
     #the laserDStrial and laserNS trial variables will later be melted() into a new variable called 'laserState' with their values
 
