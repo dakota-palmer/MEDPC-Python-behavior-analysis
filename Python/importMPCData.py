@@ -166,7 +166,15 @@ if experimentType== 'OptoInstrumentalTransfer':
     # df.loc[:,'PEtime']= dfTemp.groupby(by=dfTemp.columns, axis=1).sum()\
     
     #simply groupby() columns and sum across duplicates
-    df= df.groupby(by=df.columns, axis=1).sum()
+    #sum() here seems to be converting some dtypes to float (e.g. date)
+    #should only apply sum() to duplicated columns
+    duplicateCol= df.columns[df.columns.duplicated()]
+    dfTemp= df.loc[:,duplicateCol].copy()
+    df.drop(columns=duplicateCol, inplace=True)
+
+    
+    for col in duplicateCol:
+        df.loc[:,col]= dfTemp.loc[:,col].groupby(by=dfTemp.loc[:,col].columns, axis=1).sum().copy()
 
 
 #%% Add unique fileID for each session (subject & date)
@@ -247,7 +255,7 @@ if  experimentType.__contains__('Opto'):
 #%% Change dtypes of variables if necessary (might help with grouping & calculations later on)
 
 #binary coded 0/1 laser variables were being imported as floats, converting them to pandas dtype Int64 which supports NA values
-if experimentType=='Opto':
+if experimentType.__contains__('Opto'):
     df.loc[:,(trialVars)]= df.loc[:,(trialVars)].astype('Int64')
 
 #%% Tidying: All events in single column, add trialID and trialType that matches trial 1-60 through each session.
@@ -271,7 +279,7 @@ dfEventAll['trialID'] = dfEventAll[(dfEventAll.eventType == 'DStime') | (
 dfEventAll['trialType']= dfEventAll[dfEventAll.trialID.notna()].eventType
 
 #%% Assign more specific trialTypes based on trialVars (OPTO ONLY specific for now)
-if experimentType=='Opto':
+if experimentType.__contains__('Opto'):
     # melt() trialVars, get trialID for each trial and use this to merge label back to df 
     dfTrial = df.melt(id_vars= idVars, value_vars=trialVars, var_name='laserType', value_name='laserState')#, ignore_index=False)
     #remove nan placeholders
@@ -767,7 +775,7 @@ dfTidy.drop(columns=['eventID'])
 dfTidy.eventID= dfTidy.index.copy()
 
 #%%  drop any redundant columns remaining
-if experimentType== 'Opto':
+if experimentType.__contains__('Opto'):
     #cat together dur and freq of laser
     dfTidy.laserDur= dfTidy.loc[dfTidy.laserDur!='nan'].laserDur.astype(str)+' @ '+dfTidy.laserFreq.astype(str)
 

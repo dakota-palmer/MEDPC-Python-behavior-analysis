@@ -53,7 +53,7 @@ trialOrder= ['DStime','NStime','Pre-Cue', 'ITI']
 #DS PE probability criteria (for visualization)
 criteriaDS= 0.6
 
-if experimentType=='Opto':
+if experimentType.__contains__('Opto'):
     # trialOrder= ['laserDStrial_0', 'laserDStrial_1', 'laserNStrial_0', 'laserNStrial_1', 'Pre-Cue', 'ITI']
     # trialOrder= [trialOrder, 'laserDStrial_0', 'laserDStrial_1', 'laserNStrial_0', 'laserNStrial_1']
     trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue','ITI'])
