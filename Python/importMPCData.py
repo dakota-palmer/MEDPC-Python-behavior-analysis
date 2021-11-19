@@ -755,7 +755,7 @@ dfTidy= dfTidy.merge(dfGroup[['fileID','trialID','trialStart']],'left',on=['file
 #     # dfTidy.loc[dfTidy.trialID>=0,'trialType']= dfTidy[dfTidy.trialID>=0].groupby('fileID')['trialType'].fillna(method='ffill').copy()
     
 
-#%% TODO: ffill idVars for empty trials
+#%% ffill idVars for empty trials
 # dfTidy.loc[:,idVars]= dfTidy.groupby('fileID')['trialType'][idVars].fillna(method='ffill').copy()
 # test= dfTidy.copy()
 dfTidy.loc[:,idVars]= dfTidy.groupby(['fileID'], as_index=False)[idVars].fillna(method='ffill').copy()
@@ -774,6 +774,15 @@ dfTidy = dfTidy.sort_values(by=['fileID', 'eventTime'])
 dfTidy.drop(columns=['eventID'])
 dfTidy.eventID= dfTidy.index.copy()
 
+#%% TODO: add column for 'epoch' this timestamp is in
+# this would include inPort, DS on, NS on, laser on, maybe 'licking' based on bout calculations...
+dfTidy['epoch']= pd.NA
+
+#for now limiting to laser on vs off
+if experimentType.__contains__('Opto'):
+    dfTidy.loc[dfTidy.eventType=='laserTime', 'epoch']= 'laser on'
+    dfTidy.loc[dfTidy.eventType=='laserOffTime', 'epoch']= 'laser off'
+    dfTidy.epoch= dfTidy.groupby('fileID')['epoch'].fillna(method='ffill')
 #%%  drop any redundant columns remaining
 if experimentType.__contains__('Opto'):
     #cat together dur and freq of laser

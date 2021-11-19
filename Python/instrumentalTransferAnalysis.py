@@ -28,7 +28,6 @@ import matplotlib.pyplot as plt
 
  #%% define a function to save and close figures
 def saveFigCustom(figure, figName):
-    plt.gcf().set_size_inches((20,10), forward=False) # ~monitor size
     plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0) #creates legend ~right of the last subplot
     
     plt.gcf().tight_layout()
@@ -70,11 +69,12 @@ if experimentType.__contains__('Opto'):
 
 
 #%% subset test day, compare LPs by trialType
+#todo: debug; something takes awhile
 dfGroup= dfTidy.loc[dfTidy.stage=='test'].copy()
 dfGroup= dfGroup.loc[dfGroup.trialType!= 'ITI']
   # by_many<- group_by(py_data, virus, sex, stage, laserDur, subject, fileID, trialType, trialOutcomeBeh10s)
 
-groupers= ['virus','sex','stage','laserDur', 'subject', 'date', 'trialType']
+groupers= ['virus','sex','stage','laserDur', 'subject', 'date', 'trialType', 'epoch']
 
 #hierarchy should be something like groupVars -> stageVars -> subjVars-> sessionVars -> date -> fileID -> trialType/trialVars -> trialID -> eventVars
 
@@ -94,29 +94,55 @@ dfGroupComp.reset_index(inplace=True)
 
 
 sns.catplot(data= dfGroupComp, row='virus', col='sex', x='stage', y='trialCount', hue='trialType', hue_order=trialOrder, kind='bar')
+sns.catplot(data= dfGroupComp, row='virus', col='sex', x='stage', y='trialCount', hue='trialType', hue_order=trialOrder, kind='bar')
+
 
 #dp 11/11/21
+#TODO: laser on vs laser off epochs within trial
+#TODO: measure transfer by LP per minute**  throughout session or LP in 30s cue vs 30s pre-cue (normalized to full amount of time)
+
 
 #first) individual event counts by trial for each subject
-test= dfTidy.groupby(['subject','fileID','trialID','eventType'])['eventTime'].transform('count').reset_index().copy()
-test= dfTidy.groupby(['subject','fileID','trialID','eventType']).transform('count')
+test= dfTidy.groupby(['subject','fileID', 'trialType', 'trialID','eventType'])['eventTime'].transform('count').reset_index().copy()
+test= dfTidy.groupby(['subject','fileID','trialType', 'trialID','eventType']).transform('count')
 #transform('count') loses index but retains group info... idk how to deal with this best, could be merged() back into df on groupers
 dfPlot= pd.DataFrame()
-dfPlot['eventCount']= dfTidy.groupby(['subject','date','trialID','eventType'])['eventTime'].count().copy()
+dfPlot['eventCount']= dfTidy.groupby(['virus','subject','date', 'trialType', 'trialID','eventType'])['eventTime'].count().copy()
 dfPlot= dfPlot.reset_index()
 
 #individual subj count over time
-sns.relplot(data= dfPlot, col='subject', col_wrap=4, x='date', y='eventCount', hue='eventType', kind='line')
+sns.relplot(data= dfPlot, col='subject', col_wrap=4, x='date', y='eventCount', hue='eventType', kind='line', palette='tab20')
 
+#TEST day only!
+#virus event count by trialtype
+dfGroup= dfTidy.loc[dfTidy.stage=='test'].copy()
+dfGroup= dfGroup.loc[dfGroup.trialType!= 'ITI']
 
+dfPlot= pd.DataFrame()
+dfPlot['eventCount']= dfGroup.groupby(['virus','subject','date', 'trialType', 'trialID','eventType'])['eventTime'].count().copy()
+dfPlot= dfPlot.reset_index()
+
+sns.catplot(data= dfPlot, row='virus', x='date', y='eventCount', hue='trialType', hue_order=trialOrder, kind='bar', palette='Paired')
 
 
 
 #second) aggregation by subject
-dfGroupComp2= pd.DataFrame()
+dfGroupComp2= pd.DataFrame() #A
 dfGroupComp2['eventCount']= dfGroup['eventType'].value_counts()
-dfGroupComp2.reset_index(inplace=True)
-sns.catplot(data= dfGroupComp2, row='virus', col='sex', x='eventType', y='eventCount', hue='trialType', hue_order=trialOrder, kind='bar')
+dfGroupComp2.index.name= 'eventType'
+# dfGroupComp2= dfTidy.copy() #B
+# dfGroupComp2['eventCount']= dfTidy.groupby(groupers)['eventType'].transform('count')
+# dfGroupComp2= pd.DataFrame() #C
+# dfGroupComp2['eventCount']= dfTidy.groupby(groupers)['eventType'].count().reset_index()
+# dfGroupComp2= dfTidy.copy() #D
+# dfGroupComp2['Counts'] = dfTidy.copy().groupby(groupers)['eventType'].transform('count')
+dfGroupComp2= pd.DataFrame() #E!!
+dfGroupComp2['eventCount']= dfGroup.copy().groupby(groupers)['eventType'].value_counts()
+# dfGroupComp2.index.name= 'eventType'
+
+dfGroupComp2.reset_index(drop=False, inplace=True)
+# sns.catplot(data= dfGroupComp2, row='virus', col='sex', x='eventType', y='eventCount', hue='trialType', hue_order=trialOrder, kind='bar')
+sns.catplot(data= dfGroupComp2, row='virus', col='trialType', x='eventType', y='eventCount', hue='epoch', kind='bar')
 
 
 # #^this was just example, now do something more relevant to behavior analysis

@@ -102,6 +102,15 @@ dfGroup= dfTidy.loc[dfTidy.groupby(['subject','fileID']).cumcount()==0]
 dfTidy.loc[:,'trainDay']= dfGroup.groupby(['subject'])['fileID'].transform('cumcount')
 dfTidy.loc[:,'trainDay']= dfTidy.groupby(['subject','fileID']).fillna(method='ffill')
 
+#Add cumulative count of training day within-stage (so we can normalize between subjects appropriately)
+##very important consideration!! Different subjects can run different programs on same day, which can throw plots/analysis off when aggregating data by date.
+dfGroup= dfTidy.loc[dfTidy.groupby('fileID').transform('cumcount')==0,:].copy() #one per session
+dfTidy['trainDayThisStage']=  dfGroup.groupby(['subject', 'stage']).transform('cumcount')
+dfTidy.trainDayThisStage= dfTidy.groupby(['fileID'])['trainDayThisStage'].fillna(method='ffill').copy()
+#QC visualizations
+g= sns.relplot(data=dfTidy, col='subject', col_wrap=4, x='date', y='trainDayThisStage', hue='stage', kind='scatter')
+g= sns.relplot(data=dfTidy, col='subject', col_wrap=4, x='date', y='trainDay', hue='stage', kind='scatter')
+g= sns.relplot(data=dfTidy, col='subject', col_wrap=4, x='date', y='date', hue='stage', kind='scatter')
 
 #%% TODO: count events within 10s of cue onset (cue duration in final stage)  
 #this is mainly for comparing progression/learning between stages since cueDuration varies by stage
@@ -280,11 +289,11 @@ sns.set_palette('Paired') #default  #tab10
 dfGroup= dfTidy.copy()
  
 
-
-#cumulative count of training day within-stage (so we can normalize between subjects appropriately)
-dfGroup= dfTidy.loc[dfTidy.groupby('fileID').transform('cumcount')==0,:].copy() #one per session
-dfTidy['trainDayThisStage']=  dfGroup.groupby(['subject', 'stage']).transform('cumcount')
-dfTidy.trainDayThisStage= dfTidy.groupby(['fileID'])['trainDayThisStage'].fillna(method='ffill').copy()
+#moving higher in code
+# #cumulative count of training day within-stage (so we can normalize between subjects appropriately)
+# dfGroup= dfTidy.loc[dfTidy.groupby('fileID').transform('cumcount')==0,:].copy() #one per session
+# dfTidy['trainDayThisStage']=  dfGroup.groupby(['subject', 'stage']).transform('cumcount')
+# dfTidy.trainDayThisStage= dfTidy.groupby(['fileID'])['trainDayThisStage'].fillna(method='ffill').copy()
 
 
 
@@ -305,11 +314,11 @@ trialOrderPlot= ['DStime','NStime']
 
 #define stages for 'early' and 'late' subplotting
 #TODO: consider groupby() stage and counting day within each stage to get the first x sessions of stage 5 compared to last?
-earlyStages= ['Stage 1','Stage 2','Stage 3','Stage 4']
-lateStages= ['Stage 5', 'Stage 5+tether']
-earlyStages= ['Stage 4']
-lateStages= ['Stage 5+tether']
-testStages= ['Cue Manipulation']
+earlyStages= ['Stage 1','Stage 2','Stage 3','Stage 4', 'continuous reinforcement', 'RI 15s',' RI 30s']
+lateStages= ['Stage 5', 'Stage 5+tether', 'RI 60s']
+# earlyStages= ['Stage 4']
+# lateStages= ['Stage 5+tether']
+testStages= ['Cue Manipulation', 'test']
 dfPlot['stageType']= pd.NA #dfPlot.stage.astype('str').copy()
 
 dfPlot.loc[dfPlot.stage.isin(earlyStages), 'stageType']= 'early'
