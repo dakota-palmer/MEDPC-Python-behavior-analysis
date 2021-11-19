@@ -67,11 +67,15 @@ if experimentType.__contains__('Opto'):
     
 #%% trying stuff with data hierarchy grouping
 
-
 #%% subset test day, compare LPs by trialType
 #todo: debug; something takes awhile
+
+#define specific set of behavioral events to examine
+eventsBeh= 'inactiveLPtime', 'activeLPtime', 'PEtime', 'lickTime'
+
 dfGroup= dfTidy.loc[dfTidy.stage=='test'].copy()
 dfGroup= dfGroup.loc[dfGroup.trialType!= 'ITI']
+dfGroup= dfGroup.loc[dfGroup.eventType.isin(eventsBeh)]
   # by_many<- group_by(py_data, virus, sex, stage, laserDur, subject, fileID, trialType, trialOutcomeBeh10s)
 
 groupers= ['virus','sex','stage','laserDur', 'subject', 'date', 'trialType', 'epoch']
@@ -113,10 +117,12 @@ dfPlot= dfPlot.reset_index()
 #individual subj count over time
 sns.relplot(data= dfPlot, col='subject', col_wrap=4, x='date', y='eventCount', hue='eventType', kind='line', palette='tab20')
 
-#TEST day only!
+#%% TEST day only!
 #virus event count by trialtype
 dfGroup= dfTidy.loc[dfTidy.stage=='test'].copy()
 dfGroup= dfGroup.loc[dfGroup.trialType!= 'ITI']
+dfGroup= dfGroup.loc[dfGroup.eventType.isin(eventsBeh)]
+
 
 dfPlot= pd.DataFrame()
 dfPlot['eventCount']= dfGroup.groupby(['virus','subject','date', 'trialType', 'trialID','eventType'])['eventTime'].count().copy()
@@ -142,10 +148,10 @@ dfGroupComp2['eventCount']= dfGroup.copy().groupby(groupers)['eventType'].value_
 
 dfGroupComp2.reset_index(drop=False, inplace=True)
 # sns.catplot(data= dfGroupComp2, row='virus', col='sex', x='eventType', y='eventCount', hue='trialType', hue_order=trialOrder, kind='bar')
-sns.catplot(data= dfGroupComp2, row='virus', col='trialType', x='eventType', y='eventCount', hue='epoch', kind='bar')
+sns.catplot(data= dfGroupComp2, row='virus', x='eventType', y='eventCount', hue='epoch', kind='bar')
 
 
-# #^this was just example, now do something more relevant to behavior analysis
+#%% #^this was just example, now do something more relevant to behavior analysis
 
 # dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
 

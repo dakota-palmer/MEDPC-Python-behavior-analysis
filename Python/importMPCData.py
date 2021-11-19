@@ -777,18 +777,37 @@ dfTidy.eventID= dfTidy.index.copy()
 #%% TODO: add column for 'epoch' this timestamp is in
 # this would include inPort, DS on, NS on, laser on, maybe 'licking' based on bout calculations...
 dfTidy['epoch']= pd.NA
+dfTidy['epochCue']=pd.NA
+dfTidy['epochLaser']= pd.NA
+
+#add cue epoch
+#TODO: consider whether cue terminates early (e.g. due to PE)
+# dfTidy.loc[((dfTidy.eventType=='DStime') | (dfTidy.eventType=='NStime')), 'epochCue']= 'cue on'
+dfTidy.loc[(dfTidy.eventType=='DStime'), 'epochCue']= 'DS on'
+dfTidy.loc[(dfTidy.eventType=='NStime'), 'epochCue']= 'NS on'
+
+
+dfTidy.loc[(dfTidy.trialType=='ITI'), 'epochCue']= 'ITI'
+dfTidy.loc[(dfTidy.trialType=='Pre-Cue'), 'epochCue']= 'Pre-Cue'
+
+
+dfTidy.epochCue= dfTidy.groupby('fileID')['epochCue'].fillna(method='ffill')
 
 #for now limiting to laser on vs off
 if experimentType.__contains__('Opto'):
-    dfTidy.loc[dfTidy.eventType=='laserTime', 'epoch']= 'laser on'
-    dfTidy.loc[dfTidy.eventType=='laserOffTime', 'epoch']= 'laser off'
-    dfTidy.epoch= dfTidy.groupby('fileID')['epoch'].fillna(method='ffill')
+    dfTidy.loc[dfTidy.eventType=='laserTime', 'epochLaser']= 'laser on'
+    dfTidy.loc[dfTidy.eventType=='laserOffTime', 'epochLaser']= 'laser off'
+    dfTidy.epochLaser= dfTidy.groupby('fileID')['epochLaser'].fillna(method='ffill')
+    
+dfTidy.epoch= dfTidy.epochCue + '-' + dfTidy.epochLaser
+    
 #%%  drop any redundant columns remaining
 if experimentType.__contains__('Opto'):
     #cat together dur and freq of laser
     dfTidy.laserDur= dfTidy.loc[dfTidy.laserDur!='nan'].laserDur.astype(str)+' @ '+dfTidy.laserFreq.astype(str)
 
     dfTidy = dfTidy.drop(columns=['laserType', 'laserState', 'laserFreq']).copy()
+
 
 #%% Change dtypes for categorical vars (good for plotting & analysis later)
 dfTidy.trialType= dfTidy.trialType.astype('category')
