@@ -44,7 +44,7 @@ import seaborn as sns
 #experimentType= just a gate now for opto-specific code. = 'Opto' for opto specific code
 #TODO: could maybe add this as metadata column in spreadsheet?
 experimentType= 'Opto'
-experimentType= 'OptoInstrumentalTransfer'
+# experimentType= 'OptoInstrumentalTransfer'
 # experimentType= 'photometry'
 
 #%% ID and import raw data .xlsx
@@ -52,7 +52,7 @@ experimentType= 'OptoInstrumentalTransfer'
 # datapath = r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw\\'#dp vp-vta-stgtacr opto
 
 datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
-datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\\'
+# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\\'
 # datapath= r'J:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
 
 # datapath= r'C:\Users\Dakota\Desktop\_example_gaddreadd\MED-PC Files July-TBD 2021\All\\' #ally dreadd
@@ -130,7 +130,7 @@ df= df.merge(dfRaw.astype('str'), how='left', on=['subject'])
 # metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp vp-vta-stgtacr opto
 
 metaPath= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
-metaPath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
+# metaPath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
 
 #ensure that date is read as string
 dfRaw= pd.read_excel(metaPath, converters={'date': str, 'subject': str})#.astype('str') 
@@ -308,57 +308,57 @@ if experimentType.__contains__('Opto'):
     #now drop redundant columns
     # dfEventAll= dfEventAll.drop(['laserType','laserState'], axis=1)
      
-#%% Exclude false first cue times
+#%% Exclude false cue times due to MPC code bugs
 #need to get rid of false first cue onsets
 #DS training code error caused final cue time to overwrite first cue time (dim of array needed to be +1)
 #TODO: I think we do have the US times so could still do analyses of those
 
 #simply exclude very high first cue values
 idx= dfEventAll.loc[((dfEventAll.trialID==0) & (dfEventAll.eventTime>=2500))].index
+
+print('False first DS cue removed, fileIDs:'+ (np.array2string(dfEventAll.loc[idx].fileID.sort_values().unique())))
+
 dfEventAll.loc[idx,'eventTime']=pd.NA
 dfEventAll= dfEventAll.loc[dfEventAll.eventTime.notnull()]
-# dfEventAll.loc[idx,'trialID']=pd.NA
 
-# idx = (dfTidy.groupby(['fileID'])['trialID'].transform('cumcount').copy() == dfTidy['trialID'].copy())
-# # dfTidy.loc[idx,'nextTrialStart']= pd.NA
-# dfTest= dfTidy.loc[idx]
+# Fix separate bug before 11/5/2021 in the 'siren control' state set. 
+#The bug could cause the last NS timestamp to be logged as an extra DS. 
 
-# #for last trial set next trial start to nan
-# idx = (dfTidy.groupby(['fileID'])['trialID'].transform(max).copy() == dfTidy['trialID'].copy()) 
+# Ideal solution would be to check if last DS and NS for each file are equal (diff==0)
+# something like-
+# dfTemp= dfEventAll.loc[((dfEventAll.eventType=='NStime')|(dfEventAll.eventType=='DStime'))].copy()
 
-# dfTest=dfTidy.copy()
-# dfTest.loc[idx,'nextTrialStart']= pd.NA
-# # dfTest= dfTidy.loc[idx]
+# # test= dfTemp.groupby(['fileID','eventType'])['eventTime'].transform('diff')
 
 
-# # test= dfTidy.set_index('fileID')
-# # test.loc[((test.eventType=='DStime') | (test.eventType=='NStime'))]
+#Instead, as bandaid can just check if we've got an extra DS cue and remove it
+maxTrials= 29 #30 trials, so max of 29 if starting count @ 0
+dfTemp= dfEventAll.loc[dfEventAll.eventType=='DStime'].copy()
 
-# # dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0]
+test= dfTemp.groupby(['fileID']).eventTime.transform('cumcount')
 
-# test= dfEventAll.set_index('fileID')
-# test2= test.loc[test.loc[test.trialID==0].eventTime >= test.loc[test.trialID==1].eventTime]
+idx= dfTemp.groupby(['fileID']).eventTime.transform('cumcount')>maxTrials
 
-# dfEventAll= dfEventAll.set_index('fileID')
+idx= idx.index
 
-# dfTemp= dfEventAll.loc[dfEventAll.trialID==0].eventTime >= dfEventAll.loc[dfEventAll.trialID==1].eventTime
-# dfTemp= dfTemp.reset_index()
+# #testing a specific session with known issue
+# dfTemp= dfTemp.loc[dfTemp.date=='2021-10-06T00:00:00.000000000'].copy()
+# # test= dfTemp.groupby(['fileID']).eventTime.cumcount()
 
-# # dfEventAll.reset_index(inplace=True,drop=False)
+# test= dfTemp.groupby(['fileID']).eventTime.transform('cumcount')
 
-# #remove this cue's timestamp (we don't know when the cue came on)
-# dfEventAll.loc[(dfEventAll.fileID==dfTemp.fileID) & (dfEventAll.trialID==0)]= pd.NA
+# idx= dfTemp.groupby(['fileID']).eventTime.transform('cumcount')>=maxTrials
 
-# #
-# dfGroup= dfEventAll.groupby(['fileID','trialID'], as_index=False).first()
-# idx= dfGroup.loc[dfGroup.trialID==0].eventTime >= dfGroup.loc[dfGroup.trialID==1].eventTime
+# dfTemp.loc[idx,:]= [[pd.NA]]
 
-# #
-# dfTemp= dfEventAll.set_index('fileID')
-# test= dfTemp.loc[(dfTemp.loc[dfTemp.trialID==0].eventTime)>= (dfTemp.loc[dfTemp.trialID==1].eventTime)]
-# test.reset_index(inplace=True, drop=False)
+#simply drop these false cue entries
+print('False final DS cue removed, fileIDs:'+ (np.array2string(dfTemp.loc[idx].fileID.sort_values().unique())))
+dfEventAll= dfEventAll.drop(idx)
 
-# dfTemp.loc[dfTemp.fileID==test.fileID]
+#reset the index since values are now missing
+dfEventAll.reset_index(drop=True, inplace=True)
+
+
 
 
 #%% Sort events by chronological order within-file, correct trialID, and save as dfTidy
