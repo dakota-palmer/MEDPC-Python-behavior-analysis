@@ -314,7 +314,7 @@ if experimentType.__contains__('Opto'):
 #TODO: I think we do have the US times so could still do analyses of those
 
 #simply exclude very high first cue values
-idx= dfEventAll.loc[((dfEventAll.trialID==0) & (dfEventAll.eventTime>=2500))].index
+idx= dfEventAll.copy().loc[((dfEventAll.trialID==0) & (dfEventAll.eventTime>=2500))].index
 
 print('False first DS cue removed, fileIDs:'+ (np.array2string(dfEventAll.loc[idx].fileID.sort_values().unique())))
 
@@ -335,11 +335,9 @@ dfEventAll= dfEventAll.loc[dfEventAll.eventTime.notnull()]
 maxTrials= 29 #30 trials, so max of 29 if starting count @ 0
 dfTemp= dfEventAll.loc[dfEventAll.eventType=='DStime'].copy()
 
-test= dfTemp.groupby(['fileID']).eventTime.transform('cumcount')
+idx= dfTemp.copy().groupby(['fileID']).eventTime.transform('cumcount')>maxTrials
 
-idx= dfTemp.groupby(['fileID']).eventTime.transform('cumcount')>maxTrials
-
-idx= idx.index
+idx= idx.loc[idx==True].index
 
 # #testing a specific session with known issue
 # dfTemp= dfTemp.loc[dfTemp.date=='2021-10-06T00:00:00.000000000'].copy()
@@ -353,7 +351,7 @@ idx= idx.index
 
 #simply drop these false cue entries
 print('False final DS cue removed, fileIDs:'+ (np.array2string(dfTemp.loc[idx].fileID.sort_values().unique())))
-dfEventAll= dfEventAll.drop(idx)
+dfEventAll= dfEventAll.drop(idx).copy()
 
 #reset the index since values are now missing
 dfEventAll.reset_index(drop=True, inplace=True)

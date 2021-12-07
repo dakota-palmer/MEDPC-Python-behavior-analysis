@@ -33,6 +33,15 @@ if __name__ == '__main__':
         globals()[key]=my_shelf[key]
     my_shelf.close()
     
+     #%% define a function to save and close figures
+    def saveFigCustom(figure, figName):
+        plt.gcf().set_size_inches((20,10), forward=False) # ~monitor size
+        plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0) #creates legend ~right of the last subplot
+        
+        plt.gcf().tight_layout()
+        plt.savefig(r'./_output/_behaviorAnalysis/'+figName+'.png', bbox_inches='tight')
+        plt.close()
+        
     #%% set opto specific plotting options
     sns.set_palette('Paired') #great for compairing laser on vs laser off trialTypes
 
