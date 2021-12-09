@@ -69,7 +69,6 @@ if experimentType.__contains__('Opto'):
 # dfTidy.loc[dfTidy.trialID>=0, 'eventLatency'] = (
 #     (dfTidy.eventTime)-(dfTidy.trialEnd-dfTidy.cueDur)).copy()
 
-#DP 9/28/21:
 #have trial start now, subtract trialStart from eventTime to get latency per trial
 #no need for -trialID exception
 dfTidy.loc[:,'eventLatency']= ((dfTidy.eventTime)-(dfTidy.trialStart)).copy()
@@ -670,11 +669,6 @@ dfGroupComp2= dfGroupComp2.reset_index(drop=False).set_index(groupers)
 #do division while indexed by groupers, then reset index for reassignment of result
 outcomeProb= dfGroupComp2.outcomeBehCount/dfGroupComp.trialCount
 
-dfGroupComp.reset_index(inplace=True, drop=False)
-outcomeProb= outcomeProb.reset_index().copy()
-
-# dfGroupComp['outcomeProb']= outcomeProb.copy()
-
 
 
 #can imagine doing peri-event analyses like so
@@ -683,7 +677,82 @@ dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'da
 dfGroupComp= pd.DataFrame()
 dfGroupComp['eventOnsets']= dfGroup['eventTime'].value_counts()
 
+#%%  12/8/21 working on proportion fxn
 
+#example1 might work for binary coded outcomes but not ideal
+# df_overdue = df.groupby(['org']).apply(lambda dft: pd.Series({'is_overdue': dft.is_overdue.sum(), 'not_overdue': (~dft.is_overdue).sum()}))
+# df_overdue['proportion_overdue'] = df_overdue['is_overdue'] / (df_overdue['not_overdue'] + df_overdue['is_overdue'])
+
+# # print(df_overdue)
+# df_overdue = dfTidy.groupby(groupers).apply(lambda dft: pd.Series({'thisOutcome': dft.trialOutcomeBeh10s.sum()}))
+
+# # df_overdue = dfTidy.groupby(groupers).apply(lambda dft: pd.Series({'thisOutcome': dft.trialOutcomeBeh10s.sum(), 'notThisOutcome': (~dft.trialOutcomeBeh10s).sum()}))
+# df_overdue['proportion_overdue'] = df_overdue['is_overdue'] / (df_overdue['not_overdue'] + df_overdue['is_overdue'])
+
+# print(df_overdue)
+
+# example2 with crosstab
+# d = {
+#   'id': [1, 2, 3, 4, 5], 
+#   'is_overdue': [True, False, True, True, False],
+#   'org': ['A81001', 'A81002', 'A81001', 'A81002', 'A81003']
+# }
+# df = pd.DataFrame(data=d)
+
+# result = pd.crosstab(index=df['org'], columns=df['is_overdue'], margins=True)
+# result = result.rename(columns={True:'is_overdue', False:'not overdue'})
+# result['proportion'] = result['is_overdue']/result['All']*100
+# print(result)
+# result = pd.crosstab(index=dfTidy[groupers], columns=dfTidy['trialOutcomeBeh10s'], margins=True)
+# result = pd.crosstab(index=groupers, columns=dfTidy['trialOutcomeBeh10s'], margins=True)
+
+
+#First we need to subset only one outcome per trial
+dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
+
+#let's make a variable to remember our hierarchical index for crosstabs, just because this works a bit differently than other methods
+#array of columns
+xTabInd= [dfGroup['virus'],dfGroup['sex'],dfGroup['stage'],dfGroup['laserDur'],
+dfGroup['subject'],dfGroup['trainDayThisStage'], dfGroup['trialType']]
+
+# result= pd.crosstab(index=xTabInd, columns=dfTidy['trialOutcomeBeh10s'], margins=True)
+
+# result = result.rename(columns={True:'is_overdue', False:'not overdue'})
+# result['proportion'] = result['is_overdue']/result['All']*100
+# print(result)
+
+
+#%% ex3- Works pretty well!
+# pd.crosstab(df['Approved'],df['Gender']).apply(lambda r: r/r.sum(), axis=1)
+# set margins=False so that a summed "All" column/row aren't created
+result= pd.crosstab(index=xTabInd, columns=dfGroup['trialOutcomeBeh10s'], margins=False)
+result2= result.apply(lambda r: r/r.sum(), axis=1)
+
+
+result2= result.apply(lambda r: r/r.sum(), axis=1)
+
+#now we've calculated proportion appropriately based on hierarchical structure,
+#could go even further and group/aggregate based on groupers?
+
+#between subjects (remove groupby subj)
+#could calculate a between subjects mean using groupby .mean()
+groupers= ['virus', 'sex', 'stage', 'laserDur', 'trainDayThisStage', 'trialType']
+#including only observed groups here
+result3= result2.groupby(groupers, observed=True).mean()
+
+result4= result3.reset_index()
+
+g= sns.relplot(data=result4, x='trainDayThisStage', y='PE', hue='trialType', hue_order=trialOrder, kind='line', row='stage')
+g.fig.suptitle('testing crosstab aggregation')
+
+
+#
+# dfGroup['trialOutcomeBeh10s'].transform('count')
+
+# dfGroupComp.reset_index(inplace=True, drop=False)
+# outcomeProb= outcomeProb.reset_index().copy()
+
+# dfGroupComp['outcomeProb']= outcomeProb.copy()
 #%% Save dfTidy so it can be loaded quickly for subesequent analysis
 
 dfTidyAnalyzed= dfTidy.copy()
