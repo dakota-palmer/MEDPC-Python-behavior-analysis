@@ -677,6 +677,27 @@ dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'da
 dfGroupComp= pd.DataFrame()
 dfGroupComp['eventOnsets']= dfGroup['eventTime'].value_counts()
 
+
+# # %% 12/9/21 trying proportion fxn with groupby- not worth it probably, just use crosstabs below
+# # df['sales'] / df.groupby('state')['sales'].transform('sum')
+
+# groupers= ['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType']#, 'eventType']
+
+# #subset to one event per trial per file
+# dfTemp= dfTidy.copy().loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0]
+
+# #now groupby
+# dfGroup= dfTemp.groupby(groupers)
+# # dfGroup= dfTemp.groupby(groupers, as_index=False)
+
+# test= dfGroup['trialID'].count().reset_index(name ='countThisTrialType')
+# # 
+# # dfTemp['countThisTrialType']= dfGroup['trialID'].transform('count')
+
+# # def groupPercentCalc(dfGrouped, columnToCalc)
+    
+
+
 #%%  12/8/21 working on proportion fxn
 
 #example1 might work for binary coded outcomes but not ideal
@@ -710,10 +731,22 @@ dfGroupComp['eventOnsets']= dfGroup['eventTime'].value_counts()
 #First we need to subset only one outcome per trial
 dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
 
+#declare hierarchical grouping variables
+groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType']
+
 #let's make a variable to remember our hierarchical index for crosstabs, just because this works a bit differently than other methods
 #array of columns
-xTabInd= [dfGroup['virus'],dfGroup['sex'],dfGroup['stage'],dfGroup['laserDur'],
-dfGroup['subject'],dfGroup['trainDayThisStage'], dfGroup['trialType']]
+#TODO: could automate this by looping through groupers and adding to list
+xTabInd= []
+for grouper in groupers:
+    # xTabInd2= np.append(xTabInd2, pd.Series([dfGroup[grouper]])) 
+    # xTabInd2= 
+    # xTabInd2.append(pd.Series([dfGroup[grouper]])) 
+    xTabInd.append(dfGroup[grouper]) 
+
+
+# xTabInd= [dfGroup['virus'],dfGroup['sex'],dfGroup['stage'],dfGroup['laserDur'],
+# dfGroup['subject'],dfGroup['trainDayThisStage'], dfGroup['trialType']]
 
 # result= pd.crosstab(index=xTabInd, columns=dfTidy['trialOutcomeBeh10s'], margins=True)
 
@@ -726,33 +759,91 @@ dfGroup['subject'],dfGroup['trainDayThisStage'], dfGroup['trialType']]
 # pd.crosstab(df['Approved'],df['Gender']).apply(lambda r: r/r.sum(), axis=1)
 # set margins=False so that a summed "All" column/row aren't created
 result= pd.crosstab(index=xTabInd, columns=dfGroup['trialOutcomeBeh10s'], margins=False)
-result2= result.apply(lambda r: r/r.sum(), axis=1)
-
 
 result2= result.apply(lambda r: r/r.sum(), axis=1)
+
+#above method should be identical to results if we crosstab with Normalize across rows
+#so the lambda function in this case isn't actually necessary
+result0= pd.crosstab(index=xTabInd, columns=dfGroup['trialOutcomeBeh10s'], margins=False, normalize='index')
+
+print(all(result2==result0))
 
 #now we've calculated proportion appropriately based on hierarchical structure,
 #could go even further and group/aggregate based on groupers?
 
 #between subjects (remove groupby subj)
 #could calculate a between subjects mean using groupby .mean()
-groupers= ['virus', 'sex', 'stage', 'laserDur', 'trainDayThisStage', 'trialType']
+groupersNoSubj= ['virus', 'sex', 'stage', 'laserDur', 'trainDayThisStage', 'trialType']
 #including only observed groups here
-result3= result2.groupby(groupers, observed=True).mean()
+result3= result0.groupby(groupers, observed=True).mean()
 
 result4= result3.reset_index()
 
 g= sns.relplot(data=result4, x='trainDayThisStage', y='PE', hue='trialType', hue_order=trialOrder, kind='line', row='stage')
 g.fig.suptitle('testing crosstab aggregation')
 
+#next step could be to merge back into dataframe?
+dfTidy2= dfTidy.merge(result0, on=groupers).copy()
 
-#
+#combine the PE outcomes
+dfTidy2['PEsum']=dfTidy2['PE']+dfTidy2['PE+lick']
+
+#subsample for specific plotting/analysis
+dfPlot= dfTidy2.loc[dfTidy2.stage=='Cue Manipulation'].copy()
+dfPlot= dfPlot.loc[dfPlot.trialType!='ITI']
+
+#again we need to isolate observations since this is a single measure aggregated per trialType per file
+dfPlot= dfPlot.loc[dfPlot.groupby(['fileID','trialType']).cumcount()==0]
+
+# g= sns.relplot(data=dfPlot, units='subject', estimator=None, x='trainDayThisStage', y='PEsum', row='virus', hue='trialType', hue_order=trialOrder, kind='line') 
+g= sns.relplot(data=dfPlot, x= 'trainDayThisStage', y='PEsum', row='virus', hue='trialType', hue_order=trialOrder, kind='line')
+g.fig.suptitle('testing merged crosstab results')
+
+#now let's look aggregated across all laserDur
+g= sns.catplot(data=dfPlot, x= 'laserDur', y='PEsum', row='virus', hue='trialType', hue_order=trialOrder, kind='point')
+g.fig.suptitle('testing merged crosstab results')
+
 # dfGroup['trialOutcomeBeh10s'].transform('count')
 
 # dfGroupComp.reset_index(inplace=True, drop=False)
 # outcomeProb= outcomeProb.reset_index().copy()
 
 # dfGroupComp['outcomeProb']= outcomeProb.copy()
+
+#%% Turn above into function
+
+def groupPercentCalc(df, levelOfAnalysis, groupHierarchy, colToCalc):
+    #First we need to subset only one observation per level of analysis
+    dfSubset= df.loc[dfTidy.groupby(levelOfAnalysis).cumcount()==0].copy()
+      
+    #build a list of groupers to be used as hierarchical index for crosstabs, just because this works a bit differently than other methods
+    xTabInd= []
+    for grouper in groupers:
+        xTabInd.append(dfSubset[grouper]) 
+    
+    result= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=False, normalize='index')
+    return result
+
+
+#Example:
+#behavioralOutcome/trialType: out of all trials of this trialType, how many had this observed behavioral outcome?
+
+#First we need to subset only one outcome per trial
+dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
+
+#declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
+level= ['fileID','trialID']
+
+#declare hierarchical grouping variables (here want to measure percentage of)
+groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType']
+
+#here want percentage of each behavioral outcome per trialType per above groupers
+observation= 'trialOutcomeBeh10s'
+
+
+test= groupPercentCalc(dfTidy, level, groupers, observation)
+
+
 #%% Save dfTidy so it can be loaded quickly for subesequent analysis
 
 dfTidyAnalyzed= dfTidy.copy()
