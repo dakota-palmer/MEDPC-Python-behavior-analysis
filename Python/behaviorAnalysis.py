@@ -810,15 +810,16 @@ g.fig.suptitle('testing merged crosstab results')
 
 # dfGroupComp['outcomeProb']= outcomeProb.copy()
 
-#%% Turn above into function
+#%% 12/9/21 Turn above into function
+#seems to be a good template for building more custom functions later on
 
 def groupPercentCalc(df, levelOfAnalysis, groupHierarchy, colToCalc):
     #First we need to subset only one observation per level of analysis
-    dfSubset= df.loc[dfTidy.groupby(levelOfAnalysis).cumcount()==0].copy()
+    dfSubset= df.loc[df.groupby(levelOfAnalysis).cumcount()==0].copy()
       
     #build a list of groupers to be used as hierarchical index for crosstabs, just because this works a bit differently than other methods
     xTabInd= []
-    for grouper in groupers:
+    for grouper in groupHierarchy:
         xTabInd.append(dfSubset[grouper]) 
     
     result= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=False, normalize='index')
@@ -834,7 +835,7 @@ dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
 #declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
 level= ['fileID','trialID']
 
-#declare hierarchical grouping variables (here want to measure percentage of)
+#declare hierarchical grouping variables (how should the observations be separated)
 groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType']
 
 #here want percentage of each behavioral outcome per trialType per above groupers
@@ -842,6 +843,42 @@ observation= 'trialOutcomeBeh10s'
 
 
 test= groupPercentCalc(dfTidy, level, groupers, observation)
+
+#%% 12/9/21 custom fxn for calculating probability of Port entry 
+
+
+def percentPortEntryCalc(df, groupHierarchy, colToCalc):
+    #First we need to subset only one observation per level of analysis
+    dfSubset= df.loc[df.groupby(['fileID','trialID']).cumcount()==0].copy()
+      
+    #build a list of groupers to be used as hierarchical index for crosstabs, just because this works a bit differently than other methods
+    xTabInd= []
+    for grouper in groupHierarchy:
+        xTabInd.append(dfSubset[grouper]) 
+    
+    #combine all outcomes with PE before making crosstab and running calculation
+    dfSubset.loc[((dfSubset[colToCalc]=='PE') | (dfSubset[colToCalc]=='PE+lick')),colToCalc]= 'PE'
+    dfSubset.loc[((dfSubset[colToCalc]=='noPE') | (dfSubset[colToCalc]=='noPE+lick')),colToCalc]= 'noPE'
+
+    
+    result= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=False, normalize='index')
+        
+    return result
+
+#Example:
+
+#declare hierarchical grouping variables (how should observations be separated)
+groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType']
+
+#here want percentage of each behavioral outcome per trialType per above groupers
+observation= 'trialOutcomeBeh10s'
+
+test= percentPortEntryCalc(dfTidy, groupers, observation)
+
+#test visualization
+dfPlot= test.reset_index().copy()
+g= sns.relplot(data=dfPlot, x= 'trainDayThisStage', y='PE', row='virus', hue='trialType', hue_order=trialOrder, kind='line')
+g.fig.suptitle('PE probability: testing function results')
 
 
 #%% Save dfTidy so it can be loaded quickly for subesequent analysis
