@@ -43,18 +43,47 @@ import seaborn as sns
 
 #experimentType= just a gate now for opto-specific code. = 'Opto' for opto specific code
 #TODO: could maybe add this as metadata column in spreadsheet?
-experimentType= 'Opto'
+# experimentType= 'Opto'
 # experimentType= 'OptoInstrumentalTransfer'
 # experimentType= 'photometry'
+
+#Examples: 
+        
+#DP GAD-VP-OPTO DS Task
+# experimentType= 'Opto'
+# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
+# colToImport= 'A:W'  #dp opto 
+# metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
+# metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
+
+
+#DP GAD-VP-OPTO Instrumental Transfer
+# experimentType= 'OptoInstrumentalTransfer'
+# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\\'
+# metaPathSes= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
+
+
+#DP VP-VTA-FP DS Task 
+experimentType= 'photometry'
+datapath= r'J:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
+colToImport= 'A:Q' #dakota vp-vta-fp
+metaPathSubj= r"J:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
+metaPathSes= r"J:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
+
+
+#Ally DREADD DS Task
+# experimentType= 'DREADD'
+# datapath= r'C:\Users\Dakota\Desktop\_example_gaddreadd\MED-PC Files July-TBD 2021\All\\' #ally dreadd
+# colToImport= 'A:Q' #ally dreadd
+
 
 #%% ID and import raw data .xlsx
 # your path to folder containing excel files 
 # datapath = r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw\\'#dp vp-vta-stgtacr opto
 
-datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
+# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
 # datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\\'
 # datapath= r'J:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
-
 # datapath= r'C:\Users\Dakota\Desktop\_example_gaddreadd\MED-PC Files July-TBD 2021\All\\' #ally dreadd
 
 # set all .xls files in your folder to list
@@ -64,10 +93,11 @@ allfiles = glob.glob(datapath + "*.xls*")
 dfRaw = pd.DataFrame()
 
 #define columns in your .xlsx for specific variables you want (e.g. A:Z for all)
-colToImport= 'A:W'# 'F:S,U:X' #dp opto 
-colToImport= 'A:Z'# gad-vp-opto instrumental transfer 
-
+# colToImport= 'A:W'# 'F:S,U:X' #dp opto 
+# colToImport= 'A:Z'# gad-vp-opto instrumental transfer 
+# colToImport= 'A:Q' #dakota vp-vta-fp
 # colToImport= 'A:Q' #ally dreadd
+
 
 #for loop to aquire all excel files in folder
 for excelfiles in allfiles:
@@ -117,23 +147,23 @@ df.subject= df.subject.astype('str')
 df.date= df.date.astype('str')
 
 # Match and insert subject metadata based on subject
-# metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" #dp vp-vta-stgtacr opto
+# metaPathSubj= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" #dp vp-vta-stgtacr opto
+# metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
+# metaPathSubj= r"J:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
 
-metaPath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
-
-dfRaw= pd.read_excel(metaPath).astype('str') 
+dfRaw= pd.read_excel(metaPathSubj).astype('str') 
 
 df= df.merge(dfRaw.astype('str'), how='left', on=['subject'])
 
 # Match and insert session metadata based on date and subject
 
-# metaPath= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp vp-vta-stgtacr opto
-
-metaPath= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
-# metaPath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
+# metaPathSes= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp vp-vta-stgtacr opto
+# metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
+# metaPathSes= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
+# metaPathSes= r"J:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
 
 #ensure that date is read as string
-dfRaw= pd.read_excel(metaPath, converters={'date': str, 'subject': str})#.astype('str') 
+dfRaw= pd.read_excel(metaPathSes, converters={'date': str, 'subject': str})#.astype('str') 
 
 # df= df.merge(dfRaw.astype('str'), how='left', on=['subject','date'])
 
@@ -257,6 +287,9 @@ if  experimentType.__contains__('Opto'):
 #binary coded 0/1 laser variables were being imported as floats, converting them to pandas dtype Int64 which supports NA values
 if experimentType.__contains__('Opto'):
     df.loc[:,(trialVars)]= df.loc[:,(trialVars)].astype('Int64')
+    
+#change stage to str dtype
+df.stage= df.stage.astype('str')
 
 #%% Tidying: All events in single column, add trialID and trialType that matches trial 1-60 through each session.
 

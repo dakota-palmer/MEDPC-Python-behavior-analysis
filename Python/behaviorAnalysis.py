@@ -827,7 +827,7 @@ def groupPercentCalc(df, levelOfAnalysis, groupHierarchy, colToCalc):
 
 
 #Example:
-#behavioralOutcome/trialType: out of all trials of this trialType, how many had this observed behavioral outcome?
+#behavioralOutcome/trialType: out of all vtrials of this trialType, how many had this observed behavioral outcome?
 
 #First we need to subset only one outcome per trial
 dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
@@ -868,7 +868,9 @@ def percentPortEntryCalc(df, groupHierarchy, colToCalc):
 #Example:
 
 #declare hierarchical grouping variables (how should observations be separated)
-groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType']
+groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType'] #Opto
+# groupers= ['virus', 'sex', 'stage', 'subject', 'trainDayThisStage', 'trialType'] #Photometry
+
 
 #here want percentage of each behavioral outcome per trialType per above groupers
 observation= 'trialOutcomeBeh10s'
@@ -879,6 +881,56 @@ test= percentPortEntryCalc(dfTidy, groupers, observation)
 dfPlot= test.reset_index().copy()
 g= sns.relplot(data=dfPlot, x= 'trainDayThisStage', y='PE', row='virus', hue='trialType', hue_order=trialOrder, kind='line')
 g.fig.suptitle('PE probability: testing function results')
+
+
+#%% Illustration of groupby() calculations based on date vs trainDay vs normalized trainDay hierarchies
+
+# #declare hierarchical grouping variables (how should observations be separated)
+# # groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'date', 'trialType'] #Opto
+# groupers= ['virus', 'sex', 'stage', 'subject', 'date', 'trialType'] #photometry
+
+
+# #here want percentage of each behavioral outcome per trialType per above groupers
+# observation= 'trialOutcomeBeh10s'
+
+# test= percentPortEntryCalc(dfTidy, groupers, observation)
+
+# #test visualization
+# dfPlot= test.reset_index().copy()
+# g= sns.relplot(data=dfPlot, x= 'date', y='PE', row='stage', hue='trialType', hue_order=trialOrder, kind='line')
+# g.fig.suptitle('PE probability: computed by date')
+
+
+# #declare hierarchical grouping variables (how should observations be separated)
+# # groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDay', 'trialType'] #Opto
+# groupers= ['virus', 'sex', 'stage', 'subject', 'trainDay', 'trialType'] #photometry
+
+
+# #here want percentage of each behavioral outcome per trialType per above groupers
+# observation= 'trialOutcomeBeh10s'
+
+# test= percentPortEntryCalc(dfTidy, groupers, observation)
+
+# #test visualization
+# dfPlot= test.reset_index().copy()
+# g= sns.relplot(data=dfPlot, x= 'trainDay', y='PE', row='stage', hue='trialType', hue_order=trialOrder, kind='line')
+# g.fig.suptitle('PE probability: computed by raw trainDay')
+
+
+# #declare hierarchical grouping variables (how should observations be separated)
+# # groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType'] #Opto
+# groupers= ['virus', 'sex', 'stage', 'subject', 'trainDayThisStage', 'trialType'] #photometry
+
+
+# #here want percentage of each behavioral outcome per trialType per above groupers
+# observation= 'trialOutcomeBeh10s'
+
+# test= percentPortEntryCalc(dfTidy, groupers, observation)
+
+# #test visualization
+# dfPlot= test.reset_index().copy()
+# g= sns.relplot(data=dfPlot, x= 'trainDayThisStage', y='PE', row='stage', hue='trialType', hue_order=trialOrder, kind='line')
+# g.fig.suptitle('PE probability: computed by normalized trainDayThisStage')
 
 
 #%% Save dfTidy so it can be loaded quickly for subesequent analysis
