@@ -354,18 +354,18 @@ fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount
 #retain only 1 per trial type per file
 dfPlot= dfPlot.reset_index().loc[fileAgg]
 
-#subjects may run different session types on same day (e.g. different laserDur), so shouldn't plot simply by date across subjects
-#individual plots by date is ok
+#subjects may run different session types on same day (e.g. different laserDur), so shouldn't plot simply by trainDayThisStage across subjects
+#individual plots by trainDayThisStage is ok
 # sns.set_palette('Paired')
 
 #a few examples of options here
-# g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='subject', markers=True, dashes=False)
-# g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', size='stage')
-# g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True)
+# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='subject', markers=True, dashes=False)
+# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', size='stage')
+# g= sns.relplot(data= dfPlot, x='trainDayThisStage', y='probPE', hue='subject', kind='line', style='trialType', markers=True)
 
-# g= sns.relplot(data= dfPlot, x='date', y='probPE', hue='subject', kind='line', style='trialType', markers=True, row='stage')
+# g= sns.relplot(data= dfPlot, x='trainDayThisStage', y='probPE', hue='subject', kind='line', style='trialType', markers=True, row='stage')
 # g.set_titles('{row_name}')
-g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 g.fig.suptitle('Evolution of the probPE in subjects by trialType')
 saveFigCustom(g, 'training_peProb_10s_individual')
@@ -373,15 +373,15 @@ saveFigCustom(g, 'training_peProb_10s_individual')
 
 #virus , sex facet 
 #only DS and NS
-g= sns.relplot(data=dfPlot, x='date', y='probPE', col='sex', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='sex', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 saveFigCustom(g, 'training_peProb_10s_virus+sex')
 
-g= sns.relplot(data=dfPlot, x='trainDay', y='probPE', col='sex', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='sex', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 saveFigCustom(g, 'training_peProb_10s_virus+sex_trainDay')
 
-g= sns.relplot(data=dfPlot, x='date', y='probPE', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 saveFigCustom(g, 'training_peProb_10s_virus')
 
@@ -409,31 +409,31 @@ dfPlot.stage= dfPlot.stage.cat.remove_unused_categories()
 # dfPlot.trialType= dfTidy.trialType.cat.remove_unused_categories()
 
 #late stages only
-g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 g.fig.suptitle('Evolution of the probPE in subjects by trialType')
 saveFigCustom(g, 'training_peProb_10s_lateStages_individual')
 
-g= sns.relplot(data=dfPlot, x='trainDay', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 g.fig.suptitle('Evolution of the probPE in subjects by trialType')
 saveFigCustom(g, 'training_peProb_10s_lateStages_individual_trainDay')
 
 
-g= sns.relplot(data=dfPlot, x='date', y='probPE', row='stage', col='virus', hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='stage', col='virus', hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 saveFigCustom(g, 'training_peProb_10s_lateStages_virus')
 
 
-g= sns.relplot(data=dfPlot, x='trainDay', y='probPE', row='stage', col='virus', hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='stage', col='virus', hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
 g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 saveFigCustom(g, 'training_peProb_10s_lateStages_virus_trainDay')
 
-# g= sns.relplot(data=dfPlot, x='date', y='probPE', row='trialType', hue='virus', kind='line', style='virus', markers=True, dashes=False)
+# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='trialType', hue='virus', kind='line', style='virus', markers=True, dashes=False)
 # g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 
 #individual subj lines
-# g= sns.relplot(data=dfPlot, x='date', y='probPE', row='trialType', units='subject', estimator=None, hue='virus', kind='line', style='stage', markers=True, dashes=False, palette='tab10')
+# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='trialType', units='subject', estimator=None, hue='virus', kind='line', style='stage', markers=True, dashes=False, palette='tab10')
 # g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 # g.fig.suptitle('Evolution of the probPE in subjects by trialType')
 
@@ -462,12 +462,12 @@ saveFigCustom(g, 'individual_peLatency_10s_ecdf')
  #training across stages
 dfPlot.eventLatency= dfPlot.eventLatency.astype('float') #TODO: correct dtypes early in code
 
-g= sns.relplot(data=dfPlot, x='date', y='eventLatency', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.fig.suptitle('Evolution of first PE latency by trialType')
 saveFigCustom(g, 'training_peLatency_10s_individual')
 
 
-g= sns.relplot(data=dfPlot, x='date', y='eventLatency', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.fig.suptitle('Evolution of first PE latency by trialType')
 saveFigCustom(g, 'training_peLatency_10s_virus+sex')
 
@@ -482,7 +482,7 @@ g.set_ylabels('Probability: first PE latency from epoch start')
 saveFigCustom(g, 'dist_peLatency_10s_lateStages_virus_ecdf')
 
 
-g= sns.relplot(data=dfPlot, x='date', y='eventLatency', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.fig.suptitle('Evolution of first PE latency by trialType, late stages')
 saveFigCustom(g, 'training_peLatency_10s_lateStages_virus')
 
@@ -493,8 +493,8 @@ saveFigCustom(g, 'training_peLatency_10s_lateStages_virus')
 
 # # Initialize the FacetGrid object
 # pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
-# # g = sns.FacetGrid(dfPlot, row="date", hue="date", col='subject', aspect=15, height=10, palette=pal)
-# g = sns.FacetGrid(dfPlot, row="date", hue="date", col='subject')#, aspect=15, height=10, palette=pal)
+# # g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject', aspect=15, height=10, palette=pal)
+# g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject')#, aspect=15, height=10, palette=pal)
 
 
 # # Draw the densities in a few steps
@@ -608,15 +608,15 @@ saveFigCustom(g, 'individual_ILI_10s_bar')
 
   # by_many<- group_by(py_data, virus, sex, stage, laserDur, subject, fileID, trialType, trialOutcomeBeh10s)
 
-groupers= ['virus','sex','stage','laserDur', 'subject', 'date', 'trialType']
+groupers= ['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType']
 
-#hierarchy should be something like groupVars -> stageVars -> subjVars-> sessionVars -> date -> fileID -> trialType/trialVars -> trialID -> eventVars
+#hierarchy should be something like groupVars -> stageVars -> subjVars-> sessionVars -> trainDayThisStage -> fileID -> trialType/trialVars -> trialID -> eventVars
 
 #seems that the grouping here is using all possible combos (e.g. creating entries for F Sex even for subjects that are M)
-dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
+dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'])
 
 #observed=True parameter only includes observed categories
-# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'], observed=True)
+# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'], observed=True)
 
 
 dfGroupComp= pd.DataFrame()
@@ -632,7 +632,7 @@ sns.catplot(data= dfGroupComp, row='virus', col='sex', x='stage', y='trialCount'
 
 #^this was just example, now do something more relevant to behavior analysis
 
-dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
+dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'])
 
 dfGroupComp= pd.DataFrame()
 # dfGroupComp['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].value_counts()
@@ -647,7 +647,7 @@ dfGroupComp= pd.DataFrame()
 
 
 #^ can calculate proportion more efficiently?
-# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
+# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'])
 
 #subset to one event per trial, then groupby()
 dfGroup= dfTidy.copy().loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].groupby(groupers)
@@ -672,7 +672,7 @@ outcomeProb= dfGroupComp2.outcomeBehCount/dfGroupComp.trialCount
 
 
 #can imagine doing peri-event analyses like so
-dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType', 'eventType'])
+dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType', 'eventType'])
 
 dfGroupComp= pd.DataFrame()
 dfGroupComp['eventOnsets']= dfGroup['eventTime'].value_counts()
@@ -883,7 +883,7 @@ g= sns.relplot(data=dfPlot, x= 'trainDayThisStage', y='PE', row='virus', hue='tr
 g.fig.suptitle('PE probability: testing function results')
 
 
-#%% Illustration of groupby() calculations based on date vs trainDay vs normalized trainDay hierarchies
+#%% Illustration of groupby() calculations based on date vs trainDayThisStage vs normalized trainDay hierarchies
 
 # #declare hierarchical grouping variables (how should observations be separated)
 # # groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'date', 'trialType'] #Opto

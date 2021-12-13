@@ -78,15 +78,15 @@ dfGroup= dfGroup.loc[dfGroup.trialType!= 'ITI']
 dfGroup= dfGroup.loc[dfGroup.eventType.isin(eventsBeh)]
   # by_many<- group_by(py_data, virus, sex, stage, laserDur, subject, fileID, trialType, trialOutcomeBeh10s)
 
-groupers= ['virus','sex','stage','laserDur', 'subject', 'date', 'trialType', 'epoch']
+groupers= ['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType', 'epoch']
 
-#hierarchy should be something like groupVars -> stageVars -> subjVars-> sessionVars -> date -> fileID -> trialType/trialVars -> trialID -> eventVars
+#hierarchy should be something like groupVars -> stageVars -> subjVars-> sessionVars -> trainDayThisStage -> fileID -> trialType/trialVars -> trialID -> eventVars
 
 #seems that the grouping here is using all possible combos (e.g. creating entries for F Sex even for subjects that are M)
 dfGroup= dfGroup.groupby(groupers)
 
 #observed=True parameter only includes observed categories
-# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'], observed=True)
+# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'], observed=True)
 
 
 dfGroupComp= pd.DataFrame()
@@ -111,11 +111,11 @@ test= dfTidy.groupby(['subject','fileID', 'trialType', 'trialID','eventType'])['
 test= dfTidy.groupby(['subject','fileID','trialType', 'trialID','eventType']).transform('count')
 #transform('count') loses index but retains group info... idk how to deal with this best, could be merged() back into df on groupers
 dfPlot= pd.DataFrame()
-dfPlot['eventCount']= dfTidy.groupby(['virus','subject','date', 'trialType', 'trialID','eventType'])['eventTime'].count().copy()
+dfPlot['eventCount']= dfTidy.groupby(['virus','subject','trainDayThisStage', 'trialType', 'trialID','eventType'])['eventTime'].count().copy()
 dfPlot= dfPlot.reset_index()
 
 #individual subj count over time
-sns.relplot(data= dfPlot, col='subject', col_wrap=4, x='date', y='eventCount', hue='eventType', kind='line', palette='tab20')
+sns.relplot(data= dfPlot, col='subject', col_wrap=4, x='trainDayThisStage', y='eventCount', hue='eventType', kind='line', palette='tab20')
 
 #%% TEST day only!
 #virus event count by trialtype
@@ -125,10 +125,10 @@ dfGroup= dfGroup.loc[dfGroup.eventType.isin(eventsBeh)]
 
 
 dfPlot= pd.DataFrame()
-dfPlot['eventCount']= dfGroup.groupby(['virus','subject','date', 'trialType', 'trialID','eventType'])['eventTime'].count().copy()
+dfPlot['eventCount']= dfGroup.groupby(['virus','subject','trainDayThisStage', 'trialType', 'trialID','eventType'])['eventTime'].count().copy()
 dfPlot= dfPlot.reset_index()
 
-sns.catplot(data= dfPlot, row='virus', x='date', y='eventCount', hue='trialType', hue_order=trialOrder, kind='bar', palette='Paired')
+sns.catplot(data= dfPlot, row='virus', x='trainDayThisStage', y='eventCount', hue='trialType', hue_order=trialOrder, kind='bar', palette='Paired')
 
 
 
@@ -153,7 +153,7 @@ sns.catplot(data= dfGroupComp2, row='virus', x='eventType', y='eventCount', hue=
 
 #%% #^this was just example, now do something more relevant to behavior analysis
 
-# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
+# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'])
 
 
 # dfGroupComp= pd.DataFrame()
@@ -169,7 +169,7 @@ sns.catplot(data= dfGroupComp2, row='virus', x='eventType', y='eventCount', hue=
 
 
 # #^ can calculate proportion more efficiently?
-# # dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType'])
+# # dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'])
 
 # #subset to one event per trial, then groupby()
 # dfGroup= dfTidy.copy().loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].groupby(groupers)
@@ -197,7 +197,7 @@ sns.catplot(data= dfGroupComp2, row='virus', x='eventType', y='eventCount', hue=
 
 
 # #can imagine doing peri-event analyses like so
-# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'date', 'trialType', 'eventType'])
+# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType', 'eventType'])
 
 # dfGroupComp= pd.DataFrame()
 # dfGroupComp['eventOnsets']= dfGroup['eventTime'].value_counts()

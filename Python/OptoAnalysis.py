@@ -100,12 +100,12 @@ if __name__ == '__main__':
         #retain only trials with PE+lick for comparison
         dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
     
-        #get count of each trialType by subject and date
-        dfPlot= dfGroup.loc[(dfGroup.laserDur=='Lick') & ((dfGroup.eventType=='NStime') | (dfGroup.eventType=='DStime'))].groupby(['subject','date','trialType'])['eventTime'].count().reset_index()
+        #get count of each trialType by subject and trainDayThisStage
+        dfPlot= dfGroup.loc[(dfGroup.laserDur=='Lick') & ((dfGroup.eventType=='NStime') | (dfGroup.eventType=='DStime'))].groupby(['subject','trainDayThisStage','trialType'])['eventTime'].count().reset_index()
         
         
         #Plot count of trial types for each session
-        g= sns.relplot(data=dfPlot, col='subject', col_wrap=4, x='date', y='eventTime', hue='trialType', hue_order=trialOrder, kind='line')
+        g= sns.relplot(data=dfPlot, col='subject', col_wrap=4, x='trainDayThisStage', y='eventTime', hue='trialType', hue_order=trialOrder, kind='line')
                         # facet_kws={'sharey': False, 'sharex': True})
         g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
         g.fig.suptitle('Total trial type count across LICK+laser sessions')
@@ -439,26 +439,26 @@ if __name__ == '__main__':
    #  g.tight_layout(w_pad=0)
     
     # #plot by laserDur
-    # g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
+    # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
     # # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
     # g.set_titles('{col_name}')
     # g.fig.suptitle('Evolution of the probPE in subjects by trialType')
     # g.tight_layout(w_pad=0)
     
     # #group by virus
-    # g= sns.relplot(data=dfPlot, x='date', y='probPE', row='virus', hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
+    # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='virus', hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
     # # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
     # g.set_titles('{row_name}')
     # g.fig.suptitle('Evolution of the probPE in subjects by trialType')
     # g.tight_layout(w_pad=0)
     
     # #show individual subj
-    # # g= sns.relplot(data=dfPlot, x='date', y='probPE', row='virus', units='subject', estimator=None, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
+    # # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='virus', units='subject', estimator=None, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
 
     # #subjects run different session types on same day, so can't plot by day across subjects
     # sns.set_palette('Paired')
 
-    # g= sns.relplot(data=dfPlot, x='date', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
+    # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
     # # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
     # g.set_titles('{col_name}')
     # g.fig.suptitle('Evolution of the probPE in subjects by trialType')
@@ -554,14 +554,14 @@ if __name__ == '__main__':
     #%Plot evolution of PE probability across laser test days
     
     #individual subject facet
-    g= sns.relplot(data= dfPlot, kind='line', estimator=None, col='subject', col_wrap=3, x='date', y='probPE', hue='trialType', hue_order=trialOrder, style='laserDur', markers=True)
+    g= sns.relplot(data= dfPlot, kind='line', estimator=None, col='subject', col_wrap=3, x='trainDayThisStage', y='probPE', hue='trialType', hue_order=trialOrder, style='laserDur', markers=True)
   
-    # g= sns.relplot(data= dfPlot, kind='line', estimator=None, row='trialType', x='date', y='probPE', hue='virus', style='laserDur', markers=True)
+    # g= sns.relplot(data= dfPlot, kind='line', estimator=None, row='trialType', x='trainDayThisStage', y='probPE', hue='virus', style='laserDur', markers=True)
 
 
     #virus facet
-    g= sns.relplot(data= dfPlot, kind='line', row='virus', x='date', y='probPE', hue='trialType', hue_order=trialOrder)
-    # g= sns.relplot(data= dfPlot, estimator=None, kind='line', row='virus', x='date', y='probPE', units='subject', hue='trialType', hue_order=trialOrder)
+    g= sns.relplot(data= dfPlot, kind='line', row='virus', x='trainDayThisStage', y='probPE', hue='trialType', hue_order=trialOrder)
+    # g= sns.relplot(data= dfPlot, estimator=None, kind='line', row='virus', x='trainDayThisStage', y='probPE', units='subject', hue='trialType', hue_order=trialOrder)
 
 
     #%% Calculate difference score between laser off and laser on trialTypes
@@ -584,7 +584,7 @@ if __name__ == '__main__':
     dfPlot= dfGroup.copy()
     
    #individual subject facet
-    g= sns.relplot(data= dfPlot, kind='line', estimator=None, col='subject', col_wrap=3, x='date', y='probPEdiff', hue='trialType', hue_order=trialOrder, style='laserDur', markers=True)
+    g= sns.relplot(data= dfPlot, kind='line', estimator=None, col='subject', col_wrap=3, x='trainDayThisStage', y='probPEdiff', hue='trialType', hue_order=trialOrder, style='laserDur', markers=True)
     # g.map(refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False))
     g.map(plt.axhline, y=0, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 
@@ -627,7 +627,7 @@ if __name__ == '__main__':
     #visualize
     sns.set_palette('tab10')
 
-    # g= sns.relplot(data=dfPlot, x='date', y='probPE', row='virus', hue='trialType', style='laserDur', kind='line')
+    # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='virus', hue='trialType', style='laserDur', kind='line')
     # g.map(plt.axhline, y=0.6, color=".2", dashes=(2, 1), zorder=0, linewidth=4)
 
 #%% Testing groupby()- accessing values & index of grouped data
@@ -1210,9 +1210,9 @@ dfTidyOpto.to_pickle(savePath+'dfTidyOpto.pkl')
     
     ##Unstack() the groupby output for a dataframe we can profile
     # dfPlot= dfTidyOpto
-    # dfPlot= dfPlot.groupby(['subject','date','eventType'])['eventTime'].count().unstack()
+    # dfPlot= dfPlot.groupby(['subject','trainDayThisStage','eventType'])['eventTime'].count().unstack()
     # #add trialType counts
-    # dfPlot= dfPlot.merge(dfTidyOpto.loc[(dfTidyOpto.eventType=='x_I_NStime') | (dfTidyOpto.eventType=='x_H_DStime')].groupby(['subject','date','trialType'])['eventTime'].count().unstack(),left_index=True,right_index=True)
+    # dfPlot= dfPlot.merge(dfTidyOpto.loc[(dfTidyOpto.eventType=='x_I_NStime') | (dfTidyOpto.eventType=='x_H_DStime')].groupby(['subject','trainDayThisStage','trialType'])['eventTime'].count().unstack(),left_index=True,right_index=True)
 
     # from pandas_profiling import ProfileReport
 
