@@ -868,8 +868,8 @@ def percentPortEntryCalc(df, groupHierarchy, colToCalc):
 #Example:
 
 #declare hierarchical grouping variables (how should observations be separated)
-groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType'] #Opto
-# groupers= ['virus', 'sex', 'stage', 'subject', 'trainDayThisStage', 'trialType'] #Photometry
+# groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType'] #Opto
+groupers= ['virus', 'sex', 'stage', 'subject', 'trainDayThisStage', 'trialType'] #Photometry
 
 
 #here want percentage of each behavioral outcome per trialType per above groupers
@@ -879,7 +879,7 @@ test= percentPortEntryCalc(dfTidy, groupers, observation)
 
 #test visualization
 dfPlot= test.reset_index().copy()
-g= sns.relplot(data=dfPlot, x= 'trainDayThisStage', y='PE', row='virus', hue='trialType', hue_order=trialOrder, kind='line')
+g= sns.relplot(data=dfPlot, x= 'trainDayThisStage', y='PE', row='stage', hue='trialType', hue_order=trialOrder, kind='line')
 g.fig.suptitle('PE probability: testing function results')
 
 
