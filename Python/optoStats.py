@@ -22,6 +22,17 @@ def optoStats (df, y, fixedEffects, mixedEffects):
 # M = Slope of the regression line (the effect that X has on Y)
 # X = Independent variable (input variable used in the prediction of 
 
+#%% plot fit of predicted vs actual values fxn
+# #adapted from https://www.linkedin.com/learning/python-statistics-essential-training/fitting-models-to-data?autoAdvance=true&autoSkip=true&autoplay=true&resume=false&u=42740356
+
+# def plotdata():
+#     gdata.plot.scatter('age5_surviving','babies_per_woman',
+#                        c=colors,s=size,linewidths=0.5,edgecolor='k',alpha=0.5)
+
+# def plotfit(y, fit):
+#     plotdata()
+#     pp.scatter(gdata.age5_surviving,fit.predict(gdata),
+#                c=colors,s=30,linewidths=0.5,edgecolor='k',marker='D')
 
 #%% testing regression functions - should be pretty good baseline example for regression modeling time series data
 #remove empty placeholders, ensure dtypes ok
@@ -58,6 +69,42 @@ for var in fixedEffects:
 y= ['probPE']
 
 
+#%% playing with very simple model viz
+#adapting some code from https://www.linkedin.com/learning/python-statistics-essential-training/goodness-of-fit?autoAdvance=true&autoSkip=true&autoplay=true&resume=false&u=42740356
+#would probably be examine to see with continuous variable examples
+
+testModel= sm.OLS(df.loc[:,y], df.loc[:,'virus_stgtacr']).fit()
+
+testPredict= testModel.predict(df.loc[:,'virus_stgtacr'])
+
+print_testModel= testModel.summary()
+
+print(print_testModel)
+
+testModel.params #mean of predictor(s)
+
+#plot actual vs predicted values?
+# pp.scatter(df.loc[:,'virus_stgtacr'],testModel.predict()
+
+#scatter of explanatory variable vs. residuals
+pp.scatter(df.loc[:,'virus_stgtacr'],testModel.resid)
+
+#MSE= mean squared error of residuals
+print(testModel.mse_resid)
+
+#R2 = explained variance / total variance
+print(testModel.rsquared)
+
+#F statistic= explanatory power of fit parameters compared to hypothetical 'random' fit vectors (accounts for number of parameters to address overfitting)
+ #F=1 would mean parameter contributes same as random vector. Larger F = more than random contribution
+print(testModel.fvalue)
+
+#But statsmodels gives us all of this and more in summary() !
+testModel.summary()
+
+#anova table
+# sm.stats.anova_lm(testModel)
+
 #%% FIXED EFFECTS LM
 
 testModel= sm.OLS(df.loc[:,y], df.loc[:,fixedEffectsDum]).fit()
@@ -68,11 +115,22 @@ print_testModel= testModel.summary()
 
 print(print_testModel)
 
+#try plot of fit
+# import matplotlib
+# import matplotlib.pyplot as pp
+# pp.scatter(df.loc[:,y],testModel)
+
+#try visualize?
+# fig = sm.graphics.influence_plot(testModel, criterion="cooks")
+# fig.tight_layout(pad=1.0)
+# fig.tight_layout(pad=1.0)
 
 #%% MIXED EFFECTS LM
 df= dfPlot.copy()
 #removing empty placeholders
 df= df.loc[df.subject.notnull()]
+
+df.subject= df.subject.astype('category')
 
 #convert categorical var strings to int codes?
 df['subjCode'] = df.subject.cat.codes.copy()
@@ -114,6 +172,51 @@ df_lm_table= sm.stats.anova_lm(df_lm, typ=2) #Type 2 ANOVA DataFrame
 
 print(df_lm.summary())
 
+
+#%% Playing with CROSS VALIDATION https://www.linkedin.com/learning/python-statistics-essential-training/cross-validation?autoAdvance=true&autoSkip=true&autoplay=true&resume=false&u=42740356
+#good for comparing models
+
+#data divided into training + testing set
+
+#Divide data
+#First shuffle using pandas shuffle()
+shuffled = df.sample(len(df))
+
+#Then divide into two equal sized subsets
+training, testing= shuffled.iloc[:len(df)//2], shuffled.iloc[:len(df)//2:]
+
+testModel1 = smf.ols('probPE ~ C(sex, Sum)*C(virus, Sum)', data=training).fit()    
+
+testModel1.mse_resid
+
+#predict test set using model from train set, can calculate residuals by subtracting from actual observed values
+# resid= testModel1.predict(testing)
+
+#custom cross validation fxn #Just an example! 2 divisions here. scikitlearn has cross validation fxns
+
+def cross_validate(data,formula,response,n=100):
+    ret = []
+    
+    for i in range(n):
+        shuffled = data.sample(len(data))
+        
+        #Just an example! 2 divisions here. scikitlearn has cross validation fxns
+        training, testing = shuffled.iloc[:len(data)//2], shuffled.iloc[len(data)//2:]
+        
+        trained = smf.ols(formula, data=training).fit()
+        
+        resid = trained.predict(testing) - testing[response]
+        df = len(testing) - trained.df_model - 1
+        mse = np.sum(resid**2) / df
+        
+        ret.append(mse)
+    
+    return np.mean(ret)
+
+
+formula= 'probPE ~ C(sex, Sum)*C(virus, Sum)'
+response= 'probPE'
+cross_validate(df,formula,response)
 #%% statsmodels getting started notes
 import statsmodels.api as sm
 import statsmodels.formula.api as smf

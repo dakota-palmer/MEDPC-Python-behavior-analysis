@@ -50,11 +50,11 @@ import seaborn as sns
 #Examples: 
         
 #DP GAD-VP-OPTO DS Task
-# experimentType= 'Opto'
-# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
-# colToImport= 'A:W'  #dp opto 
-# metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
-# metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
+experimentType= 'Opto'
+datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
+colToImport= 'A:W'  #dp opto 
+metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
+metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
 
 
 #DP GAD-VP-OPTO Instrumental Transfer
@@ -63,12 +63,12 @@ import seaborn as sns
 # metaPathSes= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
 
 
-#DP VP-VTA-FP DS Task 
-experimentType= 'photometry'
-datapath= r'J:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
-colToImport= 'A:Q' #dakota vp-vta-fp
-metaPathSubj= r"J:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
-metaPathSes= r"J:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
+# #DP VP-VTA-FP DS Task 
+# experimentType= 'photometry'
+# datapath= r'J:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
+# colToImport= 'A:Q' #dakota vp-vta-fp
+# metaPathSubj= r"J:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
+# metaPathSes= r"J:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
 
 
 #Ally DREADD DS Task
