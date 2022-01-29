@@ -5,7 +5,7 @@ Created on Tue Aug 31 16:09:42 2021
 @author: Dakota
 """
 
-#%% Load dependencies
+# %% Load dependencies
 import pandas as pd
 import shelve
 import os
@@ -14,78 +14,108 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-#%$ Things to change manually for your data:
-    
-#plot settings in section below
+# script ('module') containing custom fxns
+from customFunctions import saveFigCustom
+from customFunctions import subsetData
+from customFunctions import subsetLevelObs
+from customFunctions import percentPortEntryCalc
+from customFunctions import groupPercentCalc
+
+# %$ Things to change manually for your data:
+
+# plot settings in section below
+
+# %% define a function to save and close figures
 
 
- #%% define a function to save and close figures
-def saveFigCustom(figure, figName):
-    plt.gcf().set_size_inches((20,10), forward=False) # ~monitor size
-    plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0) #creates legend ~right of the last subplot
-    
-    plt.gcf().tight_layout()
-    plt.savefig(r'./_output/_behaviorAnalysis/'+figName+'.png', bbox_inches='tight')
-    plt.close()
-         
-         
+# def saveFigCustom(figure, figName):
+#     plt.gcf().set_size_inches((20, 10), forward=False)  # ~monitor size
+#     # creates legend ~right of the last subplot
+#     plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0)
 
-#%% Load previously saved dfTidy (and other vars) from pickle
-dataPath= r'./_output/' #'r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
+#     plt.gcf().tight_layout()
+#     plt.savefig(r'./_output/_behaviorAnalysis/' +
+#                 figName+'.png', bbox_inches='tight')
+#     plt.close()
 
-dfTidy= pd.read_pickle(dataPath+'dfTidy.pkl')
 
-#load any other variables saved during the import process ('dfTidymeta' shelf)
+# %% Load previously saved dfTidy (and other vars) from pickle
+dataPath = r'./_output/'  # 'r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
+
+dfTidy = pd.read_pickle(dataPath+'dfTidy.pkl')
+
+# load any other variables saved during the import process ('dfTidymeta' shelf)
 my_shelf = shelve.open(dataPath+'dfTidymeta')
 for key in my_shelf:
-    globals()[key]=my_shelf[key]
+    globals()[key] = my_shelf[key]
 my_shelf.close()
 
 
-#%% Plot settings
+# %% Plot settings
 sns.set_style("darkgrid")
 sns.set_context('notebook')
 
-#fixed order of trialType to plot (so consistent between figures)
-#for comparison of trial types (e.g. laser on vs laser off, good to have these in paired order for paired color palettes)
-trialOrder= ['DStime','NStime','Pre-Cue', 'ITI']
+savePath= r'./_output/_behaviorAnalysis/'
 
-#DS PE probability criteria (for visualization)
-criteriaDS= 0.6
+
+# fixed order of trialType to plot (so consistent between figures)
+# for comparison of trial types (e.g. laser on vs laser off, good to have these in paired order for paired color palettes)
+trialOrder = ['DStime', 'NStime', 'Pre-Cue', 'ITI']
+
+# DS PE probability criteria (for visualization)
+criteriaDS = 0.6
 
 if experimentType.__contains__('Opto'):
     # trialOrder= ['laserDStrial_0', 'laserDStrial_1', 'laserNStrial_0', 'laserNStrial_1', 'Pre-Cue', 'ITI']
     # trialOrder= [trialOrder, 'laserDStrial_0', 'laserDStrial_1', 'laserNStrial_0', 'laserNStrial_1']
-    trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue','ITI'])
+    trialOrder = (['DStime', 'DStime_laser', 'NStime',
+                  'NStime_laser', 'Pre-Cue', 'ITI'])
+
+
+
+
+# %%For Opto, combine make each laserDur its own unique stage
+if experimentType.__contains__('Opto'):
+    #find non-nan laserDur entires and combine with 
+    ind= ~dfTidy.laserDur.str.contains('nan')
+    
+    dfTidy.stage= dfTidy.stage.astype(str)
+    dfTidy.laserDur= dfTidy.laserDur.astype(str)
+    
+    dfTidy.loc[ind,'stage']= dfTidy.stage+'-laser-'+dfTidy.laserDur
+
+    dfTidy.stage=dfTidy.stage.astype('category')
+
+
 
 # %% Preliminary data analyses
 # Event latency, count, and behavioral outcome for each trial
 
-#TODO: Lick 'cleaning' to eliminate invalid licks (are they in port, is ILI within reasonable range)
+# TODO: Lick 'cleaning' to eliminate invalid licks (are they in port, is ILI within reasonable range)
 
 
 # #Calculate latency to each event in trial (from cue onset). based on trialEnd to keep it simple
-#   # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time  
+#   # trialEnd is = cue onset + cueDur. So just subtract cueDur for cue onset time
 # dfTidy.loc[dfTidy.trialID>=0, 'eventLatency'] = (
 #     (dfTidy.eventTime)-(dfTidy.trialEnd-dfTidy.cueDur)).copy()
 
-#have trial start now, subtract trialStart from eventTime to get latency per trial
-#no need for -trialID exception
-dfTidy.loc[:,'eventLatency']= ((dfTidy.eventTime)-(dfTidy.trialStart)).copy()
-# 
+# have trial start now, subtract trialStart from eventTime to get latency per trial
+# no need for -trialID exception
+dfTidy.loc[:, 'eventLatency'] = ((dfTidy.eventTime)-(dfTidy.trialStart)).copy()
+#
 # dfTidy.loc[dfTidy.trialID>=0,'eventLatency']= ((dfTidy.eventTime)-(dfTidy.trialStart))
 
 # dfTidy.loc[dfTidy.trialID<0, 'eventLatency'] = ((dfTidy.eventTime)-(dfTidy.trialStart)).copy()
 
-#TODO: exception needs to be made for first ITI; for now fill w nan
-dfTidy.loc[dfTidy.trialID== -999, 'eventLatency']= np.nan
+# TODO: exception needs to be made for first ITI; for now fill w nan
+dfTidy.loc[dfTidy.trialID == -999, 'eventLatency'] = np.nan
 
-#Count events in each trial 
-#use cumcount() of event times within file & trial 
+# Count events in each trial
+# use cumcount() of event times within file & trial
 
-#converting to float for some reason
+# converting to float for some reason
 dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
-'fileID', 'trialID'])['eventTime'].cumcount().copy()
+    'fileID', 'trialID'])['eventTime'].cumcount().copy()
 
 # #try transform
 # dfTidy.loc[:,'trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
@@ -96,309 +126,392 @@ dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'lickTime')].groupby([
     'fileID', 'trialID']).cumcount().copy()
 
 # Add trainDay variable (cumulative count of sessions within each subject)
-dfGroup= dfTidy.loc[dfTidy.groupby(['subject','fileID']).cumcount()==0]
+dfGroup = dfTidy.loc[dfTidy.groupby(['subject', 'fileID']).cumcount() == 0]
 # test= dfGroup.groupby(['subject','fileID']).transform('cumcount')
-dfTidy.loc[:,'trainDay']= dfGroup.groupby(['subject'])['fileID'].transform('cumcount')
-dfTidy.loc[:,'trainDay']= dfTidy.groupby(['subject','fileID']).fillna(method='ffill')
+dfTidy.loc[:, 'trainDay'] = dfGroup.groupby(
+    ['subject'])['fileID'].transform('cumcount')
+dfTidy.loc[:, 'trainDay'] = dfTidy.groupby(
+    ['subject', 'fileID']).fillna(method='ffill')
 
-#Add cumulative count of training day within-stage (so we can normalize between subjects appropriately)
-##very important consideration!! Different subjects can run different programs on same day, which can throw plots/analysis off when aggregating data by date.
-dfGroup= dfTidy.loc[dfTidy.groupby('fileID').transform('cumcount')==0,:].copy() #one per session
-dfTidy['trainDayThisStage']=  dfGroup.groupby(['subject', 'stage']).transform('cumcount')
-dfTidy.trainDayThisStage= dfTidy.groupby(['fileID'])['trainDayThisStage'].fillna(method='ffill').copy()
+# Add cumulative count of training day within-stage (so we can normalize between subjects appropriately)
+# very important consideration!! Different subjects can run different programs on same day, which can throw plots/analysis off when aggregating data by date.
+dfGroup = dfTidy.loc[dfTidy.groupby('fileID').transform(
+    'cumcount') == 0, :].copy()  # one per session
+dfTidy['trainDayThisStage'] = dfGroup.groupby(
+    ['subject', 'stage']).transform('cumcount')
+dfTidy.trainDayThisStage = dfTidy.groupby(
+    ['fileID'])['trainDayThisStage'].fillna(method='ffill').copy()
 # #QC visualizations
 # g= sns.relplot(data=dfTidy, col='subject', col_wrap=4, x='date', y='trainDayThisStage', hue='stage', kind='scatter')
 # g= sns.relplot(data=dfTidy, col='subject', col_wrap=4, x='date', y='trainDay', hue='stage', kind='scatter')
 # g= sns.relplot(data=dfTidy, col='subject', col_wrap=4, x='date', y='date', hue='stage', kind='scatter')
 
-#%% TODO: count events within 10s of cue onset (cue duration in final stage)  
-#this is mainly for comparing progression/learning between stages since cueDuration varies by stage
 
-dfTemp=  dfTidy.loc[((dfTidy.eventLatency<= 10) & (dfTidy.eventLatency>0))].copy()
+#Correct dtypes
+dfTidy.eventLatency = dfTidy.eventLatency.astype('float')  # TODO: correct dtypes early in code
+
+
+# %% Declare hierarchical grouping variables for analysis
+# e.g. for aggregated measures, how should things be calculated and grouped?
+
+# examples of different measures @ different levels:
+# consider within-file (e.g. total PEs per session)
+# within-trialType (e.g. Probability of PEs during all DS vs. all NS)
+# within-trialID measures (e.g. Latency to enter port all individual trials)
+# within virus, cue identity, subject, stage, etc.
+
+if experimentType.__contains__('Opto'):
+    # groupHierarchyFileID = ['virus', 'sex', 'stage',
+    #                         'laserDur', 'subject', 'trainDayThisStage', 'fileID']
+    # groupHierarchyTrialType = ['virus', 'sex', 'stage', 'laserDur',
+    #                            'subject', 'trainDayThisStage', 'fileID', 'trialType']
+    # groupHierarchyTrialID = ['virus', 'sex', 'stage', 'laserDur',
+    #                          'subject', 'trainDayThisStage', 'trialType', 'fileID', 'trialID']
+   #taking out laserDur, combining into stage
+    groupHierarchyFileID = ['virus', 'sex', 'stage',
+                            'subject', 'trainDayThisStage', 'fileID']
+    groupHierarchyTrialType = ['virus', 'sex', 'stage',
+                               'subject', 'trainDayThisStage', 'fileID', 'trialType']
+    groupHierarchyTrialID = ['virus', 'sex', 'stage',
+                             'subject', 'trainDayThisStage', 'trialType', 'fileID', 'trialID']
+    
+    groupHierarchyEventType = ['virus', 'sex', 'stage',
+                             'subject', 'trainDayThisStage', 'trialType', 'fileID', 'trialID', 'eventType']
+
+
+else:
+    groupHierarchyFileID = ['sex', 'stage',
+                            'subject', 'trainDayThisStage', 'fileID']
+    groupHierarchyTrialType = ['sex', 'stage', 'subject',
+                               'trainDayThisStage', 'fileID', 'trialType']
+    groupHierarchyTrialID = ['sex', 'stage', 'subject',
+                             'trainDayThisStage', 'trialType', 'fileID', 'trialID']
+
+    groupHierarchyEventType = ['sex', 'stage',
+                             'subject', 'trainDayThisStage', 'trialType', 'fileID', 'trialID', 'eventType']
+
+
+#%% Consider saving specific ind for different level of observations 
+#e.g. trial, file, could very quickly subset data or store alt dataframe
+
+#index of first entry per file
+obsFile= dfTidy.groupby(groupHierarchyFileID).cumcount()==0
+
+#e.g. 
+# dfFile= dfTidy[obsFile].copy()
+
+#index of first entry per trialType
+obsTrialType= dfTidy.groupby(groupHierarchyTrialType).cumcount()==0
+
+#index of first entry per trial
+obsTrial= dfTidy.groupby(groupHierarchyTrialID).cumcount()==0
+
+
+#index of first event per type per trial (e.g. mean latency of each event)
+obsEventType= dfTidy.groupby(groupHierarchyEventType).cumcount()==0
+
+
+# %% Count events within 10s of cue onset (cue duration in final stage)
+# this is mainly for comparing progression/learning between stages since cueDuration varies by stage
+
+dfTemp = dfTidy.loc[((dfTidy.eventLatency <= 10) &
+                     (dfTidy.eventLatency > 0))].copy()
 
 dfTidy['trialPE10s'] = dfTemp.loc[(dfTemp.eventType == 'PEtime')].groupby([
-'fileID', 'trialID'])['eventTime'].cumcount().copy()
+    'fileID', 'trialID'])['eventTime'].cumcount().copy()
 
 dfTidy['trialLick10s'] = dfTemp.loc[(dfTemp.eventType == 'lickTime')].groupby([
-'fileID', 'trialID'])['eventTime'].cumcount().copy()
+    'fileID', 'trialID'])['eventTime'].cumcount().copy()
 
-#%% Define behavioral (pe,lick) outcome for each trial. For my lick+laser sessions I need 
-#to isolate trials with both a PE+lick to measure effect of laser
+# %% Define behavioral (pe,lick) outcome for each trial.
+# For my lick+laser sessions I need
+# to isolate trials with both a PE+lick to measure effect of laser
 
-#For each trial (trialID >=0),
-#count the number of PEs per trial. if >0, they entered the port and earned sucrose. If=0, they did not.
-#since groupby counting methods don't work well with nans, using nunique() 
+# For each trial (trialID >=0),
+# count the number of PEs per trial. if >0, they entered the port and earned sucrose. If=0, they did not.
+# since groupby counting methods don't work well with nans, using nunique()
 # peOutcome= dfTidy.loc[dfTidy.trialID>=0].groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
-#do for all trials
-outcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialPE'].nunique()
+# do for all trials
+outcome = dfTidy.groupby(['fileID', 'trialID'], dropna=False)[
+    'trialPE'].nunique()
 
-#naming "trialOutcomeBeh" for now to distinguish between behavioral outcome and reward outcome if needed later
-trialOutcomeBeh= outcome.copy()
+# naming "trialOutcomeBeh" for now to distinguish between behavioral outcome and reward outcome if needed later
+trialOutcomeBeh = outcome.copy()
 
-trialOutcomeBeh.loc[outcome>0]='PE'
-trialOutcomeBeh.loc[outcome==0]='noPE'
+trialOutcomeBeh.loc[outcome > 0] = 'PE'
+trialOutcomeBeh.loc[outcome == 0] = 'noPE'
 
-#now do the same for licks
-outcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialLick'].nunique()
+# now do the same for licks
+outcome = dfTidy.groupby(['fileID', 'trialID'], dropna=False)[
+    'trialLick'].nunique()
 
-#add lick outcome + PE outcome for clarity #if it doesn't say '+lick', then none was counted
-trialOutcomeBeh.loc[outcome>0]=trialOutcomeBeh.loc[outcome>0]+ '+' + 'lick'
+# add lick outcome + PE outcome for clarity #if it doesn't say '+lick', then none was counted
+trialOutcomeBeh.loc[outcome >
+                    0] = trialOutcomeBeh.loc[outcome > 0] + '+' + 'lick'
 
-#set index to file,trial and
-#fill in matching file,trial with trialOutcomeBeh
-#TODO: I think there is a more efficient way to do this assignment, doens't take too long tho
+# set index to file,trial and
+# fill in matching file,trial with trialOutcomeBeh
+# TODO: I think there is a more efficient way to do this assignment, doens't take too long tho
 
-dfTidy= dfTidy.reset_index().set_index(['fileID','trialID'])
+dfTidy = dfTidy.reset_index().set_index(['fileID', 'trialID'])
 
-dfTidy.loc[trialOutcomeBeh.index,'trialOutcomeBeh']= trialOutcomeBeh
+dfTidy.loc[trialOutcomeBeh.index, 'trialOutcomeBeh'] = trialOutcomeBeh
 
-#reset index to eventID
-dfTidy= dfTidy.reset_index().set_index(['eventID'])
+# reset index to eventID
+dfTidy = dfTidy.reset_index().set_index(['eventID'])
 
-#%% same as above but behavioral outcome within first 10s of each trial
-outcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialPE10s'].nunique()
+# %% same as above but behavioral outcome within first 10s of each trial
+outcome = dfTidy.groupby(['fileID', 'trialID'], dropna=False)[
+    'trialPE10s'].nunique()
 
-#naming "trialOutcomeBeh" for now to distinguish between behavioral outcome and reward outcome if needed later
-#10s = within 10s of epoch start
-trialOutcomeBeh= outcome.copy()
+# naming "trialOutcomeBeh" for now to distinguish between behavioral outcome and reward outcome if needed later
+# 10s = within 10s of epoch start
+trialOutcomeBeh = outcome.copy()
 
-trialOutcomeBeh.loc[outcome>0]='PE'
-trialOutcomeBeh.loc[outcome==0]='noPE'
+trialOutcomeBeh.loc[outcome > 0] = 'PE'
+trialOutcomeBeh.loc[outcome == 0] = 'noPE'
 
-#now do the same for licks
-outcome= dfTidy.groupby(['fileID','trialID'],dropna=False)['trialLick10s'].nunique()
+# now do the same for licks
+outcome = dfTidy.groupby(['fileID', 'trialID'], dropna=False)[
+    'trialLick10s'].nunique()
 
-#add lick outcome + PE outcome for clarity #if it doesn't say '+lick', then none was counted
-trialOutcomeBeh.loc[outcome>0]=trialOutcomeBeh.loc[outcome>0]+ '+' + 'lick'
+# add lick outcome + PE outcome for clarity #if it doesn't say '+lick', then none was counted
+trialOutcomeBeh.loc[outcome >
+                    0] = trialOutcomeBeh.loc[outcome > 0] + '+' + 'lick'
 
-#set index to file,trial and
-#fill in matching file,trial with trialOutcomeBeh
-#TODO: I think there is a more efficient way to do this assignment, doens't take too long tho
+# set index to file,trial and
+# fill in matching file,trial with trialOutcomeBeh
+# TODO: I think there is a more efficient way to do this assignment, doens't take too long tho
 
-dfTidy= dfTidy.reset_index().set_index(['fileID','trialID'])
+dfTidy = dfTidy.reset_index().set_index(['fileID', 'trialID'])
 
-dfTidy.loc[trialOutcomeBeh.index,'trialOutcomeBeh10s']= trialOutcomeBeh
+dfTidy.loc[trialOutcomeBeh.index, 'trialOutcomeBeh10s'] = trialOutcomeBeh
 
-#reset index to eventID
-dfTidy= dfTidy.reset_index().set_index(['eventID'])
+# reset index to eventID
+dfTidy = dfTidy.reset_index().set_index(['eventID'])
 
-#%% Calculate Probability of behavioral outcome for each trial type. 
-#This is normalized so is more informative than simple count of trials. 
+# %% Calculate Probability of behavioral outcome for each trial type.
+# This is normalized so is more informative than simple count of trials.
 
-#calculate Proportion of trials with PE out of all trials for each trial type
-#can use nunique() to get count of unique trialIDs with specific PE outcome per file
-#given this, can calculate Probortion as #PE/#PE+#noPE
-   
-#subset data and save as intermediate variable dfGroup
-#get only one entry per trial
-dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
+# declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
+levelOfAnalysis = ['fileID', 'trialID']
 
-#for Lick+laser sessions, retain only trials with PE+lick for comparison (OPTO specific)
-# dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh=='PE+lick')].copy()
-   
-dfPlot= dfGroup.copy() 
+# First we need to subset only one outcome per level of analysis (trial)
+dfGroup = dfTidy.loc[dfTidy.groupby(levelOfAnalysis).cumcount() == 0].copy()
 
-#for each unique behavioral outcome, loop through and get count of trials in file
-#fill null counts with 0
-dfTemp=dfPlot.groupby(
-        ['fileID','trialType','trialOutcomeBeh'],dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
+#alternatively, this is the same as:
+# dfGroup= dfTidy[obsTrial]
 
+# declare hierarchical grouping variables (how should the observations be separated)
+groupHierarchy = groupHierarchyTrialType
 
-##calculate proportion for each trial type: num trials with outcome/total num trials of this type
+# here want percentage of each behavioral outcome per trialType per above groupers
+colToCalc = 'trialOutcomeBeh10s'
 
-trialCount= dfTemp.sum(axis=1)
+dfTemp = groupPercentCalc(dfGroup, levelOfAnalysis, groupHierarchy, colToCalc)
 
+#instead of 1 col per probability, melt into single column that matches up to outcome
+dfTemp= dfTemp.reset_index().melt(
+    id_vars=groupHierarchy, value_name='trialTypeOutcomeBehProb10s')
 
-outcomeProb= dfTemp.divide(dfTemp.sum(axis=1),axis=0)
+#merge to save as new column in dfTidy
+dfTidy = dfTidy.merge(dfTemp, how='left', on=groupHierarchy+[colToCalc])
 
-#melt() into single column w label
-dfTemp= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh',value_name='outcomeProbFile')
+#%% Calculate PE probability for each trialType
+#(combines all outcomes with PE vs all outcomes with no PE)
 
-#assign back to df by merging
-#TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
-# dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
-
-dfTidy= dfTidy.reset_index().merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh']).copy()
-
-#%% Same as above but probability of behavioral outcome within first 10s of trial 
-#This is normalized so is more informative than simple count of trials. 
-
-#calculate Proportion of trials with PE out of all trials for each trial type
-#can use nunique() to get count of unique trialIDs with specific PE outcome per file
-#given this, can calculate Probortion as #PE/#PE+#noPE
-   
-#subset data and save as intermediate variable dfGroup
-#get only one entry per trial
-dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
-
-#for Lick+laser sessions, retain only trials with PE+lick for comparison (OPTO specific)
-# dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh=='PE+lick')].copy()
-   
-dfPlot= dfGroup.copy() 
-
-#for each unique behavioral outcome, loop through and get count of trials in file
-#fill null counts with 0
-dfTemp=dfPlot.groupby(
-        ['fileID','trialType','trialOutcomeBeh10s'],dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
+dfTemp= dfTidy.copy()
 
 
-##calculate proportion for each trial type: num trials with outcome/total num trials of this type
-
-trialCount= dfTemp.sum(axis=1)
-
-
-outcomeProb= dfTemp.divide(dfTemp.sum(axis=1),axis=0)
-
-#melt() into single column w label
-dfTemp= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbFile10s')
-
-#assign back to df by merging
-#TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
-# dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
-
-dfTidy= dfTidy.reset_index().merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh10s']).copy()
+# declare hierarchical grouping variables (how should the observations be separated)
+groupHierarchy = groupHierarchyTrialType
 
 
-#%% PLOTS:
-    
-#%% Plot event counts across sessions (check for outlier sessions/event counts)
-sns.set_palette('tab20')  #good for plotting by many subj
+# here want percentage of each behavioral outcome per trialType per above groupers
+colToCalc = 'trialOutcomeBeh10s'
+
+dfTemp= percentPortEntryCalc(dfTemp, groupHierarchy, colToCalc)
+
+dfTemp= dfTemp.reset_index()
+
+dfTemp= dfTemp.rename(columns= {'PE':'trialTypePEProb10s'})
+
+dfTidy= dfTidy.merge(dfTemp, how='left', on=groupHierarchy)
+
+# # %% old code
+# # calculate Proportion of trials with PE out of all trials for each trial type
+# # can use nunique() to get count of unique trialIDs with specific PE outcome per file
+# # given this, can calculate Probortion as #PE/#PE+#noPE
+
+# # subset data and save as intermediate variable dfGroup
+# # get only one entry per trial
+# dfGroup = dfTidy.loc[dfTidy.groupby(
+#     ['fileID', 'trialID']).cumcount() == 0].copy()
+
+# # for Lick+laser sessions, retain only trials with PE+lick for comparison (OPTO specific)
+# # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh=='PE+lick')].copy()
+
+# dfPlot = dfGroup.copy()
+
+# # for each unique behavioral outcome, loop through and get count of trials in file
+# # fill null counts with 0
+# dfTemp = dfPlot.groupby(
+#     ['fileID', 'trialType', 'trialOutcomeBeh'], dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
 
 
-#I know that lick count was absurdly high (>9000) due to liquid shorting lickometer on at least 1 session
-#visualize event counts by session to ID outliers
-#not interested in some events (e.g. # cues is fixed), remove those
-dfPlot= dfTidy.loc[(dfTidy.eventType!='NStime') & (dfTidy.eventType!='DStime') & (dfTidy.eventType!='PExEst') & (dfTidy.eventType!='laserOffTime')].copy()
+# # calculate proportion for each trial type: num trials with outcome/total num trials of this type
 
-#count of each event type by date and subj
-dfPlot= dfPlot.groupby(['subject','date', 'eventType'])['eventTime'].count().reset_index()
+# trialCount = dfTemp.sum(axis=1)
 
-g= sns.relplot(data=dfPlot, col='eventType', x='date', y='eventTime', hue='subject', kind='line', style='subject', markers=True, dashes=False,
+
+# outcomeProb = dfTemp.divide(dfTemp.sum(axis=1), axis=0)
+
+# # melt() into single column w label
+# dfTemp = outcomeProb.reset_index().melt(id_vars=[
+#     'fileID', 'trialType'], var_name='trialOutcomeBeh', value_name='outcomeProbFile')
+
+# # assign back to df by merging
+# # TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
+# # dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
+
+# dfTidy = dfTidy.reset_index().merge(
+#     dfTemp, 'left', on=['fileID', 'trialType', 'trialOutcomeBeh']).copy()
+
+# # %% Same as above but probability of behavioral outcome within first 10s of trial
+# # This is normalized so is more informative than simple count of trials.
+
+# # calculate Proportion of trials with PE out of all trials for each trial type
+# # can use nunique() to get count of unique trialIDs with specific PE outcome per file
+# # given this, can calculate Probortion as #PE/#PE+#noPE
+
+# # subset data and save as intermediate variable dfGroup
+# # get only one entry per trial
+# dfGroup = dfTidy.loc[dfTidy.groupby(
+#     ['fileID', 'trialID']).cumcount() == 0].copy()
+
+# # for Lick+laser sessions, retain only trials with PE+lick for comparison (OPTO specific)
+# # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh=='PE+lick')].copy()
+
+# dfPlot = dfGroup.copy()
+
+# # for each unique behavioral outcome, loop through and get count of trials in file
+# # fill null counts with 0
+# dfTemp = dfPlot.groupby(
+#     ['fileID', 'trialType', 'trialOutcomeBeh10s'], dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
+
+
+# # calculate proportion for each trial type: num trials with outcome/total num trials of this type
+
+# trialCount = dfTemp.sum(axis=1)
+
+
+# outcomeProb = dfTemp.divide(dfTemp.sum(axis=1), axis=0)
+
+# # melt() into single column w label
+# dfTemp = outcomeProb.reset_index().melt(id_vars=[
+#     'fileID', 'trialType'], var_name='trialOutcomeBeh10s', value_name='trialTypeOutcomeBehProb10s')
+
+# # assign back to df by merging
+# # TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
+# # dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
+
+# dfTidy = dfTidy.reset_index().merge(
+#     dfTemp, 'left', on=['fileID', 'trialType', 'trialOutcomeBeh10s']).copy()
+
+
+
+
+# %%----- PLOTS:
+
+# %% Plot event counts across sessions (check for outlier sessions/event counts)
+sns.set_palette('tab20')  # good for plotting by many subj
+
+
+# I know that lick count was absurdly high (>9000) due to liquid shorting lickometer on at least 1 session
+# visualize event counts by session to ID outliers
+# not interested in some events (e.g. # cues is fixed), remove those
+dfPlot = dfTidy.loc[(dfTidy.eventType != 'NStime') & (dfTidy.eventType != 'DStime') & (
+    dfTidy.eventType != 'PExEst') & (dfTidy.eventType != 'laserOffTime')].copy()
+
+# count of each event type by date and subj
+dfPlot = dfPlot.groupby(['subject', 'date', 'eventType'])[
+    'eventTime'].count().reset_index()
+
+g = sns.relplot(data=dfPlot, col='eventType', x='date', y='eventTime', hue='subject', kind='line', style='subject', markers=True, dashes=False,
                 facet_kws={'sharey': False, 'sharex': True})
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('Total event count across sessions by type- check for outliers')
 g.set_ylabels('# of events')
 g.set_ylabels('session')
 
-saveFigCustom(g, 'individual_eventCounts_line')
+saveFigCustom(g, 'individual_eventCounts_line', savePath)
 
-#%% Plot PE probability by trialType (within 10s of trial start)
-sns.set_palette('Paired') #default  #tab10
-#subset data and save as intermediate variable dfGroup
-dfGroup= dfTidy.copy()
- 
+# %% Plot PE probability by trialType (within 10s of trial start)
+sns.set_palette('Paired')  # default  #tab10
 
-#moving higher in code
-# #cumulative count of training day within-stage (so we can normalize between subjects appropriately)
-# dfGroup= dfTidy.loc[dfTidy.groupby('fileID').transform('cumcount')==0,:].copy() #one per session
-# dfTidy['trainDayThisStage']=  dfGroup.groupby(['subject', 'stage']).transform('cumcount')
-# dfTidy.trainDayThisStage= dfTidy.groupby(['fileID'])['trainDayThisStage'].fillna(method='ffill').copy()
+# subset data corresponding to apprpriate level of observation for variable
+dfPlot = dfTidy.loc[obsTrialType].copy()
 
+# define subset further based on stage, trialTypes, eventTypes
+stagesToPlot= dfPlot.stage.unique()
+trialTypesToPlot= ['DStime','NStime']
+eventsToPlot= dfPlot.eventType.unique()
 
+##use custom fxn to subset
+# dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
+# g = sns.relplot(data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', hue='subject',
+#                 row='trialType', kind='line', style='stage', markers=True, dashes=True)
+# g.map(plt.axhline, y=criteriaDS, color=".2",
+#       linewidth=3, dashes=(3, 1), zorder=0)
 
-#select data
-#all trialTypes excluding ITI     
-# dfPlot = dfGroup[(dfGroup.trialType != 'ITI')].copy()
+# g.map(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', color='black')
 
-#all trialTypes excluding ITI     
-# dfPlot = dfGroup[(dfGroup.trialType != 'ITI') & (dfGroup.trialType !='Pre-Cue')].copy()
-# trialOrderPlot= ['DStime','DStime_laser','NStime','NStime_laser']
-
-#Only DS & NS trialTypes
-dfGroup= dfTidy.copy()
-dfPlot = dfGroup[(dfGroup.trialType == 'DStime') | (dfGroup.trialType =='NStime')].copy()
-trialOrderPlot= ['DStime','NStime']
+# saveFigCustom(g, 'training_peProb', savePath)
 
 
-#define stages for 'early' and 'late' subplotting
-#TODO: consider groupby() stage and counting day within each stage to get the first x sessions of stage 5 compared to last?
-earlyStages= ['Stage 1','Stage 2','Stage 3','Stage 4', 'continuous reinforcement', 'RI 15s',' RI 30s']
-lateStages= ['Stage 5', 'Stage 5+tether', 'RI 60s']
-# earlyStages= ['Stage 4']
-# lateStages= ['Stage 5+tether']
-testStages= ['Cue Manipulation', 'test']
-dfPlot['stageType']= pd.NA #dfPlot.stage.astype('str').copy()
+#DS PE Prob+latency in 1 fig
 
-dfPlot.loc[dfPlot.stage.isin(earlyStages), 'stageType']= 'early'
-dfPlot.loc[dfPlot.stage.isin(lateStages), 'stageType']= 'late'
-dfPlot.loc[dfPlot.stage.isin(testStages), 'stageType']= 'test'
+dfPlot= dfTidy.copy()
 
-dfGroup= dfTidy.loc[dfTidy.groupby('fileID').transform('cumcount')==0,:].copy() #one per session
-test= dfGroup.groupby(['subject', 'stage']).transform('cumcount')
-
-# dfPlot.stageType= dfPlot.stageType.astype('category')
-
-#exclude test sessions
-# dfPlot= dfPlot.loc[dfPlot.stageType != 'test',:].copy()
+#subset with customFunction
+stagesToPlot= dfPlot.stage.unique()
+trialTypesToPlot= ['DStime']
+eventsToPlot= ['PEtime']
+dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
 
- 
-#get only PE outcomes
-# dfPlot.reset_index(inplace=True)
-dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE') | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
- 
-#since we calculated aggregated proportion across all trials in session,
-#take only first index. Otherwise repeated observations are redundant
-dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh10s']).first().copy()
- 
-#sum together both PE and PE+lick for total overall PE prob
-# dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
- 
-dfPlot['probPE']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile10s'].sum().copy()
-
-#get an aggregated x axis for files per subject
-fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
- 
-#since grouping PE and PE+lick, we still have redundant observations
-#retain only 1 per trial type per file
-dfPlot= dfPlot.reset_index().loc[fileAgg]
-
-#subjects may run different session types on same day (e.g. different laserDur), so shouldn't plot simply by trainDayThisStage across subjects
-#individual plots by trainDayThisStage is ok
-# sns.set_palette('Paired')
-
-#a few examples of options here
-# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='subject', markers=True, dashes=False)
-# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', size='stage')
-# g= sns.relplot(data= dfPlot, x='trainDayThisStage', y='probPE', hue='subject', kind='line', style='trialType', markers=True)
-
-# g= sns.relplot(data= dfPlot, x='trainDayThisStage', y='probPE', hue='subject', kind='line', style='trialType', markers=True, row='stage')
-# g.set_titles('{row_name}')
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
-g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-g.fig.suptitle('Evolution of the probPE in subjects by trialType')
-saveFigCustom(g, 'training_peProb_10s_individual')
+#subset data at correct level of observation for variable    
+groupHierarchy= groupHierarchyTrialType
+dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
 
 
-#virus , sex facet 
-#only DS and NS
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='sex', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
-g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-saveFigCustom(g, 'training_peProb_10s_virus+sex')
+#subset data further to correct level of observation for variable
+dfPlot2= dfTidy[obsEventType].copy()
 
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='sex', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
-g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-saveFigCustom(g, 'training_peProb_10s_virus+sex_trainDay')
+#subset with customFunction
+stagesToPlot= dfPlot2.stage.unique()
+trialTypesToPlot= ['DStime']
+eventsToPlot= ['PEtime']
+dfPlot2= subsetData(dfPlot2, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
-g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-saveFigCustom(g, 'training_peProb_10s_virus')
+#subset data further to correct level of observation
+groupHierarchy= groupHierarchyEventType
+dfPlot2= subsetLevelObs(dfPlot2, groupHierarchy)
 
-#facet early v late stages #for iris like christelle's opto plot
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='stageType', hue='trialType', hue_order=trialOrderPlot, kind='line', style='sex', markers=True, dashes=True
-               , facet_kws={'sharey': True, 'sharex': False}, palette= 'tab10')
-g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-saveFigCustom(g, 'training_peProb_10s_early_vs_late_trainDay')
+#make figure
+f, ax= plt.subplots(2,1)
 
+g= sns.lineplot(ax=ax[0], data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', hue='subject', style='stage')
+ax[0].axhline(y=criteriaDS, color=".2", linewidth=3, dashes=(3, 1), zorder=0)
+g.set(title=('Training: 10s PE probability, DS trials'))
+g.set( ylabel='PE probability (10s)')
 
-#training across stages
-#%% define specific stages to plot!
-stagesToPlot= pd.Series(dfTidy.loc[dfTidy.stage.notnull(),'stage'].unique())
-stagesToPlot= stagesToPlot.loc[((stagesToPlot.str.contains('5')) | (stagesToPlot.str.contains('Manipulation')))]
+g= sns.lineplot(ax=ax[1], data=dfPlot2, x='trainDay', y='eventLatency', hue='subject', style='trialType')
+g.set(title=('Training: PE latency, DS trials'))
+g.set( ylabel='latency to first PE (s)')
 
-dfPlot= dfPlot.loc[dfPlot.stage.isin(stagesToPlot)].copy()
-dfPlot.stage= dfPlot.stage.cat.remove_unused_categories()
+saveFigCustom(f, 'training_PE_Prob+Latency_DS', savePath)
 
 
 # #define specific trialTypes to plot!
@@ -408,88 +521,96 @@ dfPlot.stage= dfPlot.stage.cat.remove_unused_categories()
 # dfPlot= dfPlot.loc[dfPlot.trialType.isin(trialTypesToPlot)]
 # dfPlot.trialType= dfTidy.trialType.cat.remove_unused_categories()
 
-#late stages only
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
-g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-g.fig.suptitle('Evolution of the probPE in subjects by trialType')
-saveFigCustom(g, 'training_peProb_10s_lateStages_individual')
+## late stages only
+# g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', col='subject', col_wrap=4,
+#                 hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+# g.map(plt.axhline, y=criteriaDS, color=".2",
+#       linewidth=3, dashes=(3, 1), zorder=0)
+# g.fig.suptitle('Evolution of the trialTypeOutcomeBehProb10s in subjects by trialType')
+# saveFigCustom(g, 'training_peProb_10s_lateStages_individual')
 
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
-g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-g.fig.suptitle('Evolution of the probPE in subjects by trialType')
-saveFigCustom(g, 'training_peProb_10s_lateStages_individual_trainDay')
+# g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', col='subject', col_wrap=4,
+#                 hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+# g.map(plt.axhline, y=criteriaDS, color=".2",
+#       linewidth=3, dashes=(3, 1), zorder=0)
+# g.fig.suptitle('Evolution of the trialTypeOutcomeBehProb10s in subjects by trialType')
+# saveFigCustom(g, 'training_peProb_10s_lateStages_individual_trainDay')
 
 
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='stage', col='virus', hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
-g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-saveFigCustom(g, 'training_peProb_10s_lateStages_virus')
+# g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', row='stage', col='virus',
+#                 hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
+# g.map(plt.axhline, y=criteriaDS, color=".2",
+#       linewidth=3, dashes=(3, 1), zorder=0)
+# saveFigCustom(g, 'training_peProb_10s_lateStages_virus')
 
 
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='stage', col='virus', hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
-g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-saveFigCustom(g, 'training_peProb_10s_lateStages_virus_trainDay')
+# g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', row='stage', col='virus',
+#                 hue='trialType', hue_order=trialOrder, kind='line', style='virus', markers=True, dashes=True)
+# g.map(plt.axhline, y=criteriaDS, color=".2",
+#       linewidth=3, dashes=(3, 1), zorder=0)
+# saveFigCustom(g, 'training_peProb_10s_lateStages_virus_trainDay')
 
-# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='trialType', hue='virus', kind='line', style='virus', markers=True, dashes=False)
+# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', row='trialType', hue='virus', kind='line', style='virus', markers=True, dashes=False)
 # g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 
-#individual subj lines
-# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='probPE', row='trialType', units='subject', estimator=None, hue='virus', kind='line', style='stage', markers=True, dashes=False, palette='tab10')
+# individual subj lines
+# g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', row='trialType', units='subject', estimator=None, hue='virus', kind='line', style='stage', markers=True, dashes=False, palette='tab10')
 # g.map(plt.axhline, y=criteriaDS, color=".2", linewidth=3, dashes=(3,1), zorder=0)
-# g.fig.suptitle('Evolution of the probPE in subjects by trialType')
+# g.fig.suptitle('Evolution of the trialTypeOutcomeBehProb10s in subjects by trialType')
 
 
-#% TODO: ECDF of behavioral outcome (PE) would be nice to view compared to latency ECDFs?
+# % TODO: ECDF of behavioral outcome (PE) would be nice to view compared to latency ECDFs?
 
-#%% Plot PE latency by trialType
-            
-#select data corresponding to first PE from valid trials, excluding ITI
-dfPlot = dfTidy[(dfTidy.trialType!='ITI') & (dfTidy.trialPE10s == 0)].copy()
+# %% Plot PE latency by trialType
+
+# select data corresponding to first PE from valid trials, excluding ITI
+dfPlot = dfTidy[(dfTidy.trialType != 'ITI') & (dfTidy.trialPE10s == 0)].copy()
 
 # PE latency: virus
 g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
-                row='virus', kind='ecdf', hue_order= trialOrder)
+                row='virus', kind='ecdf', hue_order=trialOrder)
 g.fig.suptitle('First PE latency by trial type')
 g.set_ylabels('First PE latency from epoch start (s)')
-saveFigCustom(g, 'virus_peLatency_10s_ecdf')
+saveFigCustom(g, 'virus_peLatency_10s_ecdf',savePath)
 
-  #PE latency:  individual subj 
-g=sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',hue='trialType', kind='ecdf', hue_order=trialOrder)
+# PE latency:  individual subj
+g = sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',
+                hue='trialType', kind='ecdf', hue_order=trialOrder)
 g.fig.suptitle('First PE latency by trial type (within 10s)')
 g.set_ylabels('Probability: first PE latency from epoch start')
-saveFigCustom(g, 'individual_peLatency_10s_ecdf')
+saveFigCustom(g, 'individual_peLatency_10s_ecdf',savePath)
 
+# training across stages
 
- #training across stages
-dfPlot.eventLatency= dfPlot.eventLatency.astype('float') #TODO: correct dtypes early in code
-
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', col='subject', col_wrap=4,
+                hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.fig.suptitle('Evolution of first PE latency by trialType')
-saveFigCustom(g, 'training_peLatency_10s_individual')
+saveFigCustom(g, 'training_peLatency_10s_individual',savePath)
 
 
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus',
+                hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.fig.suptitle('Evolution of first PE latency by trialType')
-saveFigCustom(g, 'training_peLatency_10s_virus+sex')
+saveFigCustom(g, 'training_peLatency_10s_virus+sex',savePath)
 
 
 # late stages plots
-dfPlot= dfPlot.loc[dfPlot.stage.isin(stagesToPlot)]
+dfPlot = dfPlot.loc[dfPlot.stage.isin(stagesToPlot)]
 
 g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
-                row='virus', col='stage', kind='ecdf', hue_order= trialOrder)
+                row='virus', col='stage', kind='ecdf', hue_order=trialOrder)
 g.fig.suptitle('First PE latency by trial type, late stages')
 g.set_ylabels('Probability: first PE latency from epoch start')
-saveFigCustom(g, 'dist_peLatency_10s_lateStages_virus_ecdf')
+saveFigCustom(g, 'dist_peLatency_10s_lateStages_virus_ecdf',savePath)
 
 
-g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus', hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus',
+                hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
 g.fig.suptitle('Evolution of first PE latency by trialType, late stages')
-saveFigCustom(g, 'training_peLatency_10s_lateStages_virus')
+saveFigCustom(g, 'training_peLatency_10s_lateStages_virus',savePath)
 
 
-
-
-#%% TODO: Custom Ridge Plot to show changes in distribution over time
+# %% TODO: Custom Ridge Plot to show changes in distribution over time
 
 # # Initialize the FacetGrid object
 # pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
@@ -525,365 +646,88 @@ saveFigCustom(g, 'training_peLatency_10s_lateStages_virus')
 # g.despine(bottom=True, left=True)
 
 
-#%% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType (within 10s)
+# %% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType (within 10s)
 # should represent "baseline" behavior  without laser
-      
-#trial-based, ignoring ITI
-dfPlot = dfTidy[(dfTidy.trialType !='ITI')].copy()
-#trial-based, including ITI
+
+# trial-based, ignoring ITI
+dfPlot = dfTidy[(dfTidy.trialType != 'ITI')].copy()
+# trial-based, including ITI
 # dfPlot= dfTidy.copy()
 
-#All subj distribution of ILI (inter-lick interval)
-#only include first trialLick ==0
-dfPlot = dfPlot[dfPlot.trialLick10s==0].copy()
+# All subj distribution of ILI (inter-lick interval)
+# only include first trialLick ==0
+dfPlot = dfPlot[dfPlot.trialLick10s == 0].copy()
 
-#box- all subj
-g= sns.catplot(data=dfPlot, y='eventLatency', x='trialType',  kind='box', order=trialOrder)
+# box- all subj
+g = sns.catplot(data=dfPlot, y='eventLatency',
+                x='trialType',  kind='box', order=trialOrder)
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('First Lick latencies by trial type; all subj')
 g.set_ylabels('lick latency from epoch start (s)')
-saveFigCustom(g, 'all_lickLatency_10s_box')
+saveFigCustom(g, 'all_lickLatency_10s_box',savePath)
 
 
-
-#ecdf- all subj'[]
-g= sns.displot(data=dfPlot, x='eventLatency', hue='trialType',  kind='ecdf', hue_order=trialOrder)
+# ecdf- all subj'[]
+g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
+                kind='ecdf', hue_order=trialOrder)
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('First Lick latencies by trial type; all subj')
 g.set_xlabels('lick latency from epoch start (s)')
-saveFigCustom(g, 'all_lickLatency_10s_ecdf')
+saveFigCustom(g, 'all_lickLatency_10s_ecdf',savePath)
 
 
-
-#Individual distribution of ILI (inter-lick interval)
-#only include trialLick~=nan 
-#bar- individual subj
-g= sns.catplot(data=dfPlot, y='eventLatency', x='subject', hue='trialType',  kind='bar', hue_order=trialOrder)
+# Individual distribution of ILI (inter-lick interval)
+# only include trialLick~=nan
+# bar- individual subj
+g = sns.catplot(data=dfPlot, y='eventLatency', x='subject',
+                hue='trialType',  kind='bar', hue_order=trialOrder)
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('First Lick latencies by trial type; individual subj')
 g.set_ylabels('lick latency from epoch start (s)')
-saveFigCustom(g, 'individual_lickLatency_10s_bar')
+saveFigCustom(g, 'individual_lickLatency_10s_bar',savePath)
 
 
-    
 # %% Plot inter-lick interval (ILI) by trialType (within 10s)
 
-#trial-based, ignoring ITI
-dfPlot = dfTidy[(dfTidy.trialType!= 'ITI')].copy()
-#trial-based, including ITI
+# trial-based, ignoring ITI
+dfPlot = dfTidy[(dfTidy.trialType != 'ITI')].copy()
+# trial-based, including ITI
 # dfPlot = dfTidy.copy()
 
-#All subj distribution of ILI (inter-lick interval)
-#only include trialLick~=nan (lick timestamps within trials)
+# All subj distribution of ILI (inter-lick interval)
+# only include trialLick~=nan (lick timestamps within trials)
 dfPlot = dfPlot[dfPlot.trialLick10s.notnull()].copy()
 
-#calculate ILI by taking diff() of latencies
-ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
+# calculate ILI by taking diff() of latencies
+ili = dfPlot.groupby(['fileID', 'trialID', 'trialType'])['eventLatency'].diff()
 
-#ecdf- all subj
-g= sns.displot(data=dfPlot, x=ili, hue='trialType',  kind='ecdf', hue_order=trialOrder)
+# ecdf- all subj
+g = sns.displot(data=dfPlot, x=ili, hue='trialType',
+                kind='ecdf', hue_order=trialOrder)
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('ILI by trial type; all subj')
 g.set_xlabels('ILI (s)')
-g.set(xlim=(0,1))
-saveFigCustom(g, 'all_ILI_ecdf')
+g.set(xlim=(0, 1))
+saveFigCustom(g, 'all_ILI_ecdf',savePath)
 
 
-
-#Individual distribution of ILI (inter-lick interval)
-#only include trialLick~=nan
+# Individual distribution of ILI (inter-lick interval)
+# only include trialLick~=nan
 dfPlot = dfPlot[dfPlot.trialLick10s.notnull()].copy()
-#calculate ILI by taking diff() of latencies
-ili= dfPlot.groupby(['fileID','trialID','trialType'])['eventLatency'].diff()
-#bar- individual subj
-g= sns.catplot(data=dfPlot, y=ili, x='subject', hue='trialType',  kind='bar', hue_order=trialOrder)
+# calculate ILI by taking diff() of latencies
+ili = dfPlot.groupby(['fileID', 'trialID', 'trialType'])['eventLatency'].diff()
+# bar- individual subj
+g = sns.catplot(data=dfPlot, y=ili, x='subject',
+                hue='trialType',  kind='bar', hue_order=trialOrder)
 g.fig.subplots_adjust(top=0.9)  # adjust the figure for title
 g.fig.suptitle('ILI by trial type; individual subj')
 g.set_ylabels('ILI (s)')
-g.set(ylim=(0,1))
-saveFigCustom(g, 'individual_ILI_10s_bar')
+g.set(ylim=(0, 1))
+saveFigCustom(g, 'individual_ILI_10s_bar',savePath)
 
 
-#%% trying stuff with data hierarchy grouping
 
-  # by_many<- group_by(py_data, virus, sex, stage, laserDur, subject, fileID, trialType, trialOutcomeBeh10s)
-
-groupers= ['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType']
-
-#hierarchy should be something like groupVars -> stageVars -> subjVars-> sessionVars -> trainDayThisStage -> fileID -> trialType/trialVars -> trialID -> eventVars
-
-#seems that the grouping here is using all possible combos (e.g. creating entries for F Sex even for subjects that are M)
-dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'])
-
-#observed=True parameter only includes observed categories
-# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'], observed=True)
-
-
-dfGroupComp= pd.DataFrame()
-dfGroupComp['trialCount']= dfGroup['trialID'].nunique()
-dfGroupComp.reset_index(inplace=True)
-
-# dfGroupComp2= dfTidy.copy()
-# dfGroupComp2['trialCount']= dfGroup['trialID'].transform('nunique')
-
-
-sns.catplot(data= dfGroupComp, row='virus', col='sex', x='stage', y='trialCount', hue='trialType', hue_order=trialOrder, kind='bar')
-
-
-#^this was just example, now do something more relevant to behavior analysis
-
-dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'])
-
-dfGroupComp= pd.DataFrame()
-# dfGroupComp['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].value_counts()
-# dfGroupComp['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].transform(pd.Series.mode)
-# dfGroupComp['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].transform(dfTidy.trialOutcomeBeh10s.mode)
-
-
-# dfGroupComp.reset_index(inplace=True)
-
-
-# sns.catplot(data= dfGroupComp, row='virus', col='sex', x='trialOutcomeBeh10s', y='outcomeBehCount', hue='trialType', hue_order=trialOrder, kind='bar')
-
-
-#^ can calculate proportion more efficiently?
-# dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType'])
-
-#subset to one event per trial, then groupby()
-dfGroup= dfTidy.copy().loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].groupby(groupers)
-
-dfGroupComp= pd.DataFrame()
-dfGroupComp['trialCount']= dfGroup['trialID'].nunique()
-dfGroupComp= dfGroupComp.reset_index(drop=False).set_index(groupers)
-
-
-
-dfGroupComp2= pd.DataFrame()
-dfGroupComp2['outcomeBehCount']= dfGroup['trialOutcomeBeh10s'].value_counts()
-dfGroupComp2= dfGroupComp2.reset_index(drop=False).set_index(groupers)
-
-#issue now would be dividing appropriately with non-unique index
-#could try using transform() operation?
-# dfGroupComp2['outcomeProb']= dfGroupComp2.outcomeBehCount/dfGroupComp.trialCount
-
-#do division while indexed by groupers, then reset index for reassignment of result
-outcomeProb= dfGroupComp2.outcomeBehCount/dfGroupComp.trialCount
-
-
-
-#can imagine doing peri-event analyses like so
-dfGroup= dfTidy.copy().groupby(['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType', 'eventType'])
-
-dfGroupComp= pd.DataFrame()
-dfGroupComp['eventOnsets']= dfGroup['eventTime'].value_counts()
-
-
-# # %% 12/9/21 trying proportion fxn with groupby- not worth it probably, just use crosstabs below
-# # df['sales'] / df.groupby('state')['sales'].transform('sum')
-
-# groupers= ['virus','sex','stage','laserDur', 'subject', 'trainDayThisStage', 'trialType']#, 'eventType']
-
-# #subset to one event per trial per file
-# dfTemp= dfTidy.copy().loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0]
-
-# #now groupby
-# dfGroup= dfTemp.groupby(groupers)
-# # dfGroup= dfTemp.groupby(groupers, as_index=False)
-
-# test= dfGroup['trialID'].count().reset_index(name ='countThisTrialType')
-# # 
-# # dfTemp['countThisTrialType']= dfGroup['trialID'].transform('count')
-
-# # def groupPercentCalc(dfGrouped, columnToCalc)
-    
-
-
-#%%  12/8/21 working on proportion fxn
-
-#example1 might work for binary coded outcomes but not ideal
-# df_overdue = df.groupby(['org']).apply(lambda dft: pd.Series({'is_overdue': dft.is_overdue.sum(), 'not_overdue': (~dft.is_overdue).sum()}))
-# df_overdue['proportion_overdue'] = df_overdue['is_overdue'] / (df_overdue['not_overdue'] + df_overdue['is_overdue'])
-
-# # print(df_overdue)
-# df_overdue = dfTidy.groupby(groupers).apply(lambda dft: pd.Series({'thisOutcome': dft.trialOutcomeBeh10s.sum()}))
-
-# # df_overdue = dfTidy.groupby(groupers).apply(lambda dft: pd.Series({'thisOutcome': dft.trialOutcomeBeh10s.sum(), 'notThisOutcome': (~dft.trialOutcomeBeh10s).sum()}))
-# df_overdue['proportion_overdue'] = df_overdue['is_overdue'] / (df_overdue['not_overdue'] + df_overdue['is_overdue'])
-
-# print(df_overdue)
-
-# example2 with crosstab
-# d = {
-#   'id': [1, 2, 3, 4, 5], 
-#   'is_overdue': [True, False, True, True, False],
-#   'org': ['A81001', 'A81002', 'A81001', 'A81002', 'A81003']
-# }
-# df = pd.DataFrame(data=d)
-
-# result = pd.crosstab(index=df['org'], columns=df['is_overdue'], margins=True)
-# result = result.rename(columns={True:'is_overdue', False:'not overdue'})
-# result['proportion'] = result['is_overdue']/result['All']*100
-# print(result)
-# result = pd.crosstab(index=dfTidy[groupers], columns=dfTidy['trialOutcomeBeh10s'], margins=True)
-# result = pd.crosstab(index=groupers, columns=dfTidy['trialOutcomeBeh10s'], margins=True)
-
-
-#First we need to subset only one outcome per trial
-dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
-
-#declare hierarchical grouping variables
-groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType']
-
-#let's make a variable to remember our hierarchical index for crosstabs, just because this works a bit differently than other methods
-#array of columns
-#TODO: could automate this by looping through groupers and adding to list
-xTabInd= []
-for grouper in groupers:
-    # xTabInd2= np.append(xTabInd2, pd.Series([dfGroup[grouper]])) 
-    # xTabInd2= 
-    # xTabInd2.append(pd.Series([dfGroup[grouper]])) 
-    xTabInd.append(dfGroup[grouper]) 
-
-
-# xTabInd= [dfGroup['virus'],dfGroup['sex'],dfGroup['stage'],dfGroup['laserDur'],
-# dfGroup['subject'],dfGroup['trainDayThisStage'], dfGroup['trialType']]
-
-# result= pd.crosstab(index=xTabInd, columns=dfTidy['trialOutcomeBeh10s'], margins=True)
-
-# result = result.rename(columns={True:'is_overdue', False:'not overdue'})
-# result['proportion'] = result['is_overdue']/result['All']*100
-# print(result)
-
-
-#%% ex3- Works pretty well!
-# pd.crosstab(df['Approved'],df['Gender']).apply(lambda r: r/r.sum(), axis=1)
-# set margins=False so that a summed "All" column/row aren't created
-result= pd.crosstab(index=xTabInd, columns=dfGroup['trialOutcomeBeh10s'], margins=False)
-
-result2= result.apply(lambda r: r/r.sum(), axis=1)
-
-#above method should be identical to results if we crosstab with Normalize across rows
-#so the lambda function in this case isn't actually necessary
-result0= pd.crosstab(index=xTabInd, columns=dfGroup['trialOutcomeBeh10s'], margins=False, normalize='index')
-
-print(all(result2==result0))
-
-#now we've calculated proportion appropriately based on hierarchical structure,
-#could go even further and group/aggregate based on groupers?
-
-#between subjects (remove groupby subj)
-#could calculate a between subjects mean using groupby .mean()
-groupersNoSubj= ['virus', 'sex', 'stage', 'laserDur', 'trainDayThisStage', 'trialType']
-#including only observed groups here
-result3= result0.groupby(groupers, observed=True).mean()
-
-result4= result3.reset_index()
-
-g= sns.relplot(data=result4, x='trainDayThisStage', y='PE', hue='trialType', hue_order=trialOrder, kind='line', row='stage')
-g.fig.suptitle('testing crosstab aggregation')
-
-#next step could be to merge back into dataframe?
-dfTidy2= dfTidy.merge(result0, on=groupers).copy()
-
-#combine the PE outcomes
-dfTidy2['PEsum']=dfTidy2['PE']+dfTidy2['PE+lick']
-
-#subsample for specific plotting/analysis
-dfPlot= dfTidy2.loc[dfTidy2.stage=='Cue Manipulation'].copy()
-dfPlot= dfPlot.loc[dfPlot.trialType!='ITI']
-
-#again we need to isolate observations since this is a single measure aggregated per trialType per file
-dfPlot= dfPlot.loc[dfPlot.groupby(['fileID','trialType']).cumcount()==0]
-
-# g= sns.relplot(data=dfPlot, units='subject', estimator=None, x='trainDayThisStage', y='PEsum', row='virus', hue='trialType', hue_order=trialOrder, kind='line') 
-g= sns.relplot(data=dfPlot, x= 'trainDayThisStage', y='PEsum', row='virus', hue='trialType', hue_order=trialOrder, kind='line')
-g.fig.suptitle('testing merged crosstab results')
-
-#now let's look aggregated across all laserDur
-g= sns.catplot(data=dfPlot, x= 'laserDur', y='PEsum', row='virus', hue='trialType', hue_order=trialOrder, kind='point')
-g.fig.suptitle('testing merged crosstab results')
-
-# dfGroup['trialOutcomeBeh10s'].transform('count')
-
-# dfGroupComp.reset_index(inplace=True, drop=False)
-# outcomeProb= outcomeProb.reset_index().copy()
-
-# dfGroupComp['outcomeProb']= outcomeProb.copy()
-
-#%% 12/9/21 Turn above into function
-#seems to be a good template for building more custom functions later on
-
-def groupPercentCalc(df, levelOfAnalysis, groupHierarchy, colToCalc):
-    #First we need to subset only one observation per level of analysis
-    dfSubset= df.loc[df.groupby(levelOfAnalysis).cumcount()==0].copy()
-      
-    #build a list of groupers to be used as hierarchical index for crosstabs, just because this works a bit differently than other methods
-    xTabInd= []
-    for grouper in groupHierarchy:
-        xTabInd.append(dfSubset[grouper]) 
-    
-    result= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=False, normalize='index')
-    return result
-
-
-#Example:
-#behavioralOutcome/trialType: out of all vtrials of this trialType, how many had this observed behavioral outcome?
-
-#First we need to subset only one outcome per trial
-dfGroup= dfTidy.loc[dfTidy.groupby(['fileID','trialID']).cumcount()==0].copy()
-
-#declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
-level= ['fileID','trialID']
-
-#declare hierarchical grouping variables (how should the observations be separated)
-groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType']
-
-#here want percentage of each behavioral outcome per trialType per above groupers
-observation= 'trialOutcomeBeh10s'
-
-
-test= groupPercentCalc(dfTidy, level, groupers, observation)
-
-#%% 12/9/21 custom fxn for calculating probability of Port entry 
-
-
-def percentPortEntryCalc(df, groupHierarchy, colToCalc):
-    #First we need to subset only one observation per level of analysis
-    dfSubset= df.loc[df.groupby(['fileID','trialID']).cumcount()==0].copy()
-      
-    #build a list of groupers to be used as hierarchical index for crosstabs, just because this works a bit differently than other methods
-    xTabInd= []
-    for grouper in groupHierarchy:
-        xTabInd.append(dfSubset[grouper]) 
-    
-    #combine all outcomes with PE before making crosstab and running calculation
-    dfSubset.loc[((dfSubset[colToCalc]=='PE') | (dfSubset[colToCalc]=='PE+lick')),colToCalc]= 'PE'
-    dfSubset.loc[((dfSubset[colToCalc]=='noPE') | (dfSubset[colToCalc]=='noPE+lick')),colToCalc]= 'noPE'
-
-    
-    result= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=False, normalize='index')
-        
-    return result
-
-#Example:
-
-#declare hierarchical grouping variables (how should observations be separated)
-# groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'trainDayThisStage', 'trialType'] #Opto
-groupers= ['virus', 'sex', 'stage', 'subject', 'trainDayThisStage', 'trialType'] #Photometry
-
-
-#here want percentage of each behavioral outcome per trialType per above groupers
-observation= 'trialOutcomeBeh10s'
-
-test= percentPortEntryCalc(dfTidy, groupers, observation)
-
-#test visualization
-dfPlot= test.reset_index().copy()
-g= sns.relplot(data=dfPlot, x= 'trainDayThisStage', y='PE', row='stage', hue='trialType', hue_order=trialOrder, kind='line')
-g.fig.suptitle('PE probability: testing function results')
-
-
-#%% Illustration of groupby() calculations based on date vs trainDayThisStage vs normalized trainDay hierarchies
+# %% Illustration of groupby() calculations based on date vs trainDayThisStage vs normalized trainDay hierarchies
 
 # #declare hierarchical grouping variables (how should observations be separated)
 # # groupers= ['virus', 'sex', 'stage', 'laserDur', 'subject', 'date', 'trialType'] #Opto
@@ -933,15 +777,15 @@ g.fig.suptitle('PE probability: testing function results')
 # g.fig.suptitle('PE probability: computed by normalized trainDayThisStage')
 
 
-#%% Save dfTidy so it can be loaded quickly for subesequent analysis
+# %% Save dfTidy so it can be loaded quickly for subesequent analysis
 
-dfTidyAnalyzed= dfTidy.copy()
+dfTidyAnalyzed = dfTidy.copy()
 
-savePath= r'./_output/' #r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python' 
+savePath = r'./_output/'  # r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python'
 
 print('saving dfTidyAnalyzed to file')
 
-#Save as pickel
+# Save as pickel
 dfTidyAnalyzed.to_pickle(savePath+'dfTidyAnalyzed.pkl')
 
 
@@ -949,9 +793,9 @@ dfTidyAnalyzed.to_pickle(savePath+'dfTidyAnalyzed.pkl')
 # dfTidyAnalyzed.to_csv('dfTidyAnalyzed.csv')
 
 
-#%% Use pandas profiling on event counts
-##This might be a decent way to quickly view behavior session results/outliers if automated
-## note- if you are getting errors with ProfileReport() and you installed using conda, remove and reinstall using pip install
+# %% Use pandas profiling on event counts
+# This might be a decent way to quickly view behavior session results/outliers if automated
+# note- if you are getting errors with ProfileReport() and you installed using conda, remove and reinstall using pip install
 
 # from pandas_profiling import ProfileReport
 
@@ -967,5 +811,5 @@ dfTidyAnalyzed.to_pickle(savePath+'dfTidyAnalyzed.pkl')
 # # save profile report as html
 # profile.to_file('pandasProfileEventCounts.html')
 
-#%% all done
+# %% all done
 print('all done')

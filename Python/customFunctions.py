@@ -9,17 +9,51 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
  #%% define a function to save and close figures
-def saveFigCustom(figure, figName, close=True):
+def saveFigCustom(figure, figName,savePath, close=True):
     plt.gcf().set_size_inches((20,10), forward=False) # ~monitor size
     plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0) #creates legend ~right of the last subplot
     
     plt.gcf().tight_layout()
-    plt.savefig(r'./_output/_behaviorAnalysis/'+figName+'.png', bbox_inches='tight')
+    plt.savefig(savePath+figName+'.png', bbox_inches='tight')
     
     if close==True:
         plt.close()
     
     
+#%% define a function to subset data at correct level of observation for variable
+def subsetLevelObs(df, groupers, n=0):
+    
+    #get first n observations at this groupby level
+    #(probably just want the first @ n=0)
+    ind= df.groupby(groupers).cumcount()<=n
+
+    df= df.loc[ind]
+
+    return df
+    
+    
+#%% define a function to subset data for plotting
+#--!Assumes that you will subset data at correct level of observation for given variable first
+def subsetData(df, stagesToPlot, trialTypesToPlot, eventsToPlot):
+    
+    #subset trialTypes to plot
+    df= df.loc[df.stage.isin(stagesToPlot)]
+  
+    #subset trialTypes to plot
+    df= df.loc[df.trialType.isin(trialTypesToPlot)]
+    
+    #subset events to plot
+    df= df.loc[df.eventType.isin(eventsToPlot)]
+    
+    #after subsetting data
+    #remove all unused categories from vars (so sns doesn't plot empty labels)
+    ind= df.dtypes=='category'
+    ind= df.columns[ind]
+    
+    for col in ind:
+        df[col]= df[col].cat.remove_unused_categories()
+    
+    return df
 #%% define a function to calculate PE probability
 def percentPortEntryCalc(df, groupHierarchy, colToCalc):
     #First we need to subset only one observation per level of analysis
@@ -36,6 +70,9 @@ def percentPortEntryCalc(df, groupHierarchy, colToCalc):
     
     
     result= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=False, normalize='index')
+    
+    #retain only PE column
+    result= result.drop('noPE',axis=1)
         
     return result
  
