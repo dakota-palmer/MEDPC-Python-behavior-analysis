@@ -42,7 +42,12 @@ from customFunctions import groupPercentCalc
 # %% Load previously saved dfTidy (and other vars) from pickle
 dataPath = r'./_output/'  # 'r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python\\'
 
-dfTidy = pd.read_pickle(dataPath+'dfTidy.pkl')
+# dfTidy = pd.read_pickle(dataPath+'dfTidy.pkl')
+
+#note if .pkl saved in an older python version, may need to use pickle5:
+import pickle5 as pickle
+with open(dataPath+'dfTidy.pkl', "rb") as fh:
+  dfTidy = pickle.load(fh)
 
 # load any other variables saved during the import process ('dfTidymeta' shelf)
 my_shelf = shelve.open(dataPath+'dfTidymeta')
@@ -470,7 +475,7 @@ eventsToPlot= dfPlot.eventType.unique()
 # saveFigCustom(g, 'training_peProb', savePath)
 
 
-#DS PE Prob+latency in 1 fig
+#--Training: DS PE Prob+latency in 1 fig
 
 dfPlot= dfTidy.copy()
 
@@ -559,91 +564,129 @@ saveFigCustom(f, 'training_PE_Prob+Latency_DS', savePath)
 # g.fig.suptitle('Evolution of the trialTypeOutcomeBehProb10s in subjects by trialType')
 
 
-# % TODO: ECDF of behavioral outcome (PE) would be nice to view compared to latency ECDFs?
+# %% TODO: ECDF of behavioral outcome (PE) would be nice to view compared to latency ECDFs?
+
+#not sure how to do best with binary outcome?
 
 # %% Plot PE latency by trialType
 
-# select data corresponding to first PE from valid trials, excluding ITI
-dfPlot = dfTidy[(dfTidy.trialType != 'ITI') & (dfTidy.trialPE10s == 0)].copy()
+#--Distribution: Stage 5 PE latency by trialType across trainDay
+#ECDF plot of latency shows discrimination between trialTypes
 
-# PE latency: virus
-g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
-                row='virus', kind='ecdf', hue_order=trialOrder)
-g.fig.suptitle('First PE latency by trial type')
-g.set_ylabels('First PE latency from epoch start (s)')
-saveFigCustom(g, 'virus_peLatency_10s_ecdf',savePath)
+dfPlot= dfTidy.copy()
 
-# PE latency:  individual subj
-g = sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',
-                hue='trialType', kind='ecdf', hue_order=trialOrder)
-g.fig.suptitle('First PE latency by trial type (within 10s)')
-g.set_ylabels('Probability: first PE latency from epoch start')
-saveFigCustom(g, 'individual_peLatency_10s_ecdf',savePath)
-
-# training across stages
-
-g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', col='subject', col_wrap=4,
-                hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
-g.fig.suptitle('Evolution of first PE latency by trialType')
-saveFigCustom(g, 'training_peLatency_10s_individual',savePath)
+#subset with customFunction
+stagesToPlot= ['Stage 5']
+trialTypesToPlot= ['DStime', 'NStime', 'Pre-Cue']
+eventsToPlot= ['PEtime']
+dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
 
-g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus',
-                hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
-g.fig.suptitle('Evolution of first PE latency by trialType')
-saveFigCustom(g, 'training_peLatency_10s_virus+sex',savePath)
+# #subset data at correct level of observation for variable    
+# subset to first event per trial
+groupHierarchy= groupHierarchyEventType
+dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
 
 
-# late stages plots
-dfPlot = dfPlot.loc[dfPlot.stage.isin(stagesToPlot)]
-
-g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
-                row='virus', col='stage', kind='ecdf', hue_order=trialOrder)
-g.fig.suptitle('First PE latency by trial type, late stages')
-g.set_ylabels('Probability: first PE latency from epoch start')
-saveFigCustom(g, 'dist_peLatency_10s_lateStages_virus_ecdf',savePath)
+g= sns.displot(data=dfPlot, kind='ecdf', col='trainDayThisStage', x='eventLatency', hue='trialType', hue_order=trialOrder)
 
 
-g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus',
-                hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
-g.fig.suptitle('Evolution of first PE latency by trialType, late stages')
-saveFigCustom(g, 'training_peLatency_10s_lateStages_virus',savePath)
+
+
+# # select data corresponding to first PE from valid trials, excluding ITI
+# dfPlot = dfTidy[(dfTidy.trialType != 'ITI') & (dfTidy.trialPE10s == 0)].copy()
+
+# # PE latency: virus
+# g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
+#                 row='virus', kind='ecdf', hue_order=trialOrder)
+# g.fig.suptitle('First PE latency by trial type')
+# g.set_ylabels('First PE latency from epoch start (s)')
+# saveFigCustom(g, 'virus_peLatency_10s_ecdf',savePath)
+
+# # PE latency:  individual subj
+# g = sns.displot(data=dfPlot, col='subject', col_wrap=4, x='eventLatency',
+#                 hue='trialType', kind='ecdf', hue_order=trialOrder)
+# g.fig.suptitle('First PE latency by trial type (within 10s)')
+# g.set_ylabels('Probability: first PE latency from epoch start')
+# saveFigCustom(g, 'individual_peLatency_10s_ecdf',savePath)
+
+# # training across stages
+
+# g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', col='subject', col_wrap=4,
+#                 hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+# g.fig.suptitle('Evolution of first PE latency by trialType')
+# saveFigCustom(g, 'training_peLatency_10s_individual',savePath)
+
+
+# g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus',
+#                 hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+# g.fig.suptitle('Evolution of first PE latency by trialType')
+# saveFigCustom(g, 'training_peLatency_10s_virus+sex',savePath)
+
+
+# # late stages plots
+# dfPlot = dfPlot.loc[dfPlot.stage.isin(stagesToPlot)]
+
+# g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
+#                 row='virus', col='stage', kind='ecdf', hue_order=trialOrder)
+# g.fig.suptitle('First PE latency by trial type, late stages')
+# g.set_ylabels('Probability: first PE latency from epoch start')
+# saveFigCustom(g, 'dist_peLatency_10s_lateStages_virus_ecdf',savePath)
+
+
+# g = sns.relplot(data=dfPlot, x='trainDayThisStage', y='eventLatency', row='virus',
+#                 hue='trialType', hue_order=trialOrder, kind='line', style='stage', markers=True, dashes=True)
+# g.fig.suptitle('Evolution of first PE latency by trialType, late stages')
+# saveFigCustom(g, 'training_peLatency_10s_lateStages_virus',savePath)
 
 
 # %% TODO: Custom Ridge Plot to show changes in distribution over time
 
-# # Initialize the FacetGrid object
-# pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
-# # g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject', aspect=15, height=10, palette=pal)
-# g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject')#, aspect=15, height=10, palette=pal)
+dfPlot= dfTidy.copy()
+
+#subset with customFunction
+stagesToPlot= ['Stage 5']
+trialTypesToPlot= ['DStime', 'NStime', 'Pre-Cue']
+eventsToPlot= ['PEtime']
+dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
 
-# # Draw the densities in a few steps
-# g.map(sns.kdeplot, "eventLatency",
-#       bw_adjust=.5, clip_on=False,
-#       fill=True, alpha=1, linewidth=1.5)
-# # g.map(sns.kdeplot, "eventLatency", clip_on=False, color="w", lw=2, bw_adjust=.5)
+# #subset data at correct level of observation for variable    
+# subset to first event per trial
+groupHierarchy= groupHierarchyEventType
+dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
 
-# # passing color=None to refline() uses the hue mapping
-# # g.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
+# Initialize the FacetGrid object
+pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
+# g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject', aspect=15, height=10, palette=pal)
+g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject')#, aspect=15, height=10, palette=pal)
+
+# Draw the densities in a few steps
+g.map(sns.kdeplot, "eventLatency",
+      bw_adjust=.5, clip_on=False,
+      fill=True, alpha=1, linewidth=1.5)
+# g.map(sns.kdeplot, "eventLatency", clip_on=False, color="w", lw=2, bw_adjust=.5)
+
+# passing color=None to refline() uses the hue mapping
+# g.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
 
 
-# # Define and use a simple function to label the plot in axes coordinates
-# def label(x, color, label):
-#     ax = plt.gca()
-#     ax.text(0, .2, label, fontweight="bold", color=color,
-#             ha="left", va="center", transform=ax.transAxes)
+# Define and use a simple function to label the plot in axes coordinates
+def label(x, color, label):
+    ax = plt.gca()
+    ax.text(0, .2, label, fontweight="bold", color=color,
+            ha="left", va="center", transform=ax.transAxes)
 
 
-# g.map(label, "eventLatency")
+g.map(label, "eventLatency")
 
-# # Set the subplots to overlap
-# # g.figure.subplots_adjust(hspace=-.25)
+# Set the subplots to overlap
+# g.figure.subplots_adjust(hspace=-.25)
 
-# # Remove axes details that don't play well with overlap
-# g.set_titles("")
-# g.set(yticks=[], ylabel="")
-# g.despine(bottom=True, left=True)
+# Remove axes details that don't play well with overlap
+g.set_titles("")
+g.set(yticks=[], ylabel="")
+g.despine(bottom=True, left=True)
 
 
 # %% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType (within 10s)
