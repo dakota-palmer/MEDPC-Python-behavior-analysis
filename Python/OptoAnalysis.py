@@ -56,16 +56,20 @@ if __name__ == '__main__':
     subjPalette= 'tab20'
 
     savePath= r'./_output/_optoAnalysis/'
+    
+    
+   # #manually defining color order so that paired color scheme looks nice
+   #and consistent between all plots
+   #  trialOrder =['laserDStrial_0', 'laserDStrial_1',
+   #     'laserNStrial_0', 'laserNStrial_1','ITI']
+    trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue','ITI'])
+ 
+    subjectOrder= dfTidyOpto.subject.unique()
+    
 
-    #%% exclude sessions without laser manipulations
-    dfTidyOpto= dfTidyOpto.loc[dfTidyOpto.laserDur!='nan @ nan']
-    dfTidyOpto= dfTidyOpto.loc[dfTidyOpto.laserDur.notnull()]
+    criteriaDS= 0.6
     
-    dfTidyOpto.laserDur= dfTidyOpto.laserDur.astype('category')
-    
-    #redefine categories
-    dfTidyOpto.laserDur= dfTidyOpto.laserDur.cat.remove_unused_categories()
-    
+      
    #%% Declare hierarchical grouping variables for analysis
     # e.g. for aggregated measures, how should things be calculated and grouped?
     
@@ -83,16 +87,315 @@ if __name__ == '__main__':
         # groupHierarchyTrialID = ['virus', 'sex', 'stage', 'laserDur',
         #                          'subject', 'trainDayThisStage', 'trialType', 'fileID', 'trialID']
        #taking out laserDur, combining into stage
+        groupHierarchySubject = ['virus', 'sex', 'stage',
+                                'subject']
+       
         groupHierarchyFileID = ['virus', 'sex', 'stage',
                                 'subject', 'trainDayThisStage', 'fileID']
+        
         groupHierarchyTrialType = ['virus', 'sex', 'stage',
                                    'subject', 'trainDayThisStage', 'fileID', 'trialType']
+        
         groupHierarchyTrialID = ['virus', 'sex', 'stage',
                                  'subject', 'trainDayThisStage', 'trialType', 'fileID', 'trialID']
         
         groupHierarchyEventType = ['virus', 'sex', 'stage',
                                  'subject', 'trainDayThisStage', 'trialType', 'fileID', 'trialID', 'eventType']
 
+
+   #%%~Add random 'laser' trial labels for pre-laser sessions (e.g. stage 5 technically didn't have laser trials)
+   #TODO: diff() of PE probability won’t apply to subj. who are running below CM stage. There will be no Laser trials so no diff() can be represented in these plots. Either 1) add random laser trials (sync with other subjs) or 2) only include laser sessions in the diff() plots
+      
+    dfTidyOpto.trialType= dfTidyOpto.trialType.astype(str)
+    dfTemp= dfTidyOpto.copy()
+    
+    #restrict to late sessions (stage 5) that already don't have laser labelled trials
+    dfTemp= dfTemp.loc[dfTemp.stage.str.contains('5')]
+
+    #restrict to DS and NS trialTypes
+    dfTemp= dfTemp.loc[dfTemp.trialID>=0].copy()
+    
+    #subset to 1 obs per trial
+    dfTemp= subsetLevelObs(dfTemp, groupHierarchyTrialID)
+    
+    #simply 'randomly' assign half as laser on
+    trialCount= 30
+    
+    ids = dfTemp['trialID'].unique()
+    ids = np.random.choice(ids, size=int(trialCount/2), replace=False)
+    
+    
+    #2
+    # test= dfTemp.groupby(groupHierarchyFileID)['trialID'].sample(n=int(trialCount/2), random_state=1)
+    # test= dfTemp.groupby(groupHierarchyTrialID)['trialID'].sample(n=int(trialCount/2), random_state=1)
+
+    #3
+
+    #random sample half of the trials by trialType, label these as laser trials
+    dfTemp= dfTemp.groupby(['fileID', 'trialType']).sample(n=int(trialCount/2), random_state=1)#.reset_index()
+    
+    # dfTemp['trialTypeNew']= dfTemp.trialType+'_laser'
+    
+    dfTemp['trialType']= dfTemp.trialType+'_laser'
+
+    
+    # #reassign to df!
+    # dfTidyOpto.loc[dfTemp.index, 'trialType']= dfTemp.trialType.copy()
+    
+    # #ffill wont work unless filling na
+    # dfTidyOpto.trialtype= dfTidyOpto.groupby(groupHierarchyTrialID).trialType.ffill()
+    
+    
+    # dfTemp= dfTemp[groupHierarchyTrialID]
+    # test= dfTidyOpto.copy()
+    # test.trialType= test.merge(dfTemp, how='left', on=groupHierarchyTrialID).trialType
+
+
+    # #Update- no bc want to merge on all fileID,trialID entries (not just single ind)
+    # #since wanting to update same column, use update() instead of merge()?
+    # test= dfTidyOpto.copy()
+    # test2= test.update(dfTemp)
+
+    # #Merge
+    # #cant use trialtype as merger column bc it wont match
+    
+    # test= dfTidyOpto.copy()
+    
+    # # test= dfTidyOpto.merge(dfTemp[['fileID','trialID','trialTypeNew']], on=['fileID', 'trialID']).trialTypeNew.copy()
+    
+    # test= dfTidyOpto.merge(dfTemp[['fileID','trialID','trialType']], on=['fileID', 'trialID'])
+    
+    # #-try setting index before merge?
+    # test= dfTidyOpto.copy()
+    
+    # test2= dfTemp.copy()
+    # test2= test2.set_index(['fileID','trialID'])
+    
+    # # test= test.set_index(['fileID','trialID'])
+    
+    # test3= test.merge(test2, on=['fileID','trialID'], how='left')
+    
+    #try setting index, then assignment specifically using grouped ind- should work!?
+    test= dfTidyOpto.copy()
+    test2= dfTemp.copy()
+    
+    test= test.set_index(['fileID','trialID'])
+    test2= test2.set_index(['fileID','trialID'])
+    
+    test4= test.copy()
+    test4.loc[test2.index, 'trialType']= test2.trialType.copy()
+    
+    # #try set_index then update?
+    # test= dfTidyOpto.copy()
+    # test2= dfTemp.copy()
+    
+    # test= test.set_index(['fileID','trialID'])
+    # test2= test2.set_index(['fileID','trialID'])
+
+    # # test3= test.copy().trialType.update(test2.trialType)
+    
+    # test4= test.copy()
+    
+    # test4.trialType= test2.trialType
+    
+    
+    # #-
+    # dfTidyOpto.trialType= dfTidyOpto.merge(dfTemp[['fileID','trialID','trialType']], how='left', on=['fileID', 'trialID'])
+    
+     # Assign back to df by setting index, then assignment specifically using grouped ind
+    dfTidyOpto.set_index(['fileID','trialID'], inplace=True)
+    dfTemp.set_index(['fileID','trialID'], inplace=True)
+    
+    dfTidyOpto.loc[dfTemp.index, 'trialType']= dfTemp.trialType.copy()
+
+    
+    dfTidyOpto.trialType= dfTidyOpto.trialType.astype('category')
+    
+    dfTidyOpto.reset_index(inplace=True)
+
+    #Viz trialTypes by stage now
+    dfPlot= dfTidyOpto.copy()
+    
+    #subset
+    stagesToPlot= dfPlot.loc[(dfPlot.stage.str.contains('CM') | dfPlot.stage.str.contains('5')), 'stage'].unique().astype(str)
+    trialTypesToPlot= ['DStime','DStime_laser','NStime','NStime_laser']
+    eventsToPlot= dfPlot.eventType.unique()
+
+    dfPlot= subsetLevelObs(dfPlot, groupHierarchyTrialID)
+
+    dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+
+
+    dfPlot.loc[:,'trialCount']= dfPlot.groupby(groupHierarchyTrialType)['trialID'].transform('count').copy()
+    
+    
+    
+    sns.catplot(data= dfPlot, kind='bar', row='stage', col='trialType', x='trainDayThisStage', y='trialCount', hue='subject', palette=subjPalette, hue_order=subjectOrder)
+
+    
+    #%% Don't have laser off cue manip sessions for some subjects...  should make new baseline 'stage' for simply day before laser began?
+    #this will be baseline to compare against (instead of laser off day?)
+    
+    #briefly, will add column for laserState either ON or OFF, get first() trainDay ON for each subject, save this as new column, subtract nBaselineSessions from this trainDay, and update stages accordingly matching these trainDays
+    
+    dfTidyOpto.stage= dfTidyOpto.stage.astype(str)
+
+    dfTemp= dfTidyOpto.copy()
+    
+    #number of sessions prior to laser ON which we should count as baseline (1+n bc of cumcount()), so 0 is 1 and 1 is 2
+    nBaselineSessions= 1
+    
+    
+    #go through and label sessions as laser off or on 
+    #find first session for each subject with non-zero
+    dfTemp['laserState']= dfTemp.laserDur.copy()
+    
+    dfTemp.loc[dfTemp.laserDur.isnull(),'laserState']= 'off'
+    dfTemp.loc[dfTemp.laserDur.str.contains('0.0 @ 0'),'laserState']= 'off'
+    dfTemp.loc[dfTemp.laserDur.str.contains('nan'), 'laserState']= 'off'
+    
+    dfTemp.loc[dfTemp.laserState!= 'off', 'laserState']= 'ON'
+
+    
+    #get trainDay corresponding to first laser ON day for each subj, subtract 1. This is the last laser off day.
+    # dfTemp= dfTemp.loc[dfTemp.laserState!='off']
+    # trainDay= dfTemp.groupby(['subject','laserState'], as_index=False)['trainDay'].first()
+    
+    
+    # dfTemp['laserStartDay']= dfTemp.groupby(['subject','laserState'])['trainDay'].transform('first')-1
+
+    dfTemp['laserStartDay']= dfTemp.loc[dfTemp.laserState!='off'].groupby(['subject','laserState'])['trainDay'].transform('first')-1
+    
+    dfTemp['laserStartDay'] = dfTemp.groupby(['subject'])['laserStartDay'].fillna(method='bfill')
+      
+    
+     # test= (dfTemp.groupby(['subject','laserState'])['trainDay'].transform('first')-1).reset_index()
+    
+    # test= dfTemp.loc[dfTemp.laserState!='off'].groupby(['subject','laserState'])['trainDay'].transform('first')-1
+
+    
+    
+    #use this to check matching trainDays and change stage accordingly
+    ind= ((dfTemp.trainDay >= dfTemp.laserStartDay-nBaselineSessions) & (dfTemp.trainDay <= dfTemp.laserStartDay))
+    dfTemp.loc[ind, 'stage']= '5.9-Pre-Laser'
+    
+    #save updated col back into df
+    dfTidyOpto.stage= dfTemp.stage.copy()
+    dfTidyOpto.stage= dfTidyOpto.stage.astype('category')
+
+    
+    #%% exclude sessions without laser manipulations
+    # dfTidyOpto= dfTidyOpto.loc[dfTidyOpto.laserDur!='nan @ nan']
+    # dfTidyOpto= dfTidyOpto.loc[dfTidyOpto.laserDur.notnull()]
+    
+    # dfTidyOpto.laserDur= dfTidyOpto.laserDur.astype('category')
+    
+    
+    #keep pre-laser 'stage'
+    # stagesToInclude= ['CM', 'Pre-Laser']
+    
+    # dfTidyOpto= dfTidyOpto.stage.str.contains('CM')
+    
+    ind= (dfTidyOpto.stage.str.contains('CM') | dfTidyOpto.stage.str.contains('Pre-Laser'))
+    
+    dfTidyOpto= dfTidyOpto[ind]
+    
+    #-- Simply exclude remaining 0.0 @ 0 sessions (some subj had more than others, let's just grab the last nBaselineSessions and cut out all the rest)
+    dfTidyOpto= dfTidyOpto.loc[~dfTidyOpto.stage.str.contains('0.0 @ 0')]
+
+    
+    #redefine categories
+    dfTidyOpto.stage= dfTidyOpto.stage.cat.remove_unused_categories()
+    
+    
+    #%% recalculate trainDayThisStage now that we've altered stages
+    
+    dfGroup = dfTidyOpto.loc[dfTidyOpto.groupby('fileID').transform('cumcount') == 0, :].copy()  # one per session
+    dfTidyOpto['trainDayThisStage'] = dfGroup.groupby(
+        ['subject', 'stage']).transform('cumcount')
+    dfTidyOpto.trainDayThisStage = dfTidyOpto.groupby(
+        ['fileID'])['trainDayThisStage'].fillna(method='ffill').copy()
+    
+    #%% recalculate trialOutcomes and probPE now that have new trialTypes!!
+    dfTidyOpto= dfTidyOpto.drop(['trialTypePEProb10s', 'trialTypeOutcomeBehProb10s'], axis=1)
+    
+    
+    # %% Calculate Probability of behavioral outcome for each trial type.
+    # This is normalized so is more informative than simple count of trials.
+    
+    # declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
+    levelOfAnalysis = ['fileID', 'trialID']
+    
+    # First we need to subset only one outcome per level of analysis (trial)
+    dfGroup = dfTidyOpto.loc[dfTidyOpto.groupby(levelOfAnalysis).cumcount() == 0].copy()
+    
+    #alternatively, this is the same as:
+    # dfGroup= dfTidyOpto[obsTrial]
+    
+    # declare hierarchical grouping variables (how should the observations be separated)
+    groupHierarchy = groupHierarchyTrialType
+    
+    # here want percentage of each behavioral outcome per trialType per above groupers
+    colToCalc = 'trialOutcomeBeh10s'
+    
+    dfTemp = groupPercentCalc(dfGroup, levelOfAnalysis, groupHierarchy, colToCalc)
+    
+    #instead of 1 col per probability, melt into single column that matches up to outcome
+    dfTemp= dfTemp.reset_index().melt(
+        id_vars=groupHierarchy, value_name='trialTypeOutcomeBehProb10s')
+    
+    #merge to save as new column in dfTidyOpto
+    dfTidyOpto = dfTidyOpto.merge(dfTemp, how='left', on=groupHierarchy+[colToCalc])
+    
+    #%% Calculate PE probability for each trialType
+    #(combines all outcomes with PE vs all outcomes with no PE)
+    
+    dfTemp= dfTidyOpto.copy()
+    
+    
+    # declare hierarchical grouping variables (how should the observations be separated)
+    groupHierarchy = groupHierarchyTrialType
+    
+    
+    # here want percentage of each behavioral outcome per trialType per above groupers
+    colToCalc = 'trialOutcomeBeh10s'
+    
+    dfTemp= percentPortEntryCalc(dfTemp, groupHierarchy, colToCalc)
+    
+    dfTemp= dfTemp.reset_index()
+    
+    dfTemp= dfTemp.rename(columns= {'PE':'trialTypePEProb10s'})
+    
+    dfTidyOpto= dfTidyOpto.merge(dfTemp, how='left', on=groupHierarchy)
+
+    
+    
+
+    
+        #%% viz remaining sessions
+    
+    #-stages
+    dfPlot= dfTidyOpto.copy()
+    
+    dfPlot= subsetLevelObs(dfPlot, groupHierarchyFileID)
+    
+    
+    dfPlot['sesCount']= dfPlot.groupby(groupHierarchySubject).fileID.transform('count')
+
+    
+    sns.catplot(data= dfPlot, kind='bar', x='stage', y='sesCount', hue='subject', hue_order=subjectOrder)
+    
+    #-laserDur
+    dfPlot= dfTidyOpto.copy()
+    
+    dfPlot= subsetLevelObs(dfPlot, groupHierarchyFileID)
+    
+    
+    dfPlot['sesCount']= dfPlot.groupby(['virus','sex','subject','laserDur']).fileID.transform('count')
+
+    
+    sns.catplot(data= dfPlot, kind='bar', x='laserDur', y='sesCount', hue='subject', hue_order=subjectOrder)
+  
     
       #%% Remove Lick+Laser trials without PE+Lick
       
@@ -118,30 +421,22 @@ if __name__ == '__main__':
     # # dfTidyOpto.loc[dfTidyOpto.laserDur=='Lick',:]= dfTidyOpto.loc[(dfTidyOpto.laserDur=='Lick') & (dfTidyOpto.trialOutcomeBeh10s=='PE+lick')]
     
 
-    # %% Analysis & visualization
 
-   #  # visualize using seaborn
-   #  import seaborn as sns
-   #  import matplotlib.pyplot as plt
-
-   #  # paired seems nice for comparing conditions (laser on vs off)
-    sns.set_palette('Paired')
-    
-   # #manually defining color order so that paired color scheme looks nice
-   #  trialOrder =['laserDStrial_0', 'laserDStrial_1',
-   #     'laserNStrial_0', 'laserNStrial_1','ITI']
-    trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue','ITI'])
- 
     #%% remove ITI trialtype
     trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue'])
 
 
+
+
+
    #%% Calculate difference score between laser off and laser on trialTypes
+   
+   #~~TODO: diff() of PE probability won’t apply to subj. who are running below CM stage. There will be no Laser trials so no diff() can be represented in these plots. Either 1) add random laser trials (sync with other subjs) or 2) only include laser sessions in the diff() plots
    
     dfTemp= dfTidyOpto.copy()
     
     #initialize empty col
-    dfTidyOpto['trialTypePEProb10sdiff'] = pd.Series(float)
+    dfTidyOpto['trialTypePEProb10sdiff'] = pd.Series(dtype=float)
 
     #get rid of ITI & pre cue then just use diff() to get difference
     #basically, will groupby file, subset DS & NS separately, and diff() so get one value per file for DS and one per file per NS
@@ -162,8 +457,8 @@ if __name__ == '__main__':
     
     # test= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.diff()
 
-    # test= dfTemp.copy()
-    # test.loc[ind,'trialTypePEProb10sdiff']= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.diff()
+    test= dfTemp.copy()
+    test.loc[ind,'trialTypePEProb10sdiff']= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.diff()
 
     dfTidyOpto.loc[ind,'trialTypePEProb10sdiff']= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.transform('diff')
     
@@ -172,7 +467,10 @@ if __name__ == '__main__':
 
     dfTidyOpto.loc[ind,'trialTypePEProb10sdiff']= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.transform('diff')
     
-    #make plots
+    
+    #%% --Plots: PE Prob Diff progression across days (all days separate per stage)
+    
+       #make plots
     dfPlot= dfTidyOpto.copy()
 
     stagesToPlot= dfPlot.stage.unique()
@@ -190,147 +488,15 @@ if __name__ == '__main__':
     g.map(plt.axhline, y=0, color=".2", linewidth=3, dashes=(3,1), zorder=0)
 
     # g= sns.FacetGrid(data= dfPlot, row='stage', col='trialType')
-    # g.map(sns.lineplot, data= dfPlot, units='subject', estimator=None, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, style='subject', markers=True)
+    # g.map_dataframe(sns.lineplot, data= dfPlot, units='subject', estimator=None, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, style='subject', markers=True)
 
 
     for virus in dfPlot.virus.unique():
         dfPlot2= dfPlot.loc[dfPlot.virus==virus]
         
-        #bar mean for group with individual subj points
-        #between palettes and x, something is just not working as expected:
-        # g= sns.FacetGrid(data= dfPlot2, row='stage', col='trialType')
-        
-        # g.map_dataframe(sns.barplot, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, palette='Paired')
-        
-        # g.map_dataframe(sns.lineplot,estimator=None, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='subject', palette=subjPalette, style='subject', dashes=False, markers=True)
-
-        # #testing behavior of faceting
-        # #trying bar plot of group mean with pointplot connecting individual subj observations
-        # df= pd.DataFrame()
-        # df['y']= [.8,.3,.4,-.2,-.5,.2,.3,.2,.4,.5,.2,-.1]
-        # df['day']= [0,1,2,3,0,1,0,1,0,1,2,2]
-        # df['subj']= ['a','a','a','a','b','b','a','a','b','b','a','b']
-        # df['stage']= [1,1,1,1,1,1,2,2,2,2,2,2]
-        # df['trialType']= ['c','d','c','d','c','d','c','d','c','d','c','d']
-        
-        # subjPalette= 'tab20'
-        
-        # #1) simple, no faceting- looks good
-        # sns.set_palette('tab20')
-        # g= sns.catplot(data= df, kind='bar', x='day', y='y', color='gray')
-        # g.map_dataframe(sns.pointplot, zorder=1, x='day', y='y', hue= 'subj', palette=subjPalette)
-
-        # saveFigCustom(g.fig, '_fig1', savePath)
-
-        # #2) add facet of stage- looks good
-        # g= sns.catplot(data= df, row='stage', kind='bar', x='day', y='y', color='gray')
-        # g.map_dataframe(sns.pointplot, zorder=1, x='day', y='y', hue= 'subj', palette=subjPalette)
-        
-        # saveFigCustom(g.fig, '_fig2', savePath)
-        
-        
-        # #3) add facet of trialType- bad; points no longer align with bar? why is this?
-        # g= sns.catplot(data= df, row='stage', col='trialType', kind='bar', x='day', y='y', color='gray')
-        # g.map_dataframe(sns.pointplot, zorder=1, x='day', y='y', hue= 'subj', palette=subjPalette)
-        
-        # saveFigCustom(g.fig, '_fig3', savePath)
-        
-        # #4) what if we try FacetGrid directly instead of catplot?- works
-        # g= sns.FacetGrid(data= df, row='stage', col='trialType')
-
-        # g.map_dataframe(sns.barplot, x='day', y='y', color='gray')
-        # g.map_dataframe(sns.pointplot,  zorder=1, x='day', y='y', hue= 'subj', palette=subjPalette)
-
-        # saveFigCustom(g.fig, '_fig4', savePath)
-        
-        # #5) Add bar hue of trialType (instead of gray bars)- bad
-        # #points align, but hue is incorrect ('trialTypes' d and c should be diff colors)
-        # g= sns.FacetGrid(data= df, row='stage', col='trialType')
-
-        # g.map_dataframe(sns.barplot, x='day', y='y', hue='trialType', palette='Paired')
-        # g.map_dataframe(sns.pointplot,  zorder=1, x='day', y='y', hue= 'subj', palette=subjPalette)
-
-        # saveFigCustom(g.fig, '_fig5', savePath)
-        
-        # #6) now try adding hue_order- bad
-        # #bar and point don't align- Why & how to fix?
-        # hueOrder= ['c','d']
-        # g= sns.FacetGrid(data= df, row='stage', col='trialType')
-
-        # g.map_dataframe(sns.barplot, x='day', y='y', hue='trialType', hue_order=hueOrder, palette='Paired')
-        # g.map_dataframe(sns.pointplot,  zorder=1, x='day', y='y', hue= 'subj', palette=subjPalette)
-
-        # saveFigCustom(g.fig, '_fig6', savePath)   
-        
-                
-        # #7) try with barplot dodge=True !!!! WORKS
-        # hueOrder= ['c','d']
-        # g= sns.FacetGrid(data= df, row='stage', col='trialType')
-
-        # g.map_dataframe(sns.barplot, dodge=False, x='day', y='y', hue='trialType', hue_order=hueOrder, palette='Paired')
-        # g.map_dataframe(sns.pointplot,  zorder=1, x='day', y='y', hue= 'subj', palette=subjPalette)
-
-        # saveFigCustom(g.fig, '_fig7', savePath)   
-        
-        
-        # #7) try passing hue to facet grid?- bad
-        # # points aligned but hue is off 
-        # hueOrder= ['c','d']
-        # g= sns.FacetGrid(data= df, row='stage', col='trialType', hue='trialType', hue_order=hueOrder)
-
-        # g.map_dataframe(sns.barplot, x='day', y='y', palette='Paired')
-        # g.map_dataframe(sns.pointplot,  zorder=1, x='day', y='y', hue= 'subj', palette=subjPalette)
-
-        # saveFigCustom(g.fig, '_fig10', savePath)   
-        
-        
-        # #-----
-        # #5) copy FacetGrid using my data- looks good
-        # g= sns.FacetGrid(data= dfPlot2, row='stage', col='trialType')
-
-        # g.map_dataframe(sns.barplot, x='trainDayThisStage', y='trialTypePEProb10sdiff', color='gray')
-        # g.map_dataframe(sns.pointplot,  z=1, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue= 'subject', palette=subjPalette)
-
-        # saveFigCustom(g.fig, '_fig7', savePath)
-        
-        # #--conclusion: use FacetGrid if combining multiple plot types with similar facets (not figure level catplot with catplot.map)
-
+        #get rid of extra categories
+        dfPlot2= subsetData(dfPlot2, stagesToPlot, trialTypesToPlot, eventsToPlot)
     
-        # #6) add hue for trialType- looks bad now, bar and points don't align? 
-        # g= sns.FacetGrid(data= dfPlot2, row='stage', col='trialType')
-
-        # g.map_dataframe(sns.barplot, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, palette='Paired')
-        # g.map_dataframe(sns.pointplot, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue= 'subject', palette= subjPalette)
-
-        # saveFigCustom(g.fig, '_fig8', savePath)
-
-
-        # #7) try without hue_order? still bad?
-        # g= sns.FacetGrid(data= dfPlot2, row='stage', col='trialType')
-
-        # g.map_dataframe(sns.barplot, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', palette='Paired')
-        # g.map_dataframe(sns.pointplot, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue= 'subject', palette= subjPalette)
-
-        # saveFigCustom(g.fig, '_fig9', savePath)
-        
-        # #8) try with bar dodge=False -- Works!
-        # g= sns.FacetGrid(data= dfPlot2, row='stage', col='trialType')
-
-        # g.map_dataframe(sns.barplot, dodge=False, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, palette='Paired')
-        # g.map_dataframe(sns.pointplot, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue= 'subject', palette= subjPalette)
-
-        # saveFigCustom(g.fig, '_fig11', savePath)
-
-  
-        # #9) todo: now make everything visible...
-        # g= sns.FacetGrid(data= dfPlot2, row='stage', col='trialType')
-
-        # g.map_dataframe(sns.barplot, dodge=False, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, palette='Paired')
-        # g.map_dataframe(sns.pointplot, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue= 'subject', palette= subjPalette)
-
-        # saveFigCustom(g.fig, '_fig11', savePath)
-        
-        #10) try now with catplot?
 
         #--bar plot with point plot of individual subj overlaid
         g= sns.catplot(data=dfPlot2, col='stage', row='trialType', kind='bar', dodge=False, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, palette='Paired')
@@ -344,7 +510,7 @@ if __name__ == '__main__':
         #hue=trialType
         g.map_dataframe(sns.lineplot, units='subject', estimator= None, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue= 'trialType', hue_order=trialOrder, palette= 'Paired', alpha=0.6, style='subject', dashes=False, markers=True)
 
-        g.fig.suptitle(virus+'PE Probability difference score: laser - no laser')
+        g.fig.suptitle(virus+'- Daily PE Probability difference score: laser - no laser')
         g.set_ylabels('delta PE prob (laser-no laser trials)')
         g.set_xlabels('trainDayThisStage')       
         
@@ -354,33 +520,290 @@ if __name__ == '__main__':
 
         # g.add_legend()
         
-        saveFigCustom(g, virus+'-PE Probability difference score laser_by_day', savePath)
+        saveFigCustom(g, virus+'- Daily PE Probability difference score (laser trial probPE - no laser trial probPE)', savePath)
         
-     
+       #%% --Plots: Combined PE Prob Diff (all days pooled per stage)
+    
+    #subset data
+    dfPlot= dfTidyOpto.copy()
 
-     
-        # #11 reverse order 
-
-        # g= sns.catplot(data=dfPlot2, row='stage', col='trialType', kind='point', x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='subject', palette=subjPalette)
-        # g.map_dataframe(sns.barplot, dodge=True, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue= 'trialType', hue_order=trialOrder, palette= 'Paired')
-
-
-        # # g= sns.catplot(data= df, kind='bar', row='stage', col='trialType', x='x', y='y', hue= 's', palette='tab20')
-
-        
-        # g= sns.catplot(data= dfPlot2, kind='bar', row='stage', col='trialType', x='trainDayThisStage', y='trialTypePEProb10sdiff', hue= 'trialType', hue_order=trialOrder, palette='Paired')
-        
-        # # g= sns.catplot(data= dfPlot2, kind='point', row='stage', col='trialType', x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='subject', palette= subjPalette)
-
-        # g.map_dataframe(sns.pointplot, data=dfPlot2, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='subject', palette= subjPalette)
-        
-
-        # g.map_dataframe(sns.scatterplot, data=dfPlot2, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='subject', palette= subjPalette)
-        
-        # g.fig.suptitle(virus+'PE Probability difference score: laser - no laser')
+    stagesToPlot= dfPlot.stage.unique()
+    trialTypesToPlot= ['DStime_laser','NStime_laser']
+    eventsToPlot= dfPlot.eventType.unique()
 
     
+    #running fxn still to remove unused categories
+    dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
+    
+   #individual subject facet
+    g= sns.relplot(data= dfPlot, kind='line', estimator=None, col='subject', col_wrap=3, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, style='stage', markers=True)
+    # g.map(refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False))
+    g.map(plt.axhline, y=0, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+
+    # g= sns.FacetGrid(data= dfPlot, row='stage', col='trialType')
+    # g.map_dataframe(sns.lineplot, data= dfPlot, units='subject', estimator=None, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, style='subject', markers=True)
+
+
+    #get pooled mean() of diff for this subj score within-stages
+    #definitely have multiple observations, why am i getting an error when i try to get mean() or plot?
+    test= dfPlot.groupby(groupHierarchySubject).trialTypePEProb10sdiff.count().reset_index()
+
+    #could be because of empty groups?
+    test2= dfPlot.groupby(groupHierarchySubject, observed=True).trialTypePEProb10sdiff.count().reset_index()
+
+    test3= dfPlot.groupby(groupHierarchySubject, observed=True).trialTypePEProb10sdiff.value_counts()
+
+
+
+
+    for virus in dfPlot.virus.unique():
+        dfPlot2= dfPlot.loc[dfPlot.virus==virus]
+        
+        #get rid of extra categories
+        dfPlot2= subsetData(dfPlot2, stagesToPlot, trialTypesToPlot, eventsToPlot)
+        
+
+        #--bar plot with point plot of individual subj overlaid
+        g= sns.catplot(data=dfPlot2, row='trialType', kind='bar', dodge=False, x='stage', y='trialTypePEProb10sdiff', hue='trialType', hue_order=trialOrder, palette='Paired')
+        # g.map_dataframe(sns.pointplot, x='trainDayThisStage', y='trialTypePEProb10sdiff', hue= 'subject', palette= subjPalette, alpha=0.04)
+     
+        #using lineplot bc easy to adjust alpha
+        
+        #hue=subject
+        # g.map_dataframe(sns.lineplot, estimator= None, x='stage', y='trialTypePEProb10sdiff', hue= 'subject', palette= subjPalette, alpha=0.6, style='subject', dashes=False, markers=True)
+        g.map_dataframe(sns.stripplot, x= 'stage', y='trialTypePEProb10sdiff', hue= 'subject', hue_order= subjectOrder, palette= subjPalette, alpha=0.6)
+
+        
+        
+        #hue=trialType
+        
+        #now observations aren't continuous so i think lineplot looks weird
+        #still would be great to have lines connecting observations?
+        #but maybe strip is more appropriate
+        # g.map_dataframe(sns.lineplot,  x= 'stage', y='trialTypePEProb10sdiff', hue= 'trialType', hue_order=trialOrder, palette= 'Paired', alpha=0.6, style='subject', dashes=False, markers=True)
+        # g.map_dataframe(sns.lineplot, units='subject', estimator=None, x= 'stage', y='trialTypePEProb10sdiff', hue= 'trialType', hue_order=trialOrder, palette= 'Paired', alpha=0.6, style='subject', dashes=False, markers=True)
+
+        
+
+
+        g.fig.suptitle(virus+'- Pooled PE Probability difference score (laser trial probPE - no laser trial probPE)')
+        g.set_ylabels('delta PE prob (laser-no laser trials)')
+        g.set_xlabels('trainDayThisStage')       
+        
+           #manually set axes limits
+        # g.set(xlim= (-0.5,dfPlot2.trainDayThisStage.max()+.5))   
+        # g.set(ylim= (-1,1))   
+
+        # g.add_legend()
+        
+        saveFigCustom(g, virus+'-PE Probability difference score laser_pooled_days', savePath)
+        
+    
+    #%% --plots: PE Prob overall plots similar to above (non-diff)
+    
+    
+       #make plots
+    dfPlot= dfTidyOpto.copy()
+
+    stagesToPlot= dfPlot.stage.unique()
+    trialTypesToPlot= ['DStime', 'DStime_laser', 'NStime', 'NStime_laser']
+    eventsToPlot= ['PEtime']
+
+    
+    #running fxn still to remove unused categories
+    dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+
+    
+   #individual subject facet
+    g= sns.relplot(data= dfPlot, kind='line', estimator=None, col='subject', col_wrap=3, x='trainDayThisStage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, style='stage', markers=True)
+    # g.map(refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False))
+    g.map(plt.axhline, y=0, color=".2", linewidth=3, dashes=(3,1), zorder=0)
+
+    # g= sns.FacetGrid(data= dfPlot, row='stage', col='trialType')
+    # g.map_dataframe(sns.lineplot, data= dfPlot, units='subject', estimator=None, x='trainDayThisStage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, style='subject', markers=True)
+
+
+    for virus in dfPlot.virus.unique():
+        dfPlot2= dfPlot.loc[dfPlot.virus==virus]
+        
+        #get rid of extra categories
+        dfPlot2= subsetData(dfPlot2, stagesToPlot, trialTypesToPlot, eventsToPlot)
+    
+
+        #--bar plot with point plot of individual subj overlaid
+        g= sns.catplot(data=dfPlot2, col='stage', row='trialType', kind='bar', dodge=False, x='trainDayThisStage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
+        # g.map_dataframe(sns.pointplot, x='trainDayThisStage', y='trialTypePEProb10s', hue= 'subject', palette= subjPalette, alpha=0.04)
+     
+        #using lineplot bc easy to adjust alpha
+        
+        #hue=subject
+        # g.map_dataframe(sns.lineplot, estimator= None, x='trainDayThisStage', y='trialTypePEProb10s', hue= 'subject', palette= subjPalette, alpha=0.6, style='subject', dashes=False, markers=True)
+        
+        #hue=trialType
+        g.map_dataframe(sns.lineplot, units='subject', estimator= None, x='trainDayThisStage', y='trialTypePEProb10s', hue= 'trialType', hue_order=trialOrder, palette= 'Paired', alpha=0.6, style='subject', dashes=False, markers=True)
+
+        g.fig.suptitle(virus+'- Daily PE Probability')
+        g.set_ylabels('PE prob')
+        g.set_xlabels('trainDayThisStage')       
+        
+        #overlay criteria line (facilitates comparison btwn subplots) #todo: could be no-laser baseline
+        g.map(plt.axhline, y=criteriaDS, color=".2",  linewidth=3, dashes=(3, 1), zorder=0) 
+        
+           #manually set axes limits
+        g.set(xlim= (-0.5,dfPlot2.trainDayThisStage.max()+.5))   
+        g.set(ylim= (0,1))   
+
+        # g.add_legend()
+        
+        saveFigCustom(g, virus+'- Daily PE Probability', savePath)
+        
+     #%% --plots: virus ind subjects; pooled PE latency by stage
+    #was considering viz of individal subj means just to see diff subj + group mean, requires intermediate calculation tho
+    # #TODO: difference score for latency?
+    #   #subset data
+    # dfPlot= dfTidyOpto.copy()
+
+    # stagesToPlot= dfPlot.stage.unique()
+    # trialTypesToPlot= ['DStime', 'DStime_laser', 'NStime', 'NStime_laser']
+    # eventsToPlot= ['PEtime']
+
+    
+    # #running fxn still to remove unused categories
+    # dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+
+
+    # #% -- barplot + point (let's see if ind subjects differ in their means)
+    
+    # g= sns.FacetGrid(data= dfPlot, col='stage', row='virus')
+    
+
+    # #--bar plot with point plot of individual subj means overlaid
+    # g.map_dataframe(sns.barplot, data= dfPlot, dodge=False, x='trialType', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
+    
+    # #     #just calc & show means for each subj
+    # # dfPlot2= dfPlot.copy()
+    # # dfPlot2['eventLatency']= dfPlot2.groupby(groupHierarchyTrialType).eventLatency.mean()
+    # g.map_dataframe(sns.lineplot, data=dfPlot2, units='subject', estimator= None, x='trialType', y='eventLatency', hue= 'trialType', hue_order=trialOrder, palette= 'Paired', alpha=0.6, style='subject', dashes=False, markers=True)
+ 
+    
+ 
+    
+    
+    #%% --plots: pooled between subj by virus; pooled first PE latency distribution by stage
+       #subset data
+    dfPlot= dfTidyOpto.copy()
+
+    stagesToPlot= dfPlot.stage.unique()
+    trialTypesToPlot= ['DStime', 'DStime_laser', 'NStime', 'NStime_laser']
+    eventsToPlot= ['PEtime']
+
+    
+    #running fxn still to remove unused categories
+    dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+
+
+    for virus in dfPlot.virus.unique():
+        
+        dfPlot2= dfPlot.loc[dfPlot.virus==virus]
+        
+        dfPlot2= subsetData(dfPlot2, stagesToPlot, trialTypesToPlot, eventsToPlot)
+        
+
+    
+        #--ecdf plot
+        g= sns.displot(data=dfPlot2, kind='ecdf', col='stage',  x='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
+    
+        g.fig.suptitle(virus+'- Pooled PE latency')
+        g.set_ylabels('PE latency')
+        g.set_xlabels('trainDayThisStage')       
+        
+        #overlay laser line (facilitates comparison btwn subplots) 
+        g.map(plt.axvline, x=1, color=".2",  linewidth=3, dashes=(3, 1), zorder=0) 
+        
+           #manually set axes limits
+        # g.set(xlim= (-0.5,dfPlot2.trainDayThisStage.max()+.5))   
+        # g.set(ylim= (0,1))   
+    
+        # g.add_legend()
+        
+        saveFigCustom(g, virus+'-betweenSubj- Pooled PE latency', savePath)
+            
+        
+        g.fig.suptitle(virus+'- Pooled PE latency')
+        g.set_ylabels('PE latency')
+        g.set_xlabels('trainDayThisStage')       
+        
+        #overlay laser line (facilitates comparison btwn subplots) 
+        g.map(plt.axvline, x=1, color=".2",  linewidth=3, dashes=(3, 1), zorder=0) 
+        
+        saveFigCustom(g, virus+'- Pooled PE Probability- Distribution', savePath)
+        
+        
+        
+        #--bar plot with individual subj lines overlaid
+        g= sns.FacetGrid(dfPlot2, col= 'stage')
+        g.map_dataframe(sns.barplot, data=dfPlot2, dodge=False, x='trialType', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
+        g.map_dataframe(sns.lineplot, data=dfPlot2, x='trialType', y='eventLatency', hue= 'subject', hue_order= subjectOrder, alpha=0.6, style='subject', dashes=False, markers=True)
+        
+        
+        g.fig.suptitle(virus+'- Pooled PE latency')
+        g.set_ylabels('PE latency')
+        g.set_xlabels('trainDayThisStage')  
+        saveFigCustom(g, virus+'- Pooled PE Probability- Mean', savePath)
+
+    
+    #%%-- Plots: individual subjs; daily first PE latency distribution 
+        
+        
+    dfPlot= dfTidyOpto.copy()
+    
+    #subset with customFunction
+    stagesToPlot= dfTidyOpto.stage.unique()
+    trialTypesToPlot= ['DStime','DStime_laser','NStime','NStime_laser','Pre-Cue']
+    eventsToPlot= ['PEtime']
+    dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+    
+    # #subset data at correct level of observation for variable    
+    # subset to first event per trial
+    groupHierarchy= groupHierarchyEventType
+    dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
+    
+    #--Plot evolution of PElatency- Individual subj
+    for subject in dfPlot.subject.unique():
+        
+        dfPlot2= dfPlot.loc[dfPlot.subject==subject,:].copy()
+        
+        dfPlot2= subsetData(dfPlot2, stagesToPlot, trialTypesToPlot, eventsToPlot)
+        
+
+        g = sns.FacetGrid(dfPlot2, col= 'stage', row="trainDayThisStage")
+        
+        #       # kde + hist count
+        # g.map_dataframe(sns.histplot, data=dfPlot2, bins=20, common_norm=False, element='step', alpha=0.4, x="eventLatency", hue='trialType', hue_order=trialOrder)
+        # g.map_dataframe(sns.kdeplot, data=dfPlot2, common_norm=False,  linewidth=2, x="eventLatency", hue='trialType', hue_order=trialOrder)
+        
+
+        #ecdf
+        g.map_dataframe(sns.ecdfplot, data=dfPlot2, x="eventLatency", hue='trialType', hue_order=trialOrder)
+
+
+        g.map(plt.axvline, x=1, color=".2",  linewidth=3, dashes=(3, 1), zorder=0)         
+
+        
+        
+    
+        
+        g.fig.suptitle(str(subject)+'- Daily PE latency distribution')
+        g.set_xlabels('First PE latency')       
+        
+      
+           #manually set axes limits
+        g.set(xlim= (0,10))   
+            
+        saveFigCustom(g, str(subject)+'- Daily distribution PE latency', savePath)
+
+    
 
       #%% #For lick+laser, plot trialType counts
       #since laser delivery is contingent on animal's licking, should check to see how many trials they are actually getting laser
@@ -521,11 +944,11 @@ if __name__ == '__main__':
         
         g= sns.relplot(data=dfPlot, kind='line', row='stage', x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder)
        
-        # g.map(sns.lineplot, data=dfPlot2, units='subject', estimator=None, alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder, style='subject', dashes=False, markers=True)
+        # g.map_dataframe(sns.lineplot, data=dfPlot2, units='subject', estimator=None, alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder, style='subject', dashes=False, markers=True)
         
         g= sns.catplot(data=dfPlot, col='subject', row='stage', kind='point', alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder)
 
-        g.map(sns.scatterplot(), data=dfPlot, alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder, style='subject', markers=True)
+        g.map_dataframe(sns.scatterplot(), data=dfPlot, alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder, style='subject', markers=True)
         
         g.fig.suptitle(virus+'-Opto-PE prob across laser days')
 
@@ -995,7 +1418,7 @@ if __name__ == '__main__':
    
    #trying to connect individual subj points
     #pointplot with units=subject #seems to work well for each subj
-    g= sns.catplot(data=dfPlot, y='trialTypePEProb10s', x='trialType',  kind='point', row='virus', col='stage', units='subject', hue='subject',order=trialOrder, palette=('deep'))
+    g= sns.catplot(data=dfPlot, y='trialTypePEProb10s', x='trialType',  kind='point', row='virus', col='stage', units='subject', hue='subject', order=trialOrder, palette=('deep'))
     g.fig.suptitle('PE probability by trialType; laser + CUE')
     g.set_axis_labels( 'trialType', 'probability of PE (10s)')
     g.map_dataframe(sns.barplot, y='trialTypePEProb10s', x='trialType', hue='trialType', hue_order=trialOrder, order=trialOrder, palette='Paired')
@@ -1641,7 +2064,7 @@ if __name__ == '__main__':
     except:
         print('lick+laser exception')
     
-    #%% Save dfTidy so it can be loaded quickly for subesequent analysis
+    #%% Save dfTidyOpto so it can be loaded quickly for subesequent analysis
 
 savePath= r'./_output/' #r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python' 
 
