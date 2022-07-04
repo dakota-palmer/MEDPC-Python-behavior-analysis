@@ -2,6 +2,8 @@ clear all
 close all
 clc
 
+%% Import data
+
 % % % --dp vp-vta-stgtacr data
 % CurrentDir ='Z:\Dakota\MEDPC\Downstairs\vp-vta-stgtacr_DStrain';
 % SavingDir = 'Z:\Dakota\MEDPC\Downstairs\stgtacr_behavior\laser';
@@ -16,20 +18,203 @@ CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
 SavingDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy\_output'; %'/Volumes/nsci_richard/Christelle/Codes/Matlab';
 cd(CurrentDir)
 
-[~,~,raw] = xlsread("OptoStimDayAnalysis051121.xlsx");
-[~,~,ratinfo] =  xlsread('Christelle Opto Summary Record.xlsx');
+% [~,~,raw] = xlsread("OptoStimDayAnalysis051121.xlsx");
 
+%slow to read entire allses xlsx
+[~,~,raw] = xlsread("christelle_opto_data_allSessions_withMSN_stripped_dp.xlsx"); %dp new all ses xlsx
+
+[~,~,ratinfo] =  xlsread('Christelle Opto Summary Record.xlsx');
 
 VarNames = raw(1,:);
 Data = raw(2: end,:);
 
+% first convert to table(nice to work with)
+% cell2table kinda slow here? profiling... 247s
+Data= cell2table(raw);
+
+%assign first row as column names
+Data.Properties.VariableNames = Data{1,:};
+
+%% --SUBSET data from only opto manipulation stages
+
+%-'Experiment' field should have notes for laser stim days? - imperfect,
+%relies on user imput and I saw some that I think were left blank
+%search for files with stimulation day .mpc specifically
+
+%  unique(Data.Experiment(:))
+% experimentStringToFind= {'STIM DAY', 'STIMULATION DAY', 'STIMULATION TEST'};
+
+
+% - just use StimLength later on to exclude
+% % Better to use MSN if possible
+% %-' MSN ' field has the MSN used for each session.
+% % unique(Data.MSN);
+% %- seems that 'PulsePal Gated Stimulation' = 10s laser
+% % -seems that 'PulsePal Opto Laser DS Code' = 1s laser
+% msnToInclude= {'PulsePal Opto Laser DS Code', 'PulsePal Gated Stimulation'}
+% 
+% % find index of data rows matching msnToInclude
+% ind= [];
+% ind= ismember(Data.MSN, msnToInclude);
+% 
+% %subset data
+% Data= Data(ind, :);
+
+% Remove empty data entries (missing Subject)  ? %TODO: Validate, make sure these are
+% actually empty sessions
+ind= [];
+
+ind= cellfun(@isnan,Data.Subject,'UniformOutput',false);
+
+ind= ~cellfun(@any,ind);
+
+Data= Data(ind,:);
+
+%Remove ses where NumDSCues blank 
+ind= [];
+
+ind= cellfun(@ischar,Data.NumDSCues,'UniformOutput',false);
+
+ind= ~cellfun(@any,ind);
+
+Data= Data(ind,:);
+
+ 
+% Noting another weird empty data entry (82) 
+% DS Cue onsets are all blank...
+% Probably due to macro or something autofilling subject? Search for these
+% and remove also.
+ind= [];
+% ind= Data.NumDSCues>0 %non-zero
+ind= [Data.NumDSCues{:}] >0;
+
+Data= Data(ind,:);
+
+%% -- Use Christelle's spreadsheet to find StimLength for sessions
+%- StimLength seems manually added by Christelle per session in .xlsx
+
+%initialize StimLength field
+Data{:,"StimLength"}= {nan};%cell(size(Data,1));
+
+%load the original sheet used by Christelle
+[~,~,DataOG] = xlsread("OptoStimDayAnalysis051121.xlsx");
+
+DataOG= cell2table(DataOG);
+
+DataOG.Properties.VariableNames = DataOG{1,:};
+
+DataOG= DataOG(2:end,:);
+
+%get unique subjects & sessions from my sheet for matching
+subjects= unique(Data.Subject);
+
+% dates= unique([Data.StartDate{:}]);
+
+%loop thru unique subj & dates to match up StimLengths between .xlsx sheets
+for subj= 1:numel(subjects)
+    ind= [];
+    ind= strcmp(Data.Subject,subjects{subj});
+    
+    %find dates for this subject
+    datesThisSubj= [];
+    datesThisSubj= unique([Data.StartDate{ind}]); 
+
+    %search original spreadsheet for matches
+    for date = 1:numel(datesThisSubj)
+        %get data matching this session from OG xlsx
+        indOG= [];
+        
+        indOG= strcmp(DataOG.Subject,subjects{subj});
+        
+        indOG= indOG &  ismember([DataOG.StartDate{:}], datesThisSubj(date))';
+     
+        StimLength= [];
+        StimLength= DataOG.StimLength(indOG);
+        
+        if isempty(StimLength) %if not found, make nan
+            StimLength= {nan};
+        end
+        
+        %insert into updated Data on matching session
+        ind=[];
+        ind= strcmp(Data.Subject,subjects{subj});
+        ind= ind &  ismember([Data.StartDate{:}], datesThisSubj(date))';
+
+        
+        Data{ind, "StimLength"}= StimLength;
+        
+
+    end
+    
+    
+end
+
+ %Update VsrNames!
+ VarNames= Data.Properties.VariableNames;
+
+ %% Exclude data without StimLength
+ 
+ % find index of data rows matching msnToInclude
+ind= [];
+ind= ~isnan([Data.StimLength{:}]);
+
+%subset data
+Data= Data(ind, :);
+ 
+%% searching for missing files
+
+%185 sessions in original sheet
+%only 142 in mine...
+
+% - diffs
+% + OM1
+% - multiple subjs test 200121 , 200123
+% 
+datesOG= unique([DataOG.StartDate{:}]);
+datesNew= unique([Data.StartDate{:}]);
+
+datesMissing= datesOG(~ismember(datesOG,datesNew))
+
+ 
+ 
+ %% Save this Data set as .xlsx (to compare against orginial)
+filename = '_new_Data.xlsx';
+% writetable(Data,filename);
+
+%% convert table back to original format (so works with old code)
+Data=table2cell(Data);
+
+
+
+
+%% Initialize DSStimulation struct to hold data
 DSStimulation = struct();
 
-for i = 1 : 41
+%remove spaces in VarName
+VarNames= strrep(VarNames, ' ','');
+
+%dp- seems christelle looped thru 41 simply bc first 41 variables were ones
+% she wanted saved into the struct. I left others in.
+
+%for her col 41= 'TotalLaserTrials'
+
+%old- I could get rid of the extra data or just include it all (will do this, shouldn't hurt)
+% for me this is col 69
+
+%dp getting rid of extra data cols in spreadsheet.
+%now TotalLaserTrials is col 45
+
+for i = 1 :45 %41
     if strcmp(VarNames{i},'Subject') %strcmp=compares string. If the string is 'Subject' then.. 
         DSStimulation.(VarNames{i}) = Data(1:end,(i));
     else
-        DSStimulation.(VarNames{i}) = cell2mat(Data(1:end,(i)));
+        %dp- seems cell2mat here is used for math computations later on..
+        %make exception for strings
+        if any(cellfun(@ischar, Data(:,i)))%any(ischar(Data{:,i}))
+            DSStimulation.(VarNames{i}) = (Data(1:end,(i)));%cell2mat(Data(1:end,(i)));
+        else
+            DSStimulation.(VarNames{i}) = cell2mat(Data(1:end,(i)));
+        end
     end
 end
 
@@ -42,6 +227,12 @@ DSColIndex = find(strcmp(strip(VarNames),'DSCueOnset'));
 DSStimulation.DSCueOnset = Data(1:end,DSColIndex+1 : DSColIndex + 29); % 30 trials of DS, not sure this is the same as Runbo's?
 NSColIndex = find(strcmp(strip(VarNames),'NSCueOnset'));
 DSStimulation.NSCueOnset = Data(1:end,NSColIndex : NSColIndex + 29); % Christelle's has 29 trials of NS??
+
+%dp add StimLength field (at end of my data  so search)
+ind=[];
+ind = find(strcmp(strip(VarNames),'StimLength'));
+DSStimulation.StimLength = Data(1:end,ind);
+DSStimulation.StimLength= cell2mat(DSStimulation.StimLength);
 
 %DP clearly missing port entries, only getting like 160 PEtimestamps
 %this dependence on the row profile is a problem? 
@@ -81,7 +272,7 @@ DSStimulation.NSCueOnset = cell2mat(DSStimulation.NSCueOnset);
 % dp- 'PETimestamps controlling the loop here can't be right? It's capped
 % off at 126 despite many more total PEs in sessions...
 
-% seems that here simply overwriting empty spots in array with nan
+% here simply overwriting empty spots in array with nan
 for y=1:size(DSStimulation.PETimestamps,1)
     for x=1:size(DSStimulation.PETimestamps,2)
         if ischar(DSStimulation.PETimestamps{y,x}) %dp- this is true if placeholder variable is present? e.g. if no PE logged in this slot?
@@ -360,7 +551,11 @@ DSStimulation.DSNSRatio=DSStimulation.DSPERatio./DSStimulation.NSPERatio
 CueType=vertcat(ones([length(DSStimulation.Subject) 1]),2.*ones([length(DSStimulation.Subject) 1]),3.*ones([length(DSStimulation.Subject) 1]),4.*ones([length(DSStimulation.Subject) 1])) 
 RelLatency=vertcat(DSStimulation.DSNoLaserRelLatMean,DSStimulation.DSLaserRelLatMean,DSStimulation.NSNoLaserRelLatMean,DSStimulation.NSLaserRelLatMean)
 ResponseProb=vertcat(DSStimulation.DSNoLaser10sResponseProb,DSStimulation.DSLaser10sResponseProb,DSStimulation.NSNoLaser10sResponseProb,DSStimulation.NSLaser10sResponseProb)
+
+%---- StimLength seems manually added by Christelle per session in .xlsx
 StimLength=vertcat(DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength)
+%----
+
 Group=vertcat(DSStimulation.Group,DSStimulation.Group,DSStimulation.Group,DSStimulation.Group)
 Subject=vertcat(DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID)
 Expression=vertcat(DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression)

@@ -2,12 +2,23 @@ clear all
 close all
 clc
 
-CurrentDir = 'Z:\Dakota\MEDPC\Downstairs\GAD-VP-OPTO-DStrain\ICSS' %'/Volumes/nsci_richard/Christelle/Codes/Matlab';
-SavingDir = 'Z:\Dakota\MEDPC\Downstairs\GAD-VP-OPTO-DStrain\ICSS\_matlab_output'; %'/Volumes/nsci_richard/Christelle/Codes/Matlab';
+% %--dp gad-vp-opto data
+% CurrentDir = 'Z:\Dakota\MEDPC\Downstairs\GAD-VP-OPTO-DStrain\ICSS' %'/Volumes/nsci_richard/Christelle/Codes/Matlab';
+% SavingDir = 'Z:\Dakota\MEDPC\Downstairs\GAD-VP-OPTO-DStrain\ICSS\_matlab_output'; %'/Volumes/nsci_richard/Christelle/Codes/Matlab';
+% cd(CurrentDir)
+% 
+% [~,~,raw] = xlsread('gad-vp-opto-icss-mpc2xl.xlsx'); %xlsread('Opto ICSS Data');
+% [~,~,ratinfo] = xlsread('Dakota Opto Summary Record.xlsx')% xlsread('Christelle Opto Summary Record.xlsx');
+% 
+
+% %--christelle opto data
+CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
+SavingDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy\_output'; %'/Volumes/nsci_richard/Christelle/Codes/Matlab';
 cd(CurrentDir)
 
-[~,~,raw] = xlsread('gad-vp-opto-icss-mpc2xl.xlsx'); %xlsread('Opto ICSS Data');
-[~,~,ratinfo] = xlsread('Dakota Opto Summary Record.xlsx')% xlsread('Christelle Opto Summary Record.xlsx');
+[~,~,raw] = xlsread('Opto ICSS Data');
+[~,~,ratinfo] =  xlsread('Christelle Opto Summary Record.xlsx');
+
 
 VarNames = raw(1,:);
 Data = raw(2: end,:);
