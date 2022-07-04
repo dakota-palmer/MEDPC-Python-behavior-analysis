@@ -2,6 +2,13 @@ clear all
 close all
 clc
 
+%% Figure options
+figPath= strcat(pwd,'\_output\');
+
+figFormats= {'.fig','.svg'} %list of formats to save figures as (for saveFig.m)
+
+
+
 %% Import data
 
 % % % --dp vp-vta-stgtacr data
@@ -23,7 +30,9 @@ cd(CurrentDir)
 %slow to read entire allses xlsx
 [~,~,raw] = xlsread("christelle_opto_data_allSessions_withMSN_stripped_dp.xlsx"); %dp new all ses xlsx
 
-[~,~,ratinfo] =  xlsread('Christelle Opto Summary Record.xlsx');
+% [~,~,ratinfo] =  xlsread('Christelle Opto Summary Record.xlsx');
+[~,~,ratinfo] = xlsread('Christelle Opto Summary Record_dp.xlsx');
+
 
 VarNames = raw(1,:);
 Data = raw(2: end,:);
