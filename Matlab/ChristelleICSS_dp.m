@@ -74,7 +74,16 @@ lmeVTAActive=fitlme(VTATable,'Active~Session+(1|Rat)')
 lmeVTAInactive=fitlme(VTATable,'Inactive~Session+(1|Rat)')
 
 
+%% DP Subset data for vp--> vta group only
 
+ind=[];
+ind= ~(ICSS.ProjGroup==1);
+
+%loop thru fields and eliminate data
+allFields= fieldnames(ICSS);
+for field= 1:numel(allFields)
+    ICSS.(allFields{field})(ind)= [];
+end
 %% plot ICSS Active vs Inactive NP Group
 
 figure %projection
@@ -187,11 +196,61 @@ saveFig(gcf, figPath,title,figFormats);
 % g.export('file_name','ICSS Nosepoke Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf') 
 
 
+%% -- DP calculate active nosepoke preference & deltas
+
+%-calculate active proportion (active/total)
+ICSS.npTotal= ICSS.ActiveNP + ICSS.InactiveNP;
+
+ICSS.npActiveProportion= ICSS.ActiveNP ./ ICSS.npTotal;
+
+%calculate active nosepoke delta (active-inactive)
+ICSS.npDelta= (ICSS.ActiveNP - ICSS.InactiveNP);
+
+
+%calculate active fold NP relative to inactive (Active NP / Inactive NP)
+ICSS.npActiveFold= (ICSS.ActiveNP ./ ICSS.InactiveNP);
+%% DP plot of individual active nosepoke preference proportion (active/total)
+
+%- plot individual rats active proportion NP
+figure; clear d;
+
+selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
+
+d(1,1)=gramm('x',ICSS.Session(selection),'y',ICSS.npActiveProportion(selection),'color',ICSS.Subject(selection))
+d(1,1).stat_summary('type','sem','geom','line');
+d(1,1).set_names('x','Session','y','Proportion active nosepokes (active/total NP)','color','Stim(-)')
+d(1,1).set_title('ICSS Active Proportion Nospoke Individual')
+d(1,1).axe_property( 'YLim',[0 1],'XLim',[1 8])
+
+d(1,1).geom_hline('yintercept', 0.5, 'style', 'k--'); %horizontal line @ 0.5 (equal preference)
+% d(1,1).draw();
+
+%- plot delta NP
+d(1,2)=gramm('x',ICSS.Session(selection),'y',ICSS.npDelta(selection),'color',ICSS.Subject(selection))
+d(1,2).stat_summary('type','sem','geom','line');
+d(1,2).set_names('x','Session','y','Delta nosepokes (Active - Inactive NP)','color','Stim(-)')
+d(1,2).set_title('ICSS Delta Nospoke Individual')
+d(1,2).axe_property( 'YLim',[0 150],'XLim',[1 8])
+d(1,2).geom_hline('yintercept', 0, 'style', 'k--'); %horizontal line @ 0 (equal preference)
+
+
+% d(1,2).draw();
+
+%- plot active fold NP
+d(1,3)=gramm('x',ICSS.Session(selection),'y',ICSS.npActiveFold(selection),'color',ICSS.Subject(selection))
+d(1,3).stat_summary('type','sem','geom','line');
+d(1,3).set_names('x','Session','y','Active Fold nosepokes (Active / Inactive NP)','color','Stim(-)')
+d(1,3).set_title('ICSS Delta Nospoke Individual')
+d(1,3).axe_property( 'YLim',[0 10],'XLim',[1 8])
+d(1,3).geom_hline('yintercept', 1, 'style', 'k--'); %horizontal line @ 1 (equal preference)
+
+d.draw();
+
 %% Individual Data
 
 
 %plot individual rats Active vs Inactive NP
-figure
+figure; clear d;
 selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
 d(1,1)=gramm('x',ICSS.Session(selection),'y',ICSS.ActiveNP(selection),'color',ICSS.Subject(selection))
 d(1,1).stat_summary('type','sem','geom','line');
@@ -199,6 +258,18 @@ d(1,1).set_names('x','Session','y','Number of Nose Pokes','color','Stim(-)')
 d(1,1).set_title('ICSS Nospoke Individual')
 d(1,1).axe_property( 'YLim',[0 1500],'XLim',[1 8])
 %d.export( 'file_name','Verified ICSS Individual Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf')
+d(1,1).draw();
+
+%- dp add inactive np lines for individuals
+d(1,1).update('x',ICSS.Session(selection),'y',ICSS.InactiveNP(selection),'color',ICSS.Subject(selection))
+d(1,1).stat_summary('type','sem','geom','line');
+d(1,1).set_names('x','Session','y','Number of Nose Pokes','color','No Stim(--)')
+d(1,1).set_line_options( 'styles',{':'})
+
+% dp zoom in (can always have inlay or try log scale for highly responsive subj)
+d(1,1).axe_property( 'YLim',[0 100])
+
+% d(1,1).draw();
 
 %plot ICSS Active vs Inactive Total Time in NP Individual
 selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
@@ -206,14 +277,16 @@ d(1,2)=gramm('x',ICSS.Session(selection),'y',ICSS.TotalLengthActiveNP(selection)
 d(1,2).stat_summary('type','sem','geom','area');
 d(1,2).set_names('x','Session','y','Time in Nosepoke','color','Active(-)')
 d(1,2).set_title('ICSS Time in Nosepoke Individual')
-d(1,2).axe_property( 'YLim',[0 100])
+d(1,2).axe_property( 'YLim',[0 150])
+d.draw()
+
 
 d(1,2).update('x',ICSS.Session(selection),'y',ICSS.TotalLengthInactiveNP(selection),'color',ICSS.Subject(selection))
 d(1,2).stat_summary('type','sem','geom','area');
 d(1,2).set_names('x','Session','y','Time in Nosepoke','color','Inactive(--)')
 d(1,2).set_title('ICSS Time in Nosepoke')
 d(1,2).set_line_options( 'styles',{':'})
-d.draw()
+d(1,2).draw()
 
 title= 'ICSS_nosepoke_data_individuals_verified';
 saveFig(gcf, figPath,title,figFormats);
