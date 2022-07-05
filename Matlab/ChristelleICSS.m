@@ -2,28 +2,12 @@ clear all
 close all
 clc
 
-%% Figure options
-figPath= strcat(pwd,'\_output\_ICSS\');
-
-figFormats= {'.fig','.svg'} %list of formats to save figures as (for saveFig.m)
-
-
-
-%% load data
 %CurrentDir ='/Volumes/nsci_richard/Christelle/Codes/Matlab';
 %SavingDir = '/Volumes/nsci_richard/Christelle/Codes/Matlab';
 %cd(CurrentDir)
 
-
-% %--christelle opto data
-CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
-cd(CurrentDir)
-
-
 [~,~,raw] = xlsread('Opto ICSS Data');
-% [~,~,ratinfo] = xlsread('Christelle Opto Summary Record.xlsx');
-[~,~,ratinfo] = xlsread('Christelle Opto Summary Record_dp.xlsx');
-
+[~,~,ratinfo] = xlsread('Christelle Opto Summary Record.xlsx');
 
 VarNames = raw(1,:);
 Data = raw(2: end,:);
@@ -180,11 +164,7 @@ g(2,2).set_line_options( 'styles',{':'})
 %g.export( 'file_name','VERIFIED Reversal ICSS Total Length Active vs Inactive NP','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf')
 
 g.draw();
-
-title= 'ICSS_nosepoke_data_verified';
-saveFig(gcf, figPath,title,figFormats);
-
-% g.export('file_name','ICSS Nosepoke Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf') 
+g.export('file_name','ICSS Nosepoke Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf') 
 
 
 %% Individual Data
@@ -200,7 +180,9 @@ d(1,1).set_title('ICSS Nospoke Individual')
 d(1,1).axe_property( 'YLim',[0 1500],'XLim',[1 8])
 %d.export( 'file_name','Verified ICSS Individual Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf')
 
+
 %plot ICSS Active vs Inactive Total Time in NP Individual
+figure
 selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
 d(1,2)=gramm('x',ICSS.Session(selection),'y',ICSS.TotalLengthActiveNP(selection),'color',ICSS.Subject(selection))
 d(1,2).stat_summary('type','sem','geom','area');
@@ -214,9 +196,6 @@ d(1,2).set_names('x','Session','y','Time in Nosepoke','color','Inactive(--)')
 d(1,2).set_title('ICSS Time in Nosepoke')
 d(1,2).set_line_options( 'styles',{':'})
 d.draw()
-
-title= 'ICSS_nosepoke_data_individuals_verified';
-saveFig(gcf, figPath,title,figFormats);
 
 %Calculate how many animals/sex per group on each session day
 Fmdthal= ICSS.Expression==1 & ICSS.ExpType==1 & ICSS.Session==1 & strcmp(ICSS.Sex,'F') & strcmp(ICSS.Projection,'mdThal');
