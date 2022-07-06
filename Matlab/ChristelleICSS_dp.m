@@ -7,6 +7,15 @@ figPath= strcat(pwd,'\_output\_ICSS\');
 
 figFormats= {'.fig','.svg'} %list of formats to save figures as (for saveFig.m)
 
+%-- Master plot linestyles and colors
+
+%thin, light lines for individual subj
+linewidthSubj= 0.5;
+% lightnessRangeSubj= [100,100]; %lightness range doesn't work with color facet?
+
+%dark, thick lines for between subj grand mean
+linewidthGrand= 1.5;
+% lightnessRangeGrand= [10,10];%lightness range doesn't work with color facet?
 
 
 %% load data
@@ -84,6 +93,9 @@ allFields= fieldnames(ICSS);
 for field= 1:numel(allFields)
     ICSS.(allFields{field})(ind)= [];
 end
+
+
+
 %% plot ICSS Active vs Inactive NP Group
 
 figure %projection
@@ -245,6 +257,101 @@ d(1,3).axe_property( 'YLim',[0 10],'XLim',[1 8])
 d(1,3).geom_hline('yintercept', 1, 'style', 'k--'); %horizontal line @ 1 (equal preference)
 
 d.draw();
+
+
+%% dp reorganizing data into table for table fxns and easy faceting
+
+ICSStable= table();
+
+%loop thru fields and fill table
+allFields= fieldnames(ICSS);
+for field= 1:numel(allFields)
+    ICSStable.(allFields{field})= ICSS.(allFields{field});
+end
+
+
+%--dp add trainPhase variable for distinct session types (e.g. active side reversal)
+
+%initialize
+ICSStable(:,"trainPhase")= {''};
+
+%for this ICSS ses 1-5= same side, >6 = reversal
+ind= [];
+ind= ICSStable.Session <= 5;
+
+ICSStable(ind, "trainPhase")= {'ICSS-OG-active-side'};
+
+ind= [];
+ind= ICSStable.Session >= 6;
+
+ICSStable(ind, "trainPhase")= {'ICSS-Reversed-active-side'};
+
+%-dp add trainDayThisPhase for best plotting of trainPhase facet, for late
+%days this will be session-5 (assume all ran 5 days of first phase)
+ICSStable(:, "trainDayThisPhase")= table(nan); %initialize
+
+ICSStable(:, "trainDayThisPhase")= table(ICSStable.Session); %start by prefilling w session
+
+ICSStable(ind, "trainDayThisPhase")= table(ICSStable.Session(ind)-5); %carrying over ind of later phase, subtract n first phase sessions from this
+
+
+%% dp plot mean and individuals 
+
+%subset data
+selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
+
+data= ICSStable(selection,:);
+
+%stack() to make inactive/active NPtype a variable
+data= stack(data, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'NewDataVariableName', 'countNP');
+
+
+%generate figure
+figure; clear d;
+
+%-- individual subj
+group= data.Subject;
+
+% d(1,1)=gramm('x',ICSS.Session(selection),'y',ICSS.ActiveNP(selection),'color',ICSS.Subject(selection))
+d=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
+
+%facet by trainPhase - ideally could set sharex of facets false but idk w gramm
+d.facet_grid([],data.trainPhase);
+
+d.stat_summary('type','sem','geom','line');
+d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
+
+d().set_line_options('base_size',linewidthSubj);
+
+
+d.draw()
+
+%-- btwn subj mean as well
+group= [];
+
+d.update('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
+
+d.stat_summary('type','sem','geom','area');
+d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
+
+d().set_line_options('base_size',linewidthGrand);
+
+title= strcat('ICSS-dp-npType');   
+d.set_title(title);   
+
+%Zoom in on lower NP subjects, can comment out and make inlay for high
+%responders?
+% d().axe_property( 'YLim',[0 300]) %low responders
+d().axe_property( 'YLim',[0, 1200]) %high responders
+
+%TODO: SET X TICK = 1 SESSION
+%TODO: Explore inlay options in matlab
+
+d.draw()
+
+
+saveFig(gcf, figPath,title,figFormats);
+
 
 %% Individual Data
 
