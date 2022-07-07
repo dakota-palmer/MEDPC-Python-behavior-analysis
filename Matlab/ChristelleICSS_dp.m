@@ -5,7 +5,29 @@ clc
 %% Figure options
 figPath= strcat(pwd,'\_output\_ICSS\');
 
-figFormats= {'.fig','.svg'} %list of formats to save figures as (for saveFig.m)
+figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
+
+
+%-- Set some Main default settings for gramm plots
+% trying to save all at once in single vars so dont have to always use
+% so much code
+
+% -text options
+%Need to store mixed data types (str for argument/variable names and some num for values), so store as
+%a cell array. 
+
+text_options_MainStyle= {'font'; 'Arial'; 
+    'interpreter'; 'none'; 
+    'base_size'; 22; 
+    'label_scaling'; 1;
+   'legend_scaling'; 1; 
+   'legend_title_scaling'; 1.2; 
+   'facet_scaling'; 1.2; 
+   'title_scaling'; 1.4;
+   'big_title_scaling'; 1.4};
+
+% When you want to call on the gramm object to set_text_options, retrieve values with {:} like so:
+    % g.set_text_options(text_options_MainStyle{:}); 
 
 %-- Master plot linestyles and colors
 
@@ -345,8 +367,29 @@ d.set_title(title);
 d().axe_property( 'YLim',[0, 1200]) %high responders
 
 %TODO: SET X TICK = 1 SESSION
-%TODO: Explore inlay options in matlab
+d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
 
+%set text options
+text_options_MainStyle=[];
+
+text_options_MainStyle= {'font'; 'Arial'; 
+    'interpreter'; 'none'; 
+    'base_size'; 22; 
+    'label_scaling'; 1;
+   'legend_scaling'; 1; 
+   'legend_title_scaling'; 1.2; 
+   'facet_scaling'; 1.2; 
+   'title_scaling'; 1.4;
+   'big_title_scaling'; 1.4};
+
+d.set_text_options(text_options_MainStyle{:}); 
+
+
+
+%TODO: Explore inlay options in matlab
+%g(1,1).set_layout_options('Position',[0.5 .33 0.5 0.33],'legend_position',[0.65 0.38 0.1 0.1]);
+    % First 2 in 'position': halfway over, 1/3 of the way up; next 2 may be size
+    
 d.draw()
 
 

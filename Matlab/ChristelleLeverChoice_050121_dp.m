@@ -4,7 +4,7 @@ clc
 %% Figure options
 figPath= strcat(pwd,'\_output\_choiceTask\');
 
-figFormats= {'.fig','.svg'} %list of formats to save figures as (for saveFig.m)
+figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
 
 
 

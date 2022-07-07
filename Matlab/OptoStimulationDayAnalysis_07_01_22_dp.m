@@ -3,9 +3,9 @@ close all
 clc
 
 %% Figure options
-figPath= strcat(pwd,'\_output\');
+figPath= strcat(pwd,'\_output\_DS_task_stimDay\');
 
-figFormats= {'.fig','.svg'} %list of formats to save figures as (for saveFig.m)
+figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
 
 
 
@@ -546,33 +546,67 @@ Mode=cell2mat(Mode);
 Subject=cell2mat(Subject);
 
 
+%% DP Subset data for vp--> vta group only
+
+% ind=[];
+% % ind= ~(DSStimulation.Projection==1);
+% ind= ~strcmp(DSStimulation.Projection, 'VTA');
+% 
+% %loop thru fields and eliminate data
+% allFields= fieldnames(DSStimulation);
+% for field= 1:numel(allFields)
+%     DSStimulation.(allFields{field})(ind)= [];
+% end
+
+
+ind=[];
+% ind= ~(DSStimulation.Projection==1);
+ind= strcmp(Group, 'OV');
+
+
+%eliminate data
+Group= Group(ind);
+CueType= CueType(ind);
+RelLatency=RelLatency(ind);
+ResponseProb= ResponseProb(ind);
+StimLength=StimLength(ind);
+Subject= Subject(ind);
+Expression= Expression(ind);
+Mode= Mode(ind);
+DSRatio= DSRatio(ind);
+DSNSRatio= DSNSRatio(ind);
+Learner= Learner(ind);
+
 
 %% plots
 
-% %histogram to determine which animals learned
-% 
-% % histogram of NS PE Ratio calculated by MPC
-% selection= DSStimulation.StimLength==0
-% learn= DSStimulation.NSPERatio(selection)
-% animal= DSStimulation.Subject (selection)
-% BinNums = [0:.1:1]
-% 
-% figure()
-% histogram (learn, BinNums)
-% 
-% selection2 = DSStimulation.DSPERatio(selection) >= 0.6 & DSStimulation.NSPERatio(selection) <= 0.5
-% learned= DSStimulation.Subject (selection2)
-% 
-% 
-% %- histogram of 10s NS PE Ratio
-% % histogram of NS PE Ratio calculated by MPC
-% selection= DSStimulation.StimLength==0;
-% learn= DSStimulation.NSNoLaser10sResponseProb(selection);
-% animal= DSStimulation.Subject (selection);
-% BinNums = [0:.1:1];
-% 
-% figure(); hold on;
-% histogram (learn, BinNums);
+%histogram to determine which animals learned
+
+% histogram of NS PE Ratio calculated by MPC
+selection= DSStimulation.StimLength==0
+learn= DSStimulation.NSPERatio(selection)
+animal= DSStimulation.Subject (selection)
+BinNums = [0:.1:1]
+
+figure()
+histogram (learn, BinNums)
+
+selection2 = DSStimulation.DSPERatio(selection) >= 0.6 & DSStimulation.NSPERatio(selection) <= 0.5
+learned= DSStimulation.Subject (selection2)
+
+%- plot ratio being used here
+figure; clear i;
+
+
+%- histogram of 10s NS PE Ratio
+% histogram of NS PE Ratio calculated by MPC
+selection= DSStimulation.StimLength==0;
+learn= DSStimulation.NSNoLaser10sResponseProb(selection);
+animal= DSStimulation.Subject (selection);
+BinNums = [0:.1:1];
+
+figure(); hold on;
+histogram (learn, BinNums);
 
 
 %% Plot Stim Day 0
