@@ -667,7 +667,34 @@ saveFig(gcf, figPath,figTitle,figFormats);
 
 %% --Stat comparison of ICSS active v inactive nosepokes
 
+%% Prior to stats, viz the distribution 
+%wondering if should run stats on log or raw nosepoke counts
 
+figure(); clear g;
+
+g(1,1)= gramm('x', data.countNP, 'color', data.typeNP);
+
+g(1,1).set_names('x','Number of Nose Pokes','color','Nosepoke Side')
+
+g(1,1).stat_bin()
+
+g(2,1)= gramm('x', data.logNP, 'color', data.typeNP);
+
+g(2,1).stat_bin()
+
+g(1,1).set_names('x','Log(Number of Nose Pokes)','color','Nosepoke Side')
+
+figTitle= 'ICSS inset final session preReversal-Stats Distribution';
+
+g().set_title(figTitle)
+
+g.set_text_options(text_options_DefaultStyle{:}); %set text options- do before first draw() call so applied on subsequent updates()
+
+g.set_color_options('map',cmapGrand); 
+
+g.draw();
+
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %% Individual Data
