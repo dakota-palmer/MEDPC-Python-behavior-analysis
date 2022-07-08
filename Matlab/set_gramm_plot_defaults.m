@@ -292,3 +292,13 @@ colormap(map)
 
 %% CLOSE ALL example figures 
 close all;
+
+
+
+%% ----TODO
+
+
+%TODO: Explore inlay options in matlab
+%g(1,1).set_layout_options('Position',[0.5 .33 0.5 0.33],'legend_position',[0.65 0.38 0.1 0.1]);
+    % First 2 in 'position': halfway over, 1/3 of the way up; next 2 may be size
+    

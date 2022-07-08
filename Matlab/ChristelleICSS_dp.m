@@ -429,16 +429,13 @@ data= ICSStable(selection,:);
 %stack() to make inactive/active NPtype a variable
 data= stack(data, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'NewDataVariableName', 'countNP');
 
-
 %generate figure
 figure; clear d;
 
 %-- individual subj
 group= data.Subject;
 
-% d(1,1)=gramm('x',ICSS.Session(selection),'y',ICSS.ActiveNP(selection),'color',ICSS.Subject(selection))
 d=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
-% d=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group, 'lightness',group)
 
 %facet by trainPhase - ideally could set sharex of facets false but idk w gramm
 d.facet_grid([],data.trainPhase);
@@ -449,8 +446,12 @@ d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
 d().set_line_options('base_size',linewidthSubj);
 d.set_color_options('map', cmapSubj);
 
-% d.set_color_options('lightness_range', lightnessRangeSubj);
-% d.no_legend() %if faceting with lightness for individual observations, dont add legend since lighntess labels can be huge
+d.no_legend(); %prevent legend duplicates if you like
+
+
+%set text options
+d.set_text_options(text_options_DefaultStyle{:}); 
+
 
 d.draw()
 
@@ -458,7 +459,6 @@ d.draw()
 group= [];
 
 d.update('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
-% d.update('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group, 'lightness', [])
 
 d.stat_summary('type','sem','geom','area');
 
@@ -467,30 +467,86 @@ d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
 d().set_line_options('base_size',linewidthGrand);
 d.set_color_options('map', cmapGrand);
 
-% d.set_color_options('lightness_range', lightnessRangeGrand);
 
 figTitle= strcat('ICSS-dp-npType');   
 d.set_title(figTitle);   
 
-%Zoom in on lower NP subjects, can comment out and make inlay for high
-%responders?
+%Zoom in on lower NP subjects if desired
 % d().axe_property( 'YLim',[0 300]) %low responders
 d().axe_property( 'YLim',[0, 1200]) %high responders
 
 % SET X TICK = 1 SESSION
 d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
 
+
+d.draw()
+
+saveFig(gcf, figPath,figTitle,figFormats);
+
+%% - dp try log scale of above (might help since extreme variability)
+
+% cmapSubj= cmapBlueGraySubj;
+% cmapGrand= cmapBlueGrayGrand;
+
+%subset data
+% selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
+
+% data= ICSStable(selection,:);
+
+%stack() to make inactive/active NPtype a variable
+% data= stack(data, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'NewDataVariableName', 'countNP');
+
+data.logNP = log(data.countNP);
+
+%generate figure
+figure; clear d;
+
+%-- individual subj
+group= data.Subject;
+
+d=gramm('x',data.trainDayThisPhase,'y',data.logNP,'color',data.typeNP, 'group', group)
+
+%facet by trainPhase - ideally could set sharex of facets false but idk w gramm
+d.facet_grid([],data.trainPhase);
+
+d.stat_summary('type','sem','geom','line');
+d.set_names('x','Session','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
+
+d().set_line_options('base_size',linewidthSubj);
+d.set_color_options('map', cmapSubj);
+
+d.no_legend(); %prevent legend duplicates if you like
+
+
 %set text options
 d.set_text_options(text_options_DefaultStyle{:}); 
 
 
-
-%TODO: Explore inlay options in matlab
-%g(1,1).set_layout_options('Position',[0.5 .33 0.5 0.33],'legend_position',[0.65 0.38 0.1 0.1]);
-    % First 2 in 'position': halfway over, 1/3 of the way up; next 2 may be size
-    
 d.draw()
 
+%-- btwn subj mean as well
+group= [];
+
+d.update('x',data.trainDayThisPhase,'y',data.logNP,'color',data.typeNP, 'group', group)
+
+d.stat_summary('type','sem','geom','area');
+
+d.set_names('x','Session','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
+
+d().set_line_options('base_size',linewidthGrand);
+d.set_color_options('map', cmapGrand);
+
+
+figTitle= strcat('ICSS-dp-npType-logScale');   
+d.set_title(figTitle);   
+
+% d().axe_property( 'YLim',[0 300]) %low responders
+% d().axe_property( 'YLim',[0, 1200]) %high responders
+
+% SET X TICK = 1 SESSION
+d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
+
+d.draw()
 
 saveFig(gcf, figPath,figTitle,figFormats);
 
@@ -517,7 +573,10 @@ d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodg
 d(1,1).set_color_options('map',cmapGrand); 
 
 d.set_names('x','Nosepoke Side','y','Number of Nose Pokes','color','Nosepoke Side')
-d(1,1).set_title('ICSS Final day before reversal nosepoke inset')
+
+figTitle= 'ICSS inset final session preReversal';
+
+d().set_title(figTitle)
 
 %set text options- do before first draw() call so applied on subsequent updates()
 d.set_text_options(text_options_DefaultStyle{:}); 
@@ -546,9 +605,69 @@ d(1,1).set_color_options('map',cmapSubj);
 d.draw();
 
 
-figTitle= 'ICSS_inset_final_session_preReversal';
+saveFig(gcf, figPath,figTitle,figFormats);
+
+
+%% dp log scale inset bar plot of last ICSS day prior to reversal
+
+%subset data
+sesToPlot= 5; %plot last day before reversal
+
+ind= [];
+ind= data.Session== sesToPlot;
+
+data= data(ind, :);
+
+%make fig
+clear d; figure();
+
+%- Bar of btwn subj means (group = [])
+group= []; %var by which to group
+
+d=gramm('x',data.typeNP,'y',data.logNP,'color',data.typeNP, 'group', group)
+
+d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+d(1,1).set_color_options('map',cmapGrand); 
+
+d.set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
+
+figTitle= 'ICSS inset final session preReversal logScale';
+
+d().set_title(figTitle)
+
+%set text options- do before first draw() call so applied on subsequent updates()
+d.set_text_options(text_options_DefaultStyle{:}); 
+
+d.draw()
+
+%- Draw lines between individual subject points (group= subject, color=[]);
+group= data.Subject;
+d.update('x', data.typeNP,'y',data.logNP,'color',[], 'group', group)
+
+% d(1,1).stat_summary('geom',{'line'});
+d(1,1).geom_line('alpha',0.3);
+d().set_line_options('base_size',linewidthSubj);
+
+d(1,1).set_color_options('chroma', 0); %black lines connecting points
+
+d.draw()
+
+%- Update with point of individual subj points (group= subject)
+group= data.Subject;
+d.update('x', data.typeNP,'y',data.logNP,'color',data.typeNP, 'group', group)
+d(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+
+d(1,1).set_color_options('map',cmapSubj); 
+
+d.draw();
+
 
 saveFig(gcf, figPath,figTitle,figFormats);
+
+
+%% --Stat comparison of ICSS active v inactive nosepokes
+
+
 
 
 %% Individual Data
