@@ -260,8 +260,8 @@ g.draw();
 
 %error w size savefig of this fig specifically, still saves ok tho
 
-title= 'lever_choice_task_data';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'lever_choice_task_data';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 

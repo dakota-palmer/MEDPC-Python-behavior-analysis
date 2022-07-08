@@ -3,42 +3,135 @@ close all
 clc
 
 %% Figure options
+
+%--- Set output folder and format for figures to be saved
+
 figPath= strcat(pwd,'\_output\_ICSS\');
 
 figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
 
+%% Set GRAMM defaults for plots
 
-%-- Set some Main default settings for gramm plots
-% trying to save all at once in single vars so dont have to always use
-% so much code
+set_gramm_plot_defaults();
 
-% -text options
-%Need to store mixed data types (str for argument/variable names and some num for values), so store as
-%a cell array. 
-
-text_options_MainStyle= {'font'; 'Arial'; 
-    'interpreter'; 'none'; 
-    'base_size'; 22; 
-    'label_scaling'; 1;
-   'legend_scaling'; 1; 
-   'legend_title_scaling'; 1.2; 
-   'facet_scaling'; 1.2; 
-   'title_scaling'; 1.4;
-   'big_title_scaling'; 1.4};
-
-% When you want to call on the gramm object to set_text_options, retrieve values with {:} like so:
-    % g.set_text_options(text_options_MainStyle{:}); 
-
-%-- Master plot linestyles and colors
-
-%thin, light lines for individual subj
-linewidthSubj= 0.5;
-% lightnessRangeSubj= [100,100]; %lightness range doesn't work with color facet?
-
-%dark, thick lines for between subj grand mean
-linewidthGrand= 1.5;
-% lightnessRangeGrand= [10,10];%lightness range doesn't work with color facet?
-
+% 
+% %--- Set some "Main"/"Default" settings for GRAMM plots
+% % Saving at once in single vars so dont have to always use
+% % so much code when constructing individual plots
+% 
+% % altering things like color and text size in matlab can save a ton of time manually changing in external program like illustrator 
+% 
+% % -text options
+% %Need to store mixed data types (str for argument/variable names and some num for values), so store as
+% %a cell array. 
+% 
+% % When you want to call on the gramm object to set_text_options, retrieve values with {:} like so:
+%     % g.set_text_options(text_options_MainStyle{:}); 
+% 
+% text_options_DefaultStyle= {'font'; 'Arial'; 
+%     'interpreter'; 'none'; 
+%     'base_size'; 22; 
+%     'label_scaling'; 1;
+%    'legend_scaling'; 1; 
+%    'legend_title_scaling'; 1.1;
+%    'facet_scaling'; 1.2; 
+%    'title_scaling'; 1.4;
+%    'big_title_scaling'; 1.4};
+% 
+% %-- Default plot linestyles 
+% %To be used to set the 'base_size' of lines e.g. like:
+% %     d().set_line_options('base_size',linewidthSubj);
+% 
+% %may consider using the group argument in gramm as a logic gate for these (e.g. if group= subject, use subject settings, if group=[] use grand settings)
+% 
+% %thin, light lines for individual subj
+% linewidthSubj= 0.5;
+% lightnessRangeSubj= [100,100]; %lightness facet with lightness range doesn't work with custom colormap color facet? Issue is I think unknown/too many lightness 'categories' gramm wants to make but can't do it well for custom colors. would be nice if could use alpha but dont think this works... better to have distinct color
+% 
+% 
+% %dark, thick lines for between subj grand mean
+% linewidthGrand= 1.5;
+% lightnessRangeGrand= [10,10]; %lightness facet with lightness range doesn't work with custom colormap color facet? Issue is I think unknown/too many lightness 'categories' gramm wants to make but can't do it well for custom colors. would be nice if could use alpha but dont think this works... better to have distinct color
+% 
+% 
+% %--COLOR MAPS and notes about faceting Color & Lightness
+%  %- 2 strategies for plotting individual subject observations 'lighter' with darker
+%  % grand means:
+%  
+%  % 1) Use built in colormaps (ultimately not good in long run if you want to change colors). Using same map for individuals & mean plots but facet 'lightness' = subject.
+%  % This works well with built in gramm colormaps I think bc they can generate a lot of lightness categories (e.g. many subjects)
+%  
+%  % 2)*recommended* Use custom different map for individuals and mean plots without faceting
+%  % lightness. This way you have total control over the colors without
+%  % relying on gramm to figure out lightness categories. All you have to do
+%  % is define color map to use for each group 
+% 
+% %-- Default plot colormaps
+% 
+% %-brewer2 and brewerDark are two cmaps that are built-in and are good for
+% %plotting subjects, means respectively (different shades of same colors)
+% %if only 2 groupings being plotted, brewer2 and brewer_dark work well 
+% paletteSubj= 'brewer2';
+% paletteGrand= 'brewer_dark';
+% 
+% 
+% %-- Also have made some custom maps, examples follow (made using colorbrewer2.org)
+% % all you need is to make the map you want on the site, copy the RGB values
+% % and divide by 255 for matlab to recognize them as a colormap 
+% 
+% %--- Custom colormap examples for plots
+% 
+% % - Custom colormap updated from below. want alternating distinct hues for auto faceting
+% % will make different maps with diff lightness for diff 'groups' (e.g. subject lighter vs darker grand means) 
+% 
+% % alternatively add lighness facet for subjects? with fixed lightness range
+% % of single value should be able to export to illustrator and select same
+% % stroke
+% 
+% 
+% % - Examples: Colormap for 465nm vs 405nm comparisons (7 class PRGn, purple vs green)
+% %green and purple %3 levels each, dark to light extremes + neutral middle
+% mapCustomFP= [ 27,120,55;
+%             127,191,123;
+%             217,240,211;
+%             247,247,247
+%             231,212,232
+%             175,141,195;
+%             118,42,131;
+%            ];
+% 
+%         mapCustomFP= mapCustomFP/255;
+%         
+%         %viz this colormap in colorbar to side of rgbplot
+%         rgbplot(mapCustomFP);
+%         hold on
+%         colormap(mapCustomFP)
+%         colorbar('Ticks',[])
+%         title('mapCustomFP');
+% 
+% % - Colormap for DS vs NS comparisons (7 class BrBG; teal blue vs. brown orange)
+% mapCustomCue= [90,180,172;
+%             199,234,229;
+%             245,245,245;
+%             1,102,94
+%             246,232,195;
+%             216,179,101;
+%             140,81,10;   
+%             ];
+%             
+%         mapCustomCue= mapCustomCue/255;
+% 
+%                 %viz this colormap in colorbar to side of rgbplot
+%         rgbplot(mapCustomCue);
+%         hold on
+%         colormap(mapCustomCue)
+%         colorbar('Ticks',[])
+%         title('mapCustomCue');
+% 
+%         %if you want to specific colors from this map, remember each color is= RGB values so each row is 1 color and you can just index single row.
+%         %alternatively for auto faceting you may need to reorganize the
+%         %cmap order such that the colors alternate between hues (e.g. since
+%         %gramm() will facet in order of the colors in the cmap)
 
 %% load data
 %CurrentDir ='/Volumes/nsci_richard/Christelle/Codes/Matlab';
@@ -207,7 +300,7 @@ g(2,1).set_line_options( 'styles',{':'})
 
 
 selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
-g(2,2)=gramm('x',ICSS.Session(selection),'y',ICSS.TotalLengthActiveNP(selection),'color',ICSS.Projection(selection))
+g(2,2)=gramm('x',ICSS.Session(selection),'y',ICSS.TotalLengthActiveNP(selection),'color',ICSS.Projection(selection));
 g(2,2).stat_summary('type','sem','geom','area');
 g(2,2).set_names('x','Session','y','Time in Nosepoke(s)','color','Stim(-)')
 %g(2,2).set_title('VERIFIED Reversal ICSS Time in Nosepoke')
@@ -224,8 +317,8 @@ g(2,2).set_line_options( 'styles',{':'})
 
 g.draw();
 
-title= 'ICSS_nosepoke_data_verified';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'ICSS_nosepoke_data_verified';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 % g.export('file_name','ICSS Nosepoke Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf') 
 
@@ -319,6 +412,15 @@ ICSStable(ind, "trainDayThisPhase")= table(ICSStable.Session(ind)-5); %carrying 
 
 %% dp plot mean and individuals 
 
+% cmapSubj= 'brewer2';
+% cmapGrand= 'brewer_dark';
+
+% cmapSubj= cmapCueSubj;
+% cmapGrand= cmapCueGrand;
+
+cmapSubj= cmapBlueGraySubj;
+cmapGrand= cmapBlueGrayGrand;
+
 %subset data
 selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
 
@@ -336,6 +438,7 @@ group= data.Subject;
 
 % d(1,1)=gramm('x',ICSS.Session(selection),'y',ICSS.ActiveNP(selection),'color',ICSS.Subject(selection))
 d=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
+% d=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group, 'lightness',group)
 
 %facet by trainPhase - ideally could set sharex of facets false but idk w gramm
 d.facet_grid([],data.trainPhase);
@@ -344,7 +447,10 @@ d.stat_summary('type','sem','geom','line');
 d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
 
 d().set_line_options('base_size',linewidthSubj);
+d.set_color_options('map', cmapSubj);
 
+% d.set_color_options('lightness_range', lightnessRangeSubj);
+% d.no_legend() %if faceting with lightness for individual observations, dont add legend since lighntess labels can be huge
 
 d.draw()
 
@@ -352,37 +458,30 @@ d.draw()
 group= [];
 
 d.update('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
+% d.update('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group, 'lightness', [])
 
 d.stat_summary('type','sem','geom','area');
+
 d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
 
 d().set_line_options('base_size',linewidthGrand);
+d.set_color_options('map', cmapGrand);
 
-title= strcat('ICSS-dp-npType');   
-d.set_title(title);   
+% d.set_color_options('lightness_range', lightnessRangeGrand);
+
+figTitle= strcat('ICSS-dp-npType');   
+d.set_title(figTitle);   
 
 %Zoom in on lower NP subjects, can comment out and make inlay for high
 %responders?
 % d().axe_property( 'YLim',[0 300]) %low responders
 d().axe_property( 'YLim',[0, 1200]) %high responders
 
-%TODO: SET X TICK = 1 SESSION
+% SET X TICK = 1 SESSION
 d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
 
 %set text options
-text_options_MainStyle=[];
-
-text_options_MainStyle= {'font'; 'Arial'; 
-    'interpreter'; 'none'; 
-    'base_size'; 22; 
-    'label_scaling'; 1;
-   'legend_scaling'; 1; 
-   'legend_title_scaling'; 1.2; 
-   'facet_scaling'; 1.2; 
-   'title_scaling'; 1.4;
-   'big_title_scaling'; 1.4};
-
-d.set_text_options(text_options_MainStyle{:}); 
+d.set_text_options(text_options_DefaultStyle{:}); 
 
 
 
@@ -393,7 +492,7 @@ d.set_text_options(text_options_MainStyle{:});
 d.draw()
 
 
-saveFig(gcf, figPath,title,figFormats);
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %% Individual Data
@@ -438,8 +537,8 @@ d(1,2).set_title('ICSS Time in Nosepoke')
 d(1,2).set_line_options( 'styles',{':'})
 d(1,2).draw()
 
-title= 'ICSS_nosepoke_data_individuals_verified';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'ICSS_nosepoke_data_individuals_verified';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Calculate how many animals/sex per group on each session day
 Fmdthal= ICSS.Expression==1 & ICSS.ExpType==1 & ICSS.Session==1 & strcmp(ICSS.Sex,'F') & strcmp(ICSS.Projection,'mdThal');

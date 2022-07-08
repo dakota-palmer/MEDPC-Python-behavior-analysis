@@ -621,9 +621,9 @@ g.set_title('Pre Stim Day Latency')
 g.draw()
 
 
-title= 'pre_stimulation_day_peLatency';
+figTitle= 'pre_stimulation_day_peLatency';
 
-saveFig(gcf, figPath,title,figFormats);
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %Probability 
@@ -638,9 +638,9 @@ g.draw()
 SubjMetCriteria=unique(Subject(selection))
 
 
-title= 'pre_stimulation_day_peProb';
+figTitle= 'pre_stimulation_day_peProb';
 
-saveFig(gcf, figPath,title,figFormats);
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %% Plot Stim Days - OG Christelle
@@ -668,9 +668,9 @@ g(2,1).no_legend()
 g.draw()
 % g.export('file_name','Stimulation Day Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf') 
 
-title= 'stimulation_day_data_ogPlot'
+figTitle= 'stimulation_day_data_ogPlot'
 
-saveFig(gcf, figPath,title,figFormats);
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 
@@ -678,10 +678,10 @@ saveFig(gcf, figPath,title,figFormats);
 
 %TODO: facet grid not aggreeing with subplots here it seems for some reason
 
-%plot settings 
+%plot default settings 
  %if only 2 groupings, brewer2 and brewer_dark work well 
-paletteGroup= 'brewer_dark';
-paletteSubj= 'brewer2';
+cmapGrand= 'brewer_dark';
+cmapSubj= 'brewer2';
 
 dodge= 0.6; %if dodge constant between point and bar, will align correctly
 
@@ -702,7 +702,7 @@ g(1,1)=gramm('x',Group(selection),'y',RelLatency(selection),'color',CueType(sele
 g(1,1).facet_grid([],StimLength(selection))
 
 g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
-g(1,1).set_color_options('map',paletteGroup); 
+g(1,1).set_color_options('map',cmapGrand); 
 
 g(1,1).set_names('x','Projections','y','Latency')
 g(1,1).set_title('Stim Laser Day Latency')
@@ -713,13 +713,13 @@ group= Subject(selection);
 g(1,1).update('x',Group(selection),'y',RelLatency(selection),'color',CueType(selection), 'group', group);
 g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
 
-g(1,1).set_color_options('map',paletteSubj); 
+g(1,1).set_color_options('map',cmapSubj); 
 g.draw()
 
 
-title= 'stimulation_day_peLatency';
+figTitle= 'stimulation_day_peLatency';
 
-saveFig(gcf, figPath,title,figFormats);
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 % % -- 2 = subplot of stimulation PE probability
@@ -735,7 +735,7 @@ g(1,1)= gramm('x',Group(selection),'y',ResponseProb(selection),'color',CueType(s
 g(1,1).facet_grid([],StimLength(selection))
 
 g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge)
-g(1,1).set_color_options('map',paletteGroup); 
+g(1,1).set_color_options('map',cmapGrand); 
 
 g(1,1).set_names('x','Projections','y','Probability')
 g(1,1).set_title('Stim Laser Day Probability')
@@ -753,13 +753,13 @@ g(1,1).stat_summary('type','sem','geom',{'line'}, 'dodge', dodge)%,'bar' 'black_
 
 % g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
 
-g(1,1).set_color_options('map',paletteSubj); 
+g(1,1).set_color_options('map',cmapSubj); 
 g.draw()
 
 
-title= 'stimulation_day_peProbability';
+figTitle= 'stimulation_day_peProbability';
 
-saveFig(gcf, figPath,title,figFormats);
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %TODO: 3- lines for each subj (no color facet?)
 %still doesn't work below:
@@ -784,8 +784,8 @@ g.set_names('x','Projections','y','Latency')
 g.set_title('Post Stim Day Latency')
 g.draw();
 
-title= 'post_stimulation_day_peLatency';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'post_stimulation_day_peLatency';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Probability 
 figure();
@@ -796,8 +796,8 @@ g.set_names('x','Projections','y','Probability')
 g.set_title('Post Stim Day Probability')
 g.draw()
 
-title= 'post_stimulation_day_peProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'post_stimulation_day_peProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %% Histogram
 % %% histogram 

@@ -314,8 +314,8 @@ i.axe_property( 'YLim',[0 50])
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 %.export( 'file_name','Overall Stim Early Training Stage Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'overall_stim_early_training_stage_latency';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'overall_stim_early_training_stage_latency';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Overall early training progress by subject
 % figure
@@ -355,8 +355,8 @@ i.no_legend()
 i.draw()
 % i.export( 'file_name','Overall Inhib Late Training Stage Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
 
-title= 'overall_inhib_late_training_stage_latency';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'overall_inhib_late_training_stage_latency';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 
@@ -381,8 +381,8 @@ i.no_legend()
 i.draw()
 % i.export( 'file_name','Overall Stim Late Training Stage Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
 
-title= 'overall_stim_late_training_stage_latency';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'overall_stim_late_training_stage_latency';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %Overall LATE Individual PE Latencies
@@ -405,8 +405,8 @@ i.no_legend()
 i.draw()
 % i.export( 'file_name','Individual Late Training Stage Abs Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
 
-title= 'individual_late_training_stage_latency_abs';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'individual_late_training_stage_latency_abs';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 
@@ -426,8 +426,8 @@ i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Early Training Stage Abs Latency by Sex','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
 
-title= 'early_training_stage_latency_abs_bySex';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'early_training_stage_latency_abs_bySex';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 
@@ -451,8 +451,8 @@ i.no_legend()
 i.draw()
 % i.export( 'file_name','Final Training Stage Abs Latency by Sex','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
 
-title= 'final_training-stage_latency_abs_bySex';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'final_training-stage_latency_abs_bySex';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %% ABSOLUTE LATENCY: Plots indiv animals by mode and projection
@@ -468,8 +468,8 @@ i.axe_property( 'YLim',[0 50]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Stim mdThal Early Abs Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf') 
-title= 'stim_mdthal_early_latency_abs';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'stim_mdthal_early_latency_abs';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 
@@ -493,8 +493,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Stim mdThal Late Abs Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'stim_mdthal_late_latency_abs';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'stim_mdthal_late_latency_abs';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 
@@ -509,8 +509,8 @@ i.axe_property( 'YLim',[0 50]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Stim VTA Early Abs Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'stim_vta_early_latency_abs';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'stim_vta_early_latency_abs';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Late Stim VTA
 figure
@@ -532,8 +532,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Stim VTA Late Abs Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'stim_vta_late_latency_abs';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'stim_vta_late_latency_abs';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Inhib Early Thal
 figure
@@ -546,8 +546,8 @@ i.axe_property( 'YLim',[0 50]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Inhib mdthal Early Training Stage Abs Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'inhib_mdthal_early_latency_abs';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'inhib_mdthal_early_latency_abs';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Inhib Late mdThal
 figure
@@ -569,8 +569,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Inhib mdThal Late Abs Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= ('inhib_mdthal_late_latency_abs');
-saveFig(gcf, figPath,title,figFormats);
+figTitle= ('inhib_mdthal_late_latency_abs');
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Inhib Early VTA 
 figure
@@ -583,8 +583,8 @@ i.axe_property( 'YLim',[0 50]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Inhib VTA Early Abs Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'inhib_vta_early_latency_abs';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'inhib_vta_early_latency_abs';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %%Inhib Late VTA
 figure
@@ -606,8 +606,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Inhib VTA Late Abs Latency','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'inhib_vta_late_latency_abs';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'inhib_vta_late_latency_abs';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %% PLOT RESPONSE PROBABILITIES BY SEX: Plot calculated DS and NS Early Training and Late Training Response Probability using @gramm package
@@ -622,8 +622,8 @@ i.axe_property( 'YLim',[0 1]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Early Response Probability by Sex','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'early_responseProbability_bySex';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'early_responseProbability_bySex';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Late Response Prob by Sex
 figure
@@ -644,8 +644,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Late Response Probability by Sex','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'late_responseProbability_bySex';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'late_responseProbability_bySex';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %% PLOT RESPONSE PROBABILITIES BY MODE: Plot calculated DS and NS Early Training and Late Training Response Probability using @gramm package
 
@@ -660,8 +660,8 @@ i.axe_property( 'YLim',[0 1]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Overall Early Stim Response Probability','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'overall_early_stim_early_responseProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'overall_early_stim_early_responseProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Overall Late Stim
 figure
@@ -683,8 +683,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Overall Late Stim Response Probability','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'overall_late_stim_responseProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'overall_late_stim_responseProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Overall Early Inhib
 figure
@@ -697,8 +697,8 @@ i.axe_property( 'YLim',[0 1]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Overall Early Inhib Response Probability','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'overall_early_inhib_responseProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'overall_early_inhib_responseProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Overall Late Inhib
 figure
@@ -720,8 +720,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Overall Late Inhib Response Probability','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'overall_late_inhib_responseProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'overall_late_inhib_responseProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 %% PLOT RESPONSE PROBABILITIES BY MODE AND PROJECTION: Plot calculated DS and NS Early Training and Late Training Response Probability using @gramm package
 
 
@@ -736,8 +736,8 @@ i.axe_property( 'YLim',[0 1]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Stim Early mdThal Response Prob','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'stim-early_mdthal_responseProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'stim-early_mdthal_responseProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Stim Late mdThal
 figure
@@ -759,8 +759,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Stim Late mdThal Response Probability','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'stim_late_mdthal_responseProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'stim_late_mdthal_responseProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %Stim Early VTA
@@ -774,8 +774,8 @@ i.axe_property( 'YLim',[0 1]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Stim Early VTA Response Prob','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'stim_early_vta_responseProb';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'stim_early_vta_responseProb';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Stim Late VTA
 figure
@@ -797,8 +797,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Stim Late VTA Response Probability','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'stim_late_vta_responseProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'stim_late_vta_responseProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %Inhib Early mdThal
@@ -812,8 +812,8 @@ i.axe_property( 'YLim',[0 1]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Inhib Early mdThal Response Prob','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'inhib_early_mdthal_responseProb';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'inhib_early_mdthal_responseProb';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Inhib Late mdThal
 figure
@@ -835,8 +835,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Inhib  Late mdThal Response Probability','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'inhib_late_mdthal_responseProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'inhib_late_mdthal_responseProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %Inhib Early VTA
@@ -850,8 +850,8 @@ i.axe_property( 'YLim',[0 1]);
 i.axe_property( 'XLim',[1 18]);
 i.draw()
 % i.export( 'file_name','Inhib Early VTA Response Prob','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'inhib_early_vta_responseProb';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'inhib_early_vta_responseProb';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 %Inhib Late VTA
 figure
@@ -873,8 +873,8 @@ i.axe_property( 'XLim',[1 13]);
 i.no_legend()
 i.draw()
 % i.export( 'file_name','Inhib Late VTA Response Probability','export_path','/Volumes/AHC/MNPI/neuroscience/labs/richard/Christelle/VP Opto Graphs','file_type','pdf')
-title= 'inhib_late_vta_responseProbability';
-saveFig(gcf, figPath,title,figFormats);
+figTitle= 'inhib_late_vta_responseProbability';
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 
