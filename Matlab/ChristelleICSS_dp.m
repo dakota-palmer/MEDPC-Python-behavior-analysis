@@ -495,6 +495,62 @@ d.draw()
 saveFig(gcf, figPath,figTitle,figFormats);
 
 
+%% -- dp inset bar plot of last ICSS day prior to reversal
+
+%subset data
+sesToPlot= 5; %plot last day before reversal
+
+ind= [];
+ind= data.Session== sesToPlot;
+
+data= data(ind, :);
+
+%make fig
+clear d; figure();
+
+%- Bar of btwn subj means (group = [])
+group= []; %var by which to group
+
+d=gramm('x',data.typeNP,'y',data.countNP,'color',data.typeNP, 'group', group)
+
+d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+d(1,1).set_color_options('map',cmapGrand); 
+
+d.set_names('x','Nosepoke Side','y','Number of Nose Pokes','color','Nosepoke Side')
+d(1,1).set_title('ICSS Final day before reversal nosepoke inset')
+
+%set text options- do before first draw() call so applied on subsequent updates()
+d.set_text_options(text_options_DefaultStyle{:}); 
+
+d.draw()
+
+%- Draw lines between individual subject points (group= subject, color=[]);
+group= data.Subject;
+d.update('x', data.typeNP,'y',data.countNP,'color',[], 'group', group)
+
+% d(1,1).stat_summary('geom',{'line'});
+d(1,1).geom_line('alpha',0.3);
+d().set_line_options('base_size',linewidthSubj);
+
+d(1,1).set_color_options('chroma', 0); %black lines connecting points
+
+d.draw()
+
+%- Update with point of individual subj points (group= subject)
+group= data.Subject;
+d.update('x', data.typeNP,'y',data.countNP,'color',data.typeNP, 'group', group)
+d(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+
+d(1,1).set_color_options('map',cmapSubj); 
+
+d.draw();
+
+
+figTitle= 'ICSS_inset_final_session_preReversal';
+
+saveFig(gcf, figPath,figTitle,figFormats);
+
+
 %% Individual Data
 
 
