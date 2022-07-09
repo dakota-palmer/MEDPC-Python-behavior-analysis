@@ -53,6 +53,10 @@ linewidthGrand= 1.5;
 lightnessRangeGrand= [10,10]; %lightness facet with lightness range doesn't work with custom colormap color facet? Issue is I think unknown/too many lightness 'categories' gramm wants to make but can't do it well for custom colors. would be nice if could use alpha but dont think this works... better to have distinct color
 
 
+% default chroma for connecting points between categorical observations
+% (e.g. bar plot with points overlaid)
+chromaLineSubj= 0; %black lines connecting points
+
 %% ------ Notes about faceting Color & Lightness ----------
  %- 2 strategies for plotting individual subject observations 'lighter' with darker
  % grand means:
@@ -83,8 +87,49 @@ cmapGrand= 'brewer_dark';
 % https://learnui.design/tools/data-color-picker.html
 % also here are commonly used palettes with RGB https://public.tableau.com/views/TableauColors/ColorPaletteswithRGBValues?%3Aembed=y&%3AshowVizHome=no&%3Adisplay_count=y&%3Adisplay_static_image=y
 
-%-- tab10 palette
+%-- tab10- good for qualitative differences taking from https://public.tableau.com/views/TableauColors/ColorPaletteswithRGBValues?%3Aembed=y&%3AshowVizHome=no&%3Adisplay_count=y&%3Adisplay_static_image=y
+cmapTab10Subj= [174,199,232;
+                255,187,120;
+                152,223,138;
+                255,152,150;
+                197,176,213;
+                196,156,148;
+                247,182,210;
+                199,199,199;
+                219,219,141;
+                158,218,229];
+            
+cmapTab10Subj= cmapTab10Subj/255;
 
+            
+cmapTab10Grand= [31,119,180;
+                255,127,14;
+                44,160,44;
+                214,39,40;
+                148,103,189;
+                140,86,75;
+                227,119,194;
+                127,127,127;
+                188,189,34;
+                23,190,207];
+            
+cmapTab10Grand= cmapTab10Grand/255;
+
+        %viz this colormap in colorbar to side of rgbplot
+        figure();
+        rgbplot(cmapTab10Subj);
+        hold on
+        colormap(cmapTab10Subj)
+        colorbar('Ticks',[])
+        title('cmapTab10Subj');
+        
+       %viz this colormap in colorbar to side of rgbplot
+        figure();
+        rgbplot(cmapTab10Grand);
+        hold on
+        colormap(cmapTab10Grand)
+        colorbar('Ticks',[])
+        title('cmapTab10Grand');
 
 %-- Cue Type cmap colormap for DS vs NS comparisons (7 class BrBG; teal blue vs. brown orange)
 cmapCustomCue= [90,180,172; %dark teal
@@ -102,7 +147,7 @@ cmapCueGrand= cmapCustomCue([1,7],:); %dark
 cmapCueSubj= cmapCustomCue([2,5],:); %light
 
 
-%--TODO: Active vs Inactive cmaps (e.g. laser-paired vs unpaired operand)
+%--Active vs Inactive cmaps (e.g. laser-paired vs unpaired operand)
 
 %- Blue vs. Grey
 % based on colorbrewer2 5 class RdGy, replaced red w blues
@@ -288,6 +333,37 @@ colormap(map)
 % 
 % figTitle= 'ICSS_inset_final_session_preReversal';
 
+
+%% -EXAMPLE Histogram
+
+%- Prior to stats, viz the distribution 
+% %wondering if should run stats on log or raw nosepoke counts
+% 
+% figure(); clear g;
+% 
+% g(1,1)= gramm('x', data.countNP, 'color', data.typeNP);
+% 
+% g(1,1).set_names('x','Number of Nose Pokes','color','Nosepoke Side')
+% 
+% g(1,1).stat_bin()
+% 
+% g(2,1)= gramm('x', data.logNP, 'color', data.typeNP);
+% 
+% g(2,1).stat_bin()
+% 
+% g(1,1).set_names('x','Log(Number of Nose Pokes)','color','Nosepoke Side')
+% 
+% figTitle= 'ICSS inset final session preReversal-Stats Distribution';
+% 
+% g().set_title(figTitle)
+% 
+% g.set_text_options(text_options_DefaultStyle{:}); %set text options- do before first draw() call so applied on subsequent updates()
+% 
+% g.set_color_options('map',cmapGrand); 
+% 
+% g.draw();
+% 
+% saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %% CLOSE ALL example figures 

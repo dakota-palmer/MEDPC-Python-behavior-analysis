@@ -7,7 +7,9 @@ figPath= strcat(pwd,'\_output\_DS_task_stimDay\');
 
 figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
 
+%% Set GRAMM defaults for plots
 
+set_gramm_plot_defaults();
 
 %% Import data
 
@@ -578,6 +580,22 @@ DSNSRatio= DSNSRatio(ind);
 Learner= Learner(ind);
 
 
+%% dp reorganizing data into table for table fxns and easy faceting
+
+stimTable= table();
+
+%list of vars to include in table as columns
+tableVars= {'Group','CueType','RelLatency','ResponseProb'...
+    'StimLength','Subject','Expression','Mode','DSRatio','DSNSRatio','Learner'};
+
+
+
+%loop thru vars and fill table
+allVars= tableVars;
+for var= 1:numel(allVars)
+    stimTable.(allVars{var})= eval(tableVars{var});
+end
+
 %% plots
 
 %histogram to determine which animals learned
@@ -676,6 +694,10 @@ saveFig(gcf, figPath,figTitle,figFormats);
 
 %% Plot Stim Days - dp new
 
+%TODO: connect individual subj points. tried this but was just drawing
+%vertically. perhaps table format would work? works fine for ICSS data.
+%Could also be categorical data type here.
+
 %TODO: facet grid not aggreeing with subplots here it seems for some reason
 
 %plot default settings 
@@ -707,6 +729,7 @@ g(1,1).set_color_options('map',cmapGrand);
 g(1,1).set_names('x','Projections','y','Latency')
 g(1,1).set_title('Stim Laser Day Latency')
 g.draw()
+
 
 %- Update with point of individual subj points (group= subject)
 group= Subject(selection);

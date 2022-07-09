@@ -591,7 +591,7 @@ d.update('x', data.typeNP,'y',data.countNP,'color',[], 'group', group)
 d(1,1).geom_line('alpha',0.3);
 d().set_line_options('base_size',linewidthSubj);
 
-d(1,1).set_color_options('chroma', 0); %black lines connecting points
+d(1,1).set_color_options('chroma', chromaLineSubj); %black lines connecting points
 
 d.draw()
 
@@ -600,7 +600,7 @@ group= data.Subject;
 d.update('x', data.typeNP,'y',data.countNP,'color',data.typeNP, 'group', group)
 d(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
 
-d(1,1).set_color_options('map',cmapSubj); 
+d(1,1).set_color_options('map',cmapSubj);
 
 d.draw();
 
@@ -665,7 +665,7 @@ d.draw();
 saveFig(gcf, figPath,figTitle,figFormats);
 
 
-%% --Stat comparison of ICSS active v inactive nosepokes
+%% ----Stat comparison of ICSS active v inactive nosepokes
 
 %% Prior to stats, viz the distribution 
 %wondering if should run stats on log or raw nosepoke counts
@@ -696,6 +696,90 @@ g.draw();
 
 saveFig(gcf, figPath,figTitle,figFormats);
 
+%% Run Stats on log np count from single session
+
+%copying dataset above prior to dummy coding variables
+data2= data; 
+
+% STAT Testing
+%are mean nosepokes different by laser state/virus etc?... lme with random subject intercept
+
+
+%- dummy variable conversion
+% converting to dummies(retains only one column, as 2+ is redundant)
+
+%convert typeNP to dummy variable 
+dummy=[];
+dummy= categorical(data2.typeNP);
+dummy= dummyvar(dummy); 
+
+data2.typeNP= dummy(:,1);
+
+%--Run LME
+lme1=[];
+
+lme1= fitlme(data2, 'logNP~ typeNP + (1|Subject)');
+
+lme1
+
+
+%print and save results to file
+%seems diary keeps running log to same file (e.g. if code rerun seems prior output remains)
+diary('ICSS inset final session preReversal-Stats lmeDetails.txt')
+lme1
+diary off
+
+%% Run stats on log np count from all sessions
+
+% subset data
+selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
+
+data= ICSStable(selection,:);
+
+% stack() to make inactive/active NPtype a variable
+data= stack(data, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'NewDataVariableName', 'countNP');
+
+%add log NP
+data(:,"logNP") = table(log(data.countNP));
+
+% if countNP is == 0, log returns -inf. Make these 0
+data(data.logNP==-inf, "logNP")= table(0);
+
+%copying dataset above prior to dummy coding variables
+data2= data; 
+
+
+%- dummy variable conversion
+% converting to dummies(retains only one column, as 2+ is redundant)
+
+%convert typeNP to dummy variable 
+dummy=[];
+dummy= categorical(data.typeNP);
+dummy= dummyvar(dummy); 
+
+data2.typeNP= dummy(:,1);
+
+%convert trainPhase as dummyVar too
+dummy=[];
+dummy= categorical(data.trainPhase);
+dummy= dummyvar(dummy);
+
+data2(:,"activeSideReversal")= table(dummy(:,1)); %(rename as activeSideReversal)
+
+
+%--run LME
+lme1=[];
+
+lme1= fitlme(data2, 'logNP~ typeNP* Session * activeSideReversal + (1|Subject)');
+
+lme1
+
+
+%print and save results to file
+%seems diary keeps running log to same file (e.g. if code rerun seems prior output remains)
+diary('ICSS allSessions-Stats lmeDetails.txt')
+lme1
+diary off
 
 %% Individual Data
 
