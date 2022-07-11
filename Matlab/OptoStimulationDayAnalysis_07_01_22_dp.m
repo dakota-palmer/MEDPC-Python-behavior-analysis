@@ -1,5 +1,6 @@
 clear all
 close all
+
 clc
 
 %% Figure options
@@ -529,14 +530,14 @@ DSStimulation.DSNSRatio=DSStimulation.DSPERatio./DSStimulation.NSPERatio
 %seems cuetype here is simply associated with data by order of cat()
 %together of individual trial types DS, DS+Laser, NS, NS+Laser= [1,2,3,4]
 
-CueType=vertcat(ones([length(DSStimulation.Subject) 1]),2.*ones([length(DSStimulation.Subject) 1]),3.*ones([length(DSStimulation.Subject) 1]),4.*ones([length(DSStimulation.Subject) 1])) 
-RelLatency=vertcat(DSStimulation.DSNoLaserRelLatMean,DSStimulation.DSLaserRelLatMean,DSStimulation.NSNoLaserRelLatMean,DSStimulation.NSLaserRelLatMean)
-ResponseProb=vertcat(DSStimulation.DSNoLaser10sResponseProb,DSStimulation.DSLaser10sResponseProb,DSStimulation.NSNoLaser10sResponseProb,DSStimulation.NSLaser10sResponseProb)
-StimLength=vertcat(DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength)
-Group=vertcat(DSStimulation.Group,DSStimulation.Group,DSStimulation.Group,DSStimulation.Group)
-Subject=vertcat(DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID)
-Expression=vertcat(DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression)
-Mode=vertcat(DSStimulation.ExpType,DSStimulation.ExpType,DSStimulation.ExpType,DSStimulation.ExpType)
+CueType=vertcat(ones([length(DSStimulation.Subject) 1]),2.*ones([length(DSStimulation.Subject) 1]),3.*ones([length(DSStimulation.Subject) 1]),4.*ones([length(DSStimulation.Subject) 1])); 
+RelLatency=vertcat(DSStimulation.DSNoLaserRelLatMean,DSStimulation.DSLaserRelLatMean,DSStimulation.NSNoLaserRelLatMean,DSStimulation.NSLaserRelLatMean);
+ResponseProb=vertcat(DSStimulation.DSNoLaser10sResponseProb,DSStimulation.DSLaser10sResponseProb,DSStimulation.NSNoLaser10sResponseProb,DSStimulation.NSLaser10sResponseProb);
+StimLength=vertcat(DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength);
+Group=vertcat(DSStimulation.Group,DSStimulation.Group,DSStimulation.Group,DSStimulation.Group);
+Subject=vertcat(DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID);
+Expression=vertcat(DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression);
+Mode=vertcat(DSStimulation.ExpType,DSStimulation.ExpType,DSStimulation.ExpType,DSStimulation.ExpType);
 Subject=vertcat(DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID);
 DSRatio=vertcat(DSStimulation.DSPERatio,DSStimulation.DSPERatio,DSStimulation.DSPERatio,DSStimulation.DSPERatio);
 DSNSRatio=vertcat(DSStimulation.DSNSRatio,DSStimulation.DSNSRatio,DSStimulation.DSNSRatio,DSStimulation.DSNSRatio);
@@ -546,6 +547,14 @@ Learner=cell2mat(Learner);
 Expression=cell2mat(Expression);
 Mode=cell2mat(Mode);
 Subject=cell2mat(Subject);
+
+%dp add cueType label
+% make list of labels and use values for cueType as ind to match
+labels= {};
+labels= {'DS_noLaser','DS+Laser','NS_noLaser','NS+Laser'};
+
+CueTypeLabel=[];
+CueTypeLabel= {labels{CueType(:)}}';
 
 
 %% DP Subset data for vp--> vta group only
@@ -578,14 +587,14 @@ Mode= Mode(ind);
 DSRatio= DSRatio(ind);
 DSNSRatio= DSNSRatio(ind);
 Learner= Learner(ind);
-
+CueTypeLabel= CueTypeLabel(ind);
 
 %% dp reorganizing data into table for table fxns and easy faceting
 
 stimTable= table();
 
 %list of vars to include in table as columns
-tableVars= {'Group','CueType','RelLatency','ResponseProb'...
+tableVars= {'Group','CueType','CueTypeLabel','RelLatency','ResponseProb'...
     'StimLength','Subject','Expression','Mode','DSRatio','DSNSRatio','Learner'};
 
 
@@ -689,6 +698,97 @@ g.draw()
 figTitle= 'stimulation_day_data_ogPlot'
 
 saveFig(gcf, figPath,figTitle,figFormats);
+
+
+%% 2022 07 09 
+% Plot Stim Days - dp new with table
+
+% made virus Group a subplot facet instead of X in order to appropriately
+% pair individual subject observations with lines. If you don't want the
+% lines you can use the x=Group plots
+
+%TODO: connect individual subj points. tried this but was just drawing
+%vertically. perhaps table format would work? works fine for ICSS data.
+%Could also be categorical data type here.
+
+%TODO: facet grid not aggreeing with subplots here it seems for some reason
+
+%plot default settings 
+ %if only 2 groupings, brewer2 and brewer_dark work well 
+cmapGrand= 'brewer_dark';
+cmapSubj= 'brewer2';
+
+dodge= 0.6; %if dodge constant between point and bar, will align correctly
+
+%%Stimulation Latency
+clear g;
+figure; 
+
+
+%subset data
+selection= Mode==1 & Expression==1 & Learner==1
+
+data= stimTable(selection,:);
+
+% -- 1 = subplot of stimulation PE latency
+%- Bar of btwn subj means (group = [] or Group)
+group= []; %var by which to group
+
+% dp changing faceting- x cueType so can connect dots and facet by virus
+% Group as rows
+
+g(1,1)=gramm('x',data.CueType,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
+g(1,1).facet_grid(data.Group,data.StimLength)
+
+g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+g(1,1).set_color_options('map',cmapGrand); 
+
+g(1,1).set_names('x','Cue Type','y','Latency', 'column', 'StimLength length')
+g(1,1).set_title('Stim Laser Day Latency')
+
+g.set_text_options(text_options_DefaultStyle{:}); 
+
+
+% SET X TICK = 1
+% g.axe_property('XTick',1); 
+
+g.draw()
+
+
+%- Draw lines between individual subject points (group= subject, color=[]);
+
+group= data.Subject;
+
+% %actually GROUP should = fileID? since observations paired by group within-file
+% data(:,"fileID")= table(nan);
+% data(:,"fileID")= table([1:size(data,1)]');
+% 
+% group= data.fileID;
+
+g(1,1).update('x', data.CueType,'y',data.RelLatency,'color',[], 'group', group)
+
+g(1,1).stat_summary('type','sem','geom',{'line'});
+% g(1,1).stat_summary('geom',{'line'}, 'dodge', dodge);
+
+% g(1,1).geom_line;%('alpha',0.3);
+
+g(1,1).set_line_options('base_size',linewidthSubj);
+
+g(1,1).set_color_options('chroma', chromaLineSubj); %black lines connecting points
+
+g.draw()
+
+
+%- Update with point of individual subj points (group= subject)
+group= data.Subject;
+g(1,1).update('x',data.CueType,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
+g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+
+g(1,1).set_color_options('map',cmapSubj); 
+g.draw()
+
+
+figTitle= 'stimulation_day_peLatency';
 
 
 
