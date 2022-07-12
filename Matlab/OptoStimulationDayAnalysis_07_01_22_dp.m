@@ -569,25 +569,25 @@ CueTypeLabel= {labels{CueType(:)}}';
 %     DSStimulation.(allFields{field})(ind)= [];
 % end
 
-
-ind=[];
-% ind= ~(DSStimulation.Projection==1);
-ind= strcmp(Group, 'OV');
-
-
-%eliminate data
-Group= Group(ind);
-CueType= CueType(ind);
-RelLatency=RelLatency(ind);
-ResponseProb= ResponseProb(ind);
-StimLength=StimLength(ind);
-Subject= Subject(ind);
-Expression= Expression(ind);
-Mode= Mode(ind);
-DSRatio= DSRatio(ind);
-DSNSRatio= DSNSRatio(ind);
-Learner= Learner(ind);
-CueTypeLabel= CueTypeLabel(ind);
+% 
+% ind=[];
+% % ind= ~(DSStimulation.Projection==1);
+% ind= strcmp(Group, 'OV');
+% 
+% 
+% %eliminate data
+% Group= Group(ind);
+% CueType= CueType(ind);
+% RelLatency=RelLatency(ind);
+% ResponseProb= ResponseProb(ind);
+% StimLength=StimLength(ind);
+% Subject= Subject(ind);
+% Expression= Expression(ind);
+% Mode= Mode(ind);
+% DSRatio= DSRatio(ind);
+% DSNSRatio= DSNSRatio(ind);
+% Learner= Learner(ind);
+% CueTypeLabel= CueTypeLabel(ind);
 
 %% dp reorganizing data into table for table fxns and easy faceting
 
@@ -604,6 +604,13 @@ allVars= tableVars;
 for var= 1:numel(allVars)
     stimTable.(allVars{var})= eval(tableVars{var});
 end
+
+% TODO: may be good to add fileID
+% %actually GROUP should = fileID? since observations paired by group within-file
+% data(:,"fileID")= table(nan);
+% data(:,"fileID")= table([1:size(data,1)]');
+% 
+% group= data.fileID;
 
 %% plots
 
@@ -639,7 +646,7 @@ histogram (learn, BinNums);
 %% Plot Stim Day 0
 
 %Latency
-figure 
+figure; clear g; 
 selection= Mode==1 & Expression==1 & StimLength==0 & DSRatio > 0.4 & DSNSRatio >1.5 
 g=gramm('x',Group(selection),'y',RelLatency(selection),'color',CueType(selection))
 g.stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}) 
@@ -654,7 +661,7 @@ saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %Probability 
-figure 
+figure; clear g;
 selection= Mode==1 & Expression==1 & StimLength==0 & DSRatio > 0.4 & DSNSRatio >1.5
 g=gramm('x',Group(selection),'y',ResponseProb(selection),'color',CueType(selection))
 g.stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'})
@@ -673,7 +680,7 @@ saveFig(gcf, figPath,figTitle,figFormats);
 %% Plot Stim Days - OG Christelle
 %%Stimulation Latency
 
-figure 
+figure; clear g; 
 selection= Mode==1 & Expression==1 & Learner==1 
 g(1,1)=gramm('x',Group(selection),'y',RelLatency(selection),'color',CueType(selection))
 g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}) 
@@ -705,25 +712,28 @@ saveFig(gcf, figPath,figTitle,figFormats);
 
 % made virus Group a subplot facet instead of X in order to appropriately
 % pair individual subject observations with lines. If you don't want the
-% lines you can use the x=Group plots
+% lines you can use the x=Group plots. I think that x= Group doens't work
+% for pointplot since geom_line probably needs 1 observation per X value?
+    %maybe would work if made group=observationID (combo of multiple
+    %groupers)
+%TODO: find way to connect individual subj points when an Xvalue /category is
+%skipped. (in this case no laser trials on non-laser days.) could fill with
+%0 but would like to remain nan.
 
-%TODO: connect individual subj points. tried this but was just drawing
-%vertically. perhaps table format would work? works fine for ICSS data.
-%Could also be categorical data type here.
-
-%TODO: facet grid not aggreeing with subplots here it seems for some reason
+%- also subfaceting of Latency v Probability wasn't working at some point
+%to left to separate figures
 
 %plot default settings 
  %if only 2 groupings, brewer2 and brewer_dark work well 
 cmapGrand= 'brewer_dark';
 cmapSubj= 'brewer2';
 
-dodge= 0.6; %if dodge constant between point and bar, will align correctly
+dodge= 	1; %if dodge constant between point and bar, will align correctly
+width=3.8; %good for bar w dodge >=1
 
 %%Stimulation Latency
 clear g;
 figure; 
-
 
 %subset data
 selection= Mode==1 & Expression==1 & Learner==1
@@ -734,13 +744,18 @@ data= stimTable(selection,:);
 %- Bar of btwn subj means (group = [] or Group)
 group= []; %var by which to group
 
-% dp changing faceting- x cueType so can connect dots and facet by virus
-% Group as rows
+% dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
 
-g(1,1)=gramm('x',data.CueType,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
-g(1,1).facet_grid(data.Group,data.StimLength)
+g=gramm('x',data.CueType,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
+g.facet_grid(data.Group,data.StimLength)
 
-g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+% g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}) 
+% g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+% g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'},'width',width) 
+
+g.stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge,'width',width) 
+
+
 g(1,1).set_color_options('map',cmapGrand); 
 
 g(1,1).set_names('x','Cue Type','y','Latency', 'column', 'StimLength length')
@@ -748,35 +763,33 @@ g(1,1).set_title('Stim Laser Day Latency')
 
 g.set_text_options(text_options_DefaultStyle{:}); 
 
-
-% SET X TICK = 1
-% g.axe_property('XTick',1); 
-
-g.draw()
+g.draw();
 
 
 %- Draw lines between individual subject points (group= subject, color=[]);
 
 group= data.Subject;
 
-% %actually GROUP should = fileID? since observations paired by group within-file
-% data(:,"fileID")= table(nan);
-% data(:,"fileID")= table([1:size(data,1)]');
-% 
-% group= data.fileID;
-
 g(1,1).update('x', data.CueType,'y',data.RelLatency,'color',[], 'group', group)
 
+ %here specifically multiple observations
+% per subject so using stat_summary to get mean line
 g(1,1).stat_summary('type','sem','geom',{'line'});
-% g(1,1).stat_summary('geom',{'line'}, 'dodge', dodge);
-
 % g(1,1).geom_line;%('alpha',0.3);
 
 g(1,1).set_line_options('base_size',linewidthSubj);
 
 g(1,1).set_color_options('chroma', chromaLineSubj); %black lines connecting points
 
-g.draw()
+%set x lims and ticks (a bit more manual good for bars)
+lims= [min(data.CueType)-.6,max(data.CueType)+.6];
+
+g.axe_property('XLim',lims);
+g.axe_property('XTick',round([lims(1):1:lims(2)]));
+
+
+
+g.draw();
 
 
 %- Update with point of individual subj points (group= subject)
@@ -784,12 +797,71 @@ group= data.Subject;
 g(1,1).update('x',data.CueType,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
 g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
 
-g(1,1).set_color_options('map',cmapSubj); 
-g.draw()
+g(1,1).set_color_options('map',cmapSubj);
+
+g.no_legend(); %avoid duplicate legend for subj
+
+g.draw();
+
+figTitle= 'stimulation_day_peLatency_wIndividualLines';
+
+saveFig(gcf, figPath,figTitle,figFormats);
+
+%----Stimulation PE Probability
+figure; clear g;
+
+% -- 1 = subplot of stimulation PE latency
+%- Bar of btwn subj means (group = [] or Group)
+group= []; %var by which to group
+
+% dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
+
+g(1,1)=gramm('x',data.CueType,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
+g(1,1).facet_grid(data.Group,data.StimLength)
+
+g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+g(1,1).set_color_options('map',cmapGrand); 
+
+g(1,1).set_names('x','Cue Type','y','PE Probability', 'column', 'StimLength length')
+g(1,1).set_title('Stim Laser Day Latency')
+
+g.set_text_options(text_options_DefaultStyle{:}); 
+
+g.draw();
 
 
-figTitle= 'stimulation_day_peLatency';
+%- Draw lines between individual subject points (group= subject, color=[]);
 
+group= data.Subject;
+
+g(1,1).update('x', data.CueType,'y',data.ResponseProb,'color',[], 'group', group)
+
+ %here specifically multiple observations
+% per subject so using stat_summary to get mean line
+g(1,1).stat_summary('type','sem','geom',{'line'});
+% g(1,1).geom_line;%('alpha',0.3);
+
+g(1,1).set_line_options('base_size',linewidthSubj);
+
+g(1,1).set_color_options('chroma', chromaLineSubj); %black lines connecting points
+
+g.draw();
+
+
+%- Update with point of individual subj points (group= subject)
+group= data.Subject;
+g(1,1).update('x',data.CueType,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
+g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+
+g(1,1).set_color_options('map',cmapSubj);
+
+g.no_legend(); %avoid duplicate legend for subj
+
+g.draw();
+
+figTitle= 'stimulation_day_peProb_wIndividualLines';
+
+saveFig(gcf, figPath,figTitle,figFormats);
 
 
 %% Plot Stim Days - dp new
@@ -828,6 +900,9 @@ g(1,1).set_color_options('map',cmapGrand);
 
 g(1,1).set_names('x','Projections','y','Latency')
 g(1,1).set_title('Stim Laser Day Latency')
+
+g.set_text_options(text_options_DefaultStyle{:}); 
+
 g.draw()
 
 
@@ -857,12 +932,15 @@ selection= Mode==1 & Expression==1 & Learner==1
 g(1,1)= gramm('x',Group(selection),'y',ResponseProb(selection),'color',CueType(selection), 'group', group);
 g(1,1).facet_grid([],StimLength(selection))
 
-g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge)
+g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge);
+% g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge,'width',1);
+
 g(1,1).set_color_options('map',cmapGrand); 
 
 g(1,1).set_names('x','Projections','y','Probability')
 g(1,1).set_title('Stim Laser Day Probability')
 g(1,1).no_legend()
+g.set_text_options(text_options_DefaultStyle{:}); 
 g.draw()
 
 %- Update with point of individual subj points (group= subject)
@@ -896,13 +974,96 @@ saveFig(gcf, figPath,figTitle,figFormats);
 % g.export('file_name','Stimulation Day Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf') 
 
 
+%% -- STAT Comparison of above PE behavior by laser
+
+%copying dataset above prior to dummy coding variables
+data2= data; 
+
+% STAT Testing
+%are mean nosepokes different by laser state/virus etc?... lme with random subject intercept
+
+%- dummy variable conversion
+% % converting to dummies(retains only one column, as 2+ is redundant)
+% 
+% %convert CueType to dummy variable 
+% dummy=[];
+% dummy= categorical(data2.CueType);
+% dummy= dummyvar(dummy); 
+% 
+% data2.CueType= dummy(:,1); %is this correct? reducing to 2 instead of 4 values...should take first 3?
+% 
+% % %convert StimLength to dummy variable 
+% % dummy=[];
+% % dummy= categorical(data2.StimLength);
+% % dummy= dummyvar(dummy); 
+% 
+% % data2.StimLength= dummy(:,1);
+
+%--Run LME
+lme1=[];
+
+lme1= fitlme(data2, 'RelLatency~ CueType*StimLength + (1|Subject)');
+
+% lme1
+
+
+%print and save results to file
+%seems diary keeps running log to same file (e.g. if code rerun seems prior output remains)
+diary('DS Task Stim Day- All trials Latency Stats lmeDetails.txt')
+lme1
+diary off
+
+%---- Followup simple comparison for CueType effect
+%- Simple comparison: Run DS subset and NS subset separately?
+
+%subset data
+ind= [];
+%DS only
+ind= (data2.CueType == 1 | data2.CueType == 2);
+
+data3= data2(ind,:);
+
+%-Run LME
+lme1=[];
+
+lme1= fitlme(data3, 'RelLatency~ CueType*StimLength + (1|Subject)');
+
+% lme1
+
+diary('DS Task Stim Day- DS trials only Latency Stats lmeDetails.txt')
+lme1
+diary off
+
+% Same for NS
+
+%subset data
+ind= [];
+%DS only
+ind= (data2.CueType == 3 | data2.CueType == 4);
+
+data3= data2(ind,:);
+
+%-Run LME
+lme1=[];
+
+lme1= fitlme(data3, 'RelLatency~ CueType*StimLength + (1|Subject)');
+
+% lme1
+
+diary('DS Task Stim Day- NS trials only Latency Stats lmeDetails.txt');
+lme1
+diary off
+
+% %anova 
+% [p, tableAnova, stats, terms]= anovan(data3.RelLatency, {data3.CueType, data3.StimLength});
+
 %% Plot Post-Stim Session
 
 %Latency
 figure 
 selection= Mode==1 & Expression==1 & Learner==1 & StimLength==20
 g=gramm('x',Group(selection),'y',RelLatency(selection),'color',CueType(selection))
-g.stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}) 
+g.stat_summary('type','sem', 'geom',{'bar','black_errorbar'}) 
 g.set_names('x','Projections','y','Latency')
 g.set_title('Post Stim Day Latency')
 g.draw();

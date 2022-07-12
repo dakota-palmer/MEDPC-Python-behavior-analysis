@@ -29,13 +29,13 @@ dodge=0.6; %dodge is useful when drawing bars & points. Especially with categori
 
 text_options_DefaultStyle= {'font'; 'Arial'; 
     'interpreter'; 'none'; 
-    'base_size'; 22; 
+    'base_size'; 18; 
     'label_scaling'; 1;
    'legend_scaling'; 1; 
    'legend_title_scaling'; 1.02;
-   'facet_scaling'; 1.2; 
-   'title_scaling'; 1.4;
-   'big_title_scaling'; 1.4};
+   'facet_scaling'; 1.02; 
+   'title_scaling'; 1.05;
+   'big_title_scaling'; 1.1};
 
 %% -- Default plot linestyles 
 %To be used to set the 'base_size' of lines e.g. like:

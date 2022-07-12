@@ -498,6 +498,9 @@ saveFig(gcf, figPath,figTitle,figFormats);
 
 data.logNP = log(data.countNP);
 
+% if countNP is == 0, log returns -inf. Make these nan
+data(data.logNP==-inf, "logNP")= table(nan);
+
 %generate figure
 figure; clear d;
 
@@ -561,6 +564,9 @@ ind= data.Session== sesToPlot;
 
 data= data(ind, :);
 
+% dodge= 	.2; %if dodge constant between point and bar, will align correctly
+% width= 1; %bar width
+
 %make fig
 clear d; figure();
 
@@ -569,7 +575,9 @@ group= []; %var by which to group
 
 d=gramm('x',data.typeNP,'y',data.countNP,'color',data.typeNP, 'group', group)
 
-d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge);
+% d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge, 'width', width) 
+
 d(1,1).set_color_options('map',cmapGrand); 
 
 d.set_names('x','Nosepoke Side','y','Number of Nose Pokes','color','Nosepoke Side')
@@ -580,6 +588,14 @@ d().set_title(figTitle)
 
 %set text options- do before first draw() call so applied on subsequent updates()
 d.set_text_options(text_options_DefaultStyle{:}); 
+
+%set x lims and ticks (a bit more manual good for bars)
+lims= [1-.6,numel(unique(data.typeNP))+.6];
+
+d.axe_property('XLim',lims);
+d.axe_property('XTick',round([lims(1):1:lims(2)]));
+
+
 
 d.draw()
 
@@ -742,8 +758,11 @@ data= stack(data, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'Ne
 %add log NP
 data(:,"logNP") = table(log(data.countNP));
 
-% if countNP is == 0, log returns -inf. Make these 0
-data(data.logNP==-inf, "logNP")= table(0);
+% % if countNP is == 0, log returns -inf. Make these 0
+% data(data.logNP==-inf, "logNP")= table(0);
+% % if countNP is == 0, log returns -inf. Make these nan
+data(data.logNP==-inf, "logNP")= table(nan);
+
 
 %copying dataset above prior to dummy coding variables
 data2= data; 
