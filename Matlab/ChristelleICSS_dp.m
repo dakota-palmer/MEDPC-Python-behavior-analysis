@@ -5,7 +5,6 @@ clc
 %% Figure options
 
 %--- Set output folder and format for figures to be saved
-
 figPath= strcat(pwd,'\_output\_ICSS\');
 
 figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
@@ -140,7 +139,8 @@ set_gramm_plot_defaults();
 
 
 % %--christelle opto data
-CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
+% CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
+CurrentDir = 'C:\Users\Dakota\Desktop\_dp_christelle_opto_workingDir';
 cd(CurrentDir)
 
 
@@ -714,12 +714,11 @@ saveFig(gcf, figPath,figTitle,figFormats);
 
 %% Run Stats on log np count from single session
 
-%copying dataset above prior to dummy coding variables
+%copying dataset above prior to reformatting/dummy coding variables
 data2= data; 
 
 % STAT Testing
 %are mean nosepokes different by laser state/virus etc?... lme with random subject intercept
-
 
 %- dummy variable conversion
 % converting to dummies(retains only one column, as 2+ is redundant)
@@ -790,8 +789,6 @@ data2(:,"activeSideReversal")= table(dummy(:,1)); %(rename as activeSideReversal
 lme1=[];
 
 lme1= fitlme(data2, 'logNP~ typeNP* Session * activeSideReversal + (1|Subject)');
-
-lme1
 
 
 %print and save results to file

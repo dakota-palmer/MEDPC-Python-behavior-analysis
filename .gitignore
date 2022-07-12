@@ -18,3 +18,5 @@ Python/.pylint.d/optoStats1.stats
 *.csv
 *.asv
 *.pyc
+*.fig
+*.svg

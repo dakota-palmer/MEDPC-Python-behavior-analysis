@@ -24,7 +24,9 @@ set_gramm_plot_defaults();
 
 
 % %--christelle opto data
-CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
+% CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
+CurrentDir = 'C:\Users\Dakota\Desktop\_dp_christelle_opto_workingDir';
+
 cd(CurrentDir)
 
 % [~,~,raw] = xlsread("OptoStimDayAnalysis051121.xlsx");
@@ -259,11 +261,11 @@ DSStimulation.DSLaserTrialArray = Data(1:end,DSColIndex+1 : DSColIndex + 29);
 NSColIndex = find(strcmp(strip(VarNames),'NSLaserTrialArray'));
 DSStimulation.NSLaserTrialArray = Data(1:end,NSColIndex : NSColIndex + 29); % Christelle's has 29 trials of NS??
 
-
-medPCDSlatIndex = find(strcmp(strip(VarNames),'medPCDSLat'));
-DSStimulation.medPCDSLat = Data(1:end,medPCDSlatIndex : medPCDSlatIndex + 29); % 30 trials of DS
-medPCNSlatIndex = find(strcmp(strip(VarNames),'medPCNSLat'));
-DSStimulation.medPCNSLat = Data(1:end,medPCNSlatIndex : medPCNSlatIndex + 29); % 30 trials of NS
+    %dp 2022-07-12 error not finding these vars
+% medPCDSlatIndex = find(strcmp(strip(VarNames),'medPCDSLat'));
+% DSStimulation.medPCDSLat = Data(1:end,medPCDSlatIndex : medPCDSlatIndex + 29); % 30 trials of DS
+% medPCNSlatIndex = find(strcmp(strip(VarNames),'medPCNSLat'));
+% DSStimulation.medPCNSLat = Data(1:end,medPCNSlatIndex : medPCNSlatIndex + 29); % 30 trials of NS
 
 for i = 1 : length(DSStimulation.Subject)
     ind = strcmp(DSStimulation.Subject{i},ratinfo(:,1));
@@ -559,35 +561,35 @@ CueTypeLabel= {labels{CueType(:)}}';
 
 %% DP Subset data for vp--> vta group only
 
-% ind=[];
-% % ind= ~(DSStimulation.Projection==1);
-% ind= ~strcmp(DSStimulation.Projection, 'VTA');
-% 
-% %loop thru fields and eliminate data
-% allFields= fieldnames(DSStimulation);
-% for field= 1:numel(allFields)
-%     DSStimulation.(allFields{field})(ind)= [];
-% end
+ind=[];
+% ind= ~(DSStimulation.Projection==1);
+ind= ~strcmp(DSStimulation.Projection, 'VTA');
 
-% 
-% ind=[];
-% % ind= ~(DSStimulation.Projection==1);
-% ind= strcmp(Group, 'OV');
-% 
-% 
-% %eliminate data
-% Group= Group(ind);
-% CueType= CueType(ind);
-% RelLatency=RelLatency(ind);
-% ResponseProb= ResponseProb(ind);
-% StimLength=StimLength(ind);
-% Subject= Subject(ind);
-% Expression= Expression(ind);
-% Mode= Mode(ind);
-% DSRatio= DSRatio(ind);
-% DSNSRatio= DSNSRatio(ind);
-% Learner= Learner(ind);
-% CueTypeLabel= CueTypeLabel(ind);
+%loop thru fields and eliminate data
+allFields= fieldnames(DSStimulation);
+for field= 1:numel(allFields)
+    DSStimulation.(allFields{field})(ind)= [];
+end
+
+
+ind=[];
+% ind= ~(DSStimulation.Projection==1);
+ind= strcmp(Group, 'OV');
+
+
+%eliminate data
+Group= Group(ind);
+CueType= CueType(ind);
+RelLatency=RelLatency(ind);
+ResponseProb= ResponseProb(ind);
+StimLength=StimLength(ind);
+Subject= Subject(ind);
+Expression= Expression(ind);
+Mode= Mode(ind);
+DSRatio= DSRatio(ind);
+DSNSRatio= DSNSRatio(ind);
+Learner= Learner(ind);
+CueTypeLabel= CueTypeLabel(ind);
 
 %% dp reorganizing data into table for table fxns and easy faceting
 
@@ -604,6 +606,23 @@ allVars= tableVars;
 for var= 1:numel(allVars)
     stimTable.(allVars{var})= eval(tableVars{var});
 end
+
+%dp split CueType into 2 variables: 1 for cue type (simple DS v NS) and 1 for laser state
+%- simply subsetting and manually assigning instead of fancy table transform fxns
+stimTable(:,"CueID")= {''}; %preassign
+stimTable(:,"LaserTrial")= {''};
+
+% make list of labels and use values for cueType as ind to match
+labels= {};
+labels= {'DS', 'DS', 'NS', 'NS'};
+
+stimTable(:,"CueID")= {labels{CueType(:)}}';
+
+%repeat for LaserTrial var
+labels= {'noLaser', 'Laser', 'noLaser', 'Laser'};
+
+stimTable(:,"LaserTrial")= {labels{CueType(:)}}';
+
 
 % TODO: may be good to add fileID
 % %actually GROUP should = fileID? since observations paired by group within-file
@@ -973,6 +992,183 @@ saveFig(gcf, figPath,figTitle,figFormats);
 
 % g.export('file_name','Stimulation Day Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf') 
 
+
+%% -- 2022-07-12 STAT Comparison of above PE Behavior with separate CueID & LaserState Variables
+
+%copying dataset above prior to dummy coding variables
+data2= data; 
+
+%-- exclude non-laser session data
+allStimLength= unique(data2.StimLength);
+
+%Don't include StimLength =0 or =20(there are no laser trials and thus won't be
+%able to run model) 
+allStimLength = allStimLength((allStimLength~=0) & (allStimLength~=20));
+%subset data
+ind= [];
+ind= ismember(data2.StimLength,allStimLength);
+  
+data2= data2(ind,:);
+
+
+
+% STAT Testing
+%are mean nosepokes different by laser state/virus etc?... lme with random subject intercept
+
+%- dummy variable conversion
+% converting to dummies(retains only one column, as 2+ is redundant)
+% 
+% create dummyvars as necessary
+dummy=[];
+dummy= categorical(data2.CueID);
+dummy= dummyvar(dummy); 
+data2.CueIDdummy= dummy(:,1);
+
+
+dummy=[];
+dummy= categorical(data2.LaserTrial);
+dummy= dummyvar(dummy); 
+data2.LaserTrialDummy= dummy(:,1);
+
+% data2.CueType= dummy(:,1); %is this correct? reducing to 2 instead of 4 values...should take first 3?
+% 
+% % %convert StimLength to dummy variable 
+% % dummy=[];
+% % dummy= categorical(data2.StimLength);
+% % dummy= dummyvar(dummy); 
+% 
+% % data2.StimLength= dummy(:,1);
+
+%--Run LME
+lme1=[];
+
+lme1= fitlme(data2, 'RelLatency~ CueIDdummy*StimLength*LaserTrialDummy + (1|Subject)');
+
+lme1
+
+
+%print and save results to file
+%seems diary keeps running log to same file (e.g. if code rerun seems prior output remains)
+diary('DS Task Stim Day- All trials Latency Stats lmeDetails.txt')
+lme1
+diary off
+
+%% - Run followup LME for each StimLength & CueType
+% allStimLength= unique(data2.StimLength);
+
+%Don't include StimLength =0 or =20(there are no laser trials and thus won't be
+%able to run model) 
+% allStimLength = allStimLength((allStimLength~=0) & (allStimLength~=20));
+
+for thisStimLength= 1:numel(allStimLength)
+   
+    %subset data
+    ind= [];
+    ind= ismember(data2.StimLength,allStimLength(thisStimLength));
+    
+    data3=[];
+    data3= data2(ind,:);
+    
+    %run the model
+    lme1= [];
+    
+    lme1= fitlme(data3, 'RelLatency~ CueIDdummy*LaserTrialDummy + (1|Subject)');
+
+    diary('DS Task Stim Day- Followup Stats 1- StimLength subset lmeDetails.txt')
+    printStr= (strcat('Data Subset-------------****--------StimLength = ', num2str(allStimLength(thisStimLength)),'--------------****---------------'));
+    printStr
+    lme1
+    diary off
+    
+    
+    % -Followup for each CueID separately
+        allCueID= unique(data3.CueID);
+        for thisCueID= 1:numel(allCueID)
+
+            %subset data
+            ind= [];
+            ind= ismember(data3.CueID,allCueID(thisCueID));
+
+            data4=[];
+            data4= data3(ind,:);
+
+            %run the model
+            lme1= [];
+
+            lme1= fitlme(data4, 'RelLatency~ LaserTrialDummy + (1|Subject)');
+
+            diary('DS Task Stim Day- Followup Stats 2- CueID & LaserState subset lmeDetails.txt')
+            printStr= (strcat('Data Subset-------------****--------CueID = ',data4.CueID{1}, '---StimLength = ', num2str(allStimLength(thisStimLength)),'--------------****---------------'));
+            printStr
+            lme1
+            diary off
+            
+            %viz
+            printStr= strcat('data subset CueID = ',data4.CueID{1}, '--StimLength = ', num2str(allStimLength(thisStimLength)));
+            group= []; %var by which to group
+
+            figure(); clear g;
+            g= gramm('x', data4.LaserTrial, 'y', data4.RelLatency, 'color', data4.LaserTrial);
+            g.geom_point();
+%             g.stat_summary('type','sem','geom','bar');
+            g().stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+            g().set_color_options('map',cmapBlueGrayGrand); 
+            g().set_names('x','LaserState','y','Latency')
+            g().set_title(printStr)
+
+            g.draw();
+%              
+%             %update subj lines
+            group= data4.Subject;
+            g.update('x',data4.LaserTrial,'y',data4.RelLatency,'color',[], 'group', group);
+            g.stat_summary('type','sem','geom',{'line'})%,'bar' 'black_errorbar'});
+%             g.geom_line()
+            g.set_color_options('chroma',0);
+            g.draw();
+
+               %update subj points
+            group= data4.Subject;
+            g.update('x',data4.LaserTrial,'y',data4.RelLatency,'color',data4.LaserTrial, 'group', group);
+            g.stat_summary('type','sem','geom',{'point'})%,'bar' 'black_errorbar'});
+
+%               g.geom_point();
+            g.set_color_options('map',cmapBlueGraySubj);
+            
+            g.draw();
+
+%             %viz distribution? 
+%             figure(); clear g;
+% 
+%             g= gramm('x', data4.RelLatency, 'color', data4.LaserTrial);
+% 
+%             g.facet_grid(data4.LaserTrial,[]);
+%             
+%             g().set_names('x','Latency','color','LaserTrial')
+% 
+%             g().stat_bin()
+%                        
+%             g().set_title(printStr)
+% 
+%             g.draw()
+
+                %try anova?
+                % %anova 
+%                 [p, tableAnova, stats, terms]= anovan(data4.RelLatency, {data4.LaserTrial});
+
+            
+        end
+
+    
+end
+
+% -Followup for each CueID separately
+
+%subset data
+% ind= [];
+% %DS only
+% ind= (data2.CueType == 1 | data2.CueType == 2);
+% 
+% data3= data2(ind,:);
 
 %% -- STAT Comparison of above PE behavior by laser
 
