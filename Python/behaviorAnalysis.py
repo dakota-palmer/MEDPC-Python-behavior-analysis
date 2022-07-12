@@ -497,21 +497,36 @@ sns.set_palette('tab20')
 dfPlot = dfTidy.loc[obsTrialType].copy()
 
 # define subset further based on stage, trialTypes, eventTypes
-stagesToPlot= dfPlot.stage.unique()
+# stagesToPlot= dfPlot.stage.unique()
+# dp presentation plot 2022-02-21
+# stagesToPlot= ['1.0','2.0','3.0','4.0','5.0','6.0','7.0']
+stagesToPlot= ['1','2','3','4','5','6','7']
+
 trialTypesToPlot= ['DStime','NStime']
 eventsToPlot= dfPlot.eventType.unique()
 
 ##use custom fxn to subset
-# dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
-# g = sns.relplot(data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', hue='subject',
-#                 row='trialType', kind='line', style='stage', markers=True, dashes=True)
-# g.map(plt.axhline, y=criteriaDS, color=".2",
-#       linewidth=3, dashes=(3, 1), zorder=0)
+sns.set_palette('tab10')
 
-# g.map(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', color='black')
+g= sns.FacetGrid(data=dfPlot, row='trialType')
 
-# saveFigCustom(g, 'training_peProb', savePath)
+#subj + mean
+g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay',units='subject', estimator=None, alpha=0.5, y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder,
+                style='stage', markers=True, dashes=False)
+g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder,
+               )
+
+g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', color='black',
+                style='stage')
+
+g.map(plt.axhline, y=criteriaDS, color=".2",
+      linewidth=3, dashes=(3, 1), zorder=0)
+
+g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', color='black')
+
+saveFigCustom(g, 'training_peProb', savePath)
 
 
 #--Training: DS PE Prob+latency in 1 fig

@@ -17,3 +17,4 @@ Python/.pylint.d/behaviorAnalysis1.stats
 Python/.pylint.d/optoStats1.stats
 *.csv
 *.asv
+*.pyc

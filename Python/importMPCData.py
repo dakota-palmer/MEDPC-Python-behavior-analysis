@@ -48,8 +48,16 @@ import seaborn as sns
 # experimentType= 'photometry'
 
 #Examples: 
+
+# #DP VP-VTA-STGTACR DS Task
+# experimentType= 'Opto'
+# datapath= r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\\' 
+# colToImport= 'A:W'  #dp opto 
+# metaPathSubj= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" 
+# metaPathSes= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx"
+
         
-#DP GAD-VP-OPTO DS Task
+# #DP GAD-VP-OPTO DS Task
 experimentType= 'Opto'
 datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
 colToImport= 'A:W'  #dp opto 
@@ -65,10 +73,10 @@ metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" 
 
 # #DP VP-VTA-FP DS Task 
 # experimentType= 'photometry'
-# datapath= r'J:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
+# datapath= r'K:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
 # colToImport= 'A:Q' #dakota vp-vta-fp
-# metaPathSubj= r"J:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
-# metaPathSes= r"J:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
+# metaPathSubj= r"K:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
+# metaPathSes= r"K:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
 
 
 #Ally DREADD DS Task
@@ -210,7 +218,9 @@ if experimentType== 'OptoInstrumentalTransfer':
 #%% Add unique fileID for each session (subject & date)
 
 #sort by date and subject
-test= df.sort_values(['date','subject'])
+# test= df.sort_values(['date','subject'])
+df= df.sort_values(['date','subject'])
+
 
 df.loc[:,'fileID'] = df.groupby(['date', 'subject']).ngroup()
 

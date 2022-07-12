@@ -69,6 +69,9 @@ def percentPortEntryCalc(df, groupHierarchy, colToCalc):
     dfSubset.loc[((dfSubset[colToCalc]=='noPE') | (dfSubset[colToCalc]=='noPE+lick')),colToCalc]= 'noPE'
     
     
+    test= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=True)
+
+    #normalizing over index (row) should return proportion of each outcome for each trialType 
     result= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=False, normalize='index')
     
     #retain only PE column
@@ -86,5 +89,8 @@ def groupPercentCalc(df, levelOfAnalysis, groupHierarchy, colToCalc):
     for grouper in groupHierarchy:
         xTabInd.append(dfSubset[grouper]) 
     
+    # test= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=True)
+    
+    #normalizing over index (row) should return proportion of each outcome for each trialType 
     result= pd.crosstab(index=xTabInd, columns=dfSubset[colToCalc], margins=False, normalize='index')
     return result

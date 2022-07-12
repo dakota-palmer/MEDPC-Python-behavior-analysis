@@ -455,10 +455,13 @@ if __name__ == '__main__':
     #take diff between DS trial types 
     ind= dfTidyOpto.trialType.str.contains('DS')
     
-    # test= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.diff()
+    # test2= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.diff()
 
     test= dfTemp.copy()
     test.loc[ind,'trialTypePEProb10sdiff']= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.diff()
+    
+    #examining some more extreme values
+    test= test.loc[test.stage.str.contains('Pre-Laser')].copy()
 
     dfTidyOpto.loc[ind,'trialTypePEProb10sdiff']= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.transform('diff')
     
@@ -870,11 +873,6 @@ if __name__ == '__main__':
     
     
     
-    
-    #%% dp 2022-02-02 way too much visually going on with plots of laser v no laser
-    #need to calculate a difference score and plot the delta, should vastly improve with just DS vs NS
-    
-    
     #%% Evolution across days/stages: PE prob & latency
         
     sns.set_palette('Paired')
@@ -942,16 +940,26 @@ if __name__ == '__main__':
         #remove unused stages (diff opto groups should have diff laser params) to keep sns from making empty facets
         dfPlot2.stage= dfPlot2.stage.cat.remove_unused_categories().copy()
         
-        g= sns.relplot(data=dfPlot, kind='line', row='stage', x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder)
+        #mean lines w individual subj
+        g= sns.FacetGrid(data=dfPlot2, col='stage')
+        
+        g.map_dataframe(sns.lineplot, data=dfPlot2, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder)
+        g.map_dataframe(sns.lineplot, data=dfPlot2, units='subject', estimator=None, alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder, style='subject', dashes=False, markers=True)
+
+        g.map(plt.axhline, y=criteriaDS, color=".2",  linewidth=3, dashes=(3, 1), zorder=0) 
+
+
+        # g= sns.relplot(data=dfPlot2, kind='line', row='stage', x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder)
        
         # g.map_dataframe(sns.lineplot, data=dfPlot2, units='subject', estimator=None, alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder, style='subject', dashes=False, markers=True)
         
-        g= sns.catplot(data=dfPlot, col='subject', row='stage', kind='point', alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder)
+        # g= sns.catplot(data=dfPlot2, col='subject', row='stage', kind='point', alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder)
 
-        g.map_dataframe(sns.scatterplot(), data=dfPlot, alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder, style='subject', markers=True)
+        # g.map_dataframe(sns.scatterplot, data=dfPlot2, alpha=0.6, x='trainDayThisStage', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder, style='subject', markers=True)
         
         g.fig.suptitle(virus+'-Opto-PE prob across laser days')
 
+        saveFigCustom(g, virus+'- Daily PEprob by stage', savePath)
 
 
 
@@ -1050,27 +1058,27 @@ if __name__ == '__main__':
     
     # boxplots for each trial type with individual data points
     #individual subj facet
-    g = sns.FacetGrid(data=dfPlot, col='subject',col_wrap=3)
-    g.fig.suptitle('PE latency by trialType; laser + CUE')
-    g.map_dataframe(sns.boxplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
-    g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.2, edgecolor='gray', linewidth=1)
-    g.set_axis_labels( 'stage', 'latency to first PE (10s)')
-    saveFigCustom(g, 'opto_individual_peLatency_10s_box')
+    # g = sns.FacetGrid(data=dfPlot, col='subject',col_wrap=3)
+    # g.fig.suptitle('PE latency by trialType; laser + CUE')
+    # g.map_dataframe(sns.boxplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
+    # g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.2, edgecolor='gray', linewidth=1)
+    # g.set_axis_labels( 'stage', 'latency to first PE (10s)')
+    # saveFigCustom(g, 'opto_individual_peLatency_10s_box', savePath)
     
-    g = sns.FacetGrid(data=dfPlot, col='subject',col_wrap=3)
-    g.fig.suptitle('PE latency by trialType; laser + CUE')
-    g.map_dataframe(sns.barplot, ci=68, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
-    g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.2, edgecolor='gray', linewidth=1)
-    g.set_axis_labels( 'laser duration', 'latency to first PE (10s)')
-    saveFigCustom(g, 'opto_individual_peLatency_10s_bar')
+    # g = sns.FacetGrid(data=dfPlot, col='subject',col_wrap=3)
+    # g.fig.suptitle('PE latency by trialType; laser + CUE')
+    # g.map_dataframe(sns.barplot, ci=68, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
+    # g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.2, edgecolor='gray', linewidth=1)
+    # g.set_axis_labels( 'laser duration', 'latency to first PE (10s)')
+    # saveFigCustom(g, 'opto_individual_peLatency_10s_bar', savePath)
     
     #virus facet
-    g = sns.FacetGrid(data=dfPlot, row='virus')
-    g.fig.suptitle('PE latency by trialType; laser + CUE')
-    g.map_dataframe(sns.boxplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
-    g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.2, edgecolor='gray', linewidth=1)
-    g.set_axis_labels( 'laser duration', 'latency to first PE (10s)')
-    saveFigCustom(g, 'opto_virus_peLatency_10s_box')
+    # g = sns.FacetGrid(data=dfPlot, row='virus')
+    # g.fig.suptitle('PE latency by trialType; laser + CUE')
+    # g.map_dataframe(sns.boxplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
+    # g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.2, edgecolor='gray', linewidth=1)
+    # g.set_axis_labels( 'laser duration', 'latency to first PE (10s)')
+    # saveFigCustom(g, 'opto_virus_peLatency_10s_box', savePath)
     
     # barplots for each trial type with individual data points 
     #individual subj facet
@@ -1079,7 +1087,7 @@ if __name__ == '__main__':
     g.map_dataframe(sns.barplot, ci=68, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
     g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.2, edgecolor='gray', linewidth=1)
     g.set_axis_labels( 'laser duration', 'latency to first PE (10s)')
-    saveFigCustom(g, 'opto_individual_peLatency_10s_bar')
+    saveFigCustom(g, 'opto_individual_peLatency_10s_bar', savePath)
     
     #virus facet
     g = sns.FacetGrid(data=dfPlot, row='virus')
@@ -1087,7 +1095,7 @@ if __name__ == '__main__':
     g.map_dataframe(sns.barplot, ci=68, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
     g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.2, edgecolor='gray', linewidth=1)
     g.set_axis_labels( 'laser duration', 'latency to first PE (10s)')
-    saveFigCustom(g, 'opto_virus_peLatency_10s_bar')
+    saveFigCustom(g, 'opto_virus_peLatency_10s_bar', savePath)
     
     #virus + sex facet
     g = sns.FacetGrid(data=dfPlot, row='virus', col='sex')
@@ -1095,14 +1103,14 @@ if __name__ == '__main__':
     g.map_dataframe(sns.barplot, ci=68, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
     g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.2, edgecolor='gray', linewidth=1)
     g.set_axis_labels( 'laser duration', 'latency to first PE (10s)')
-    saveFigCustom(g, 'opto_virus+sex_peLatency_10s_bar')
+    saveFigCustom(g, 'opto_virus+sex_peLatency_10s_bar', savePath)
     
     # ECDFs
     #vius facet
     g = sns.displot(data=dfPlot, row='virus', col='stage', x='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', kind='ecdf')
     g.fig.suptitle('PE latency by trialType; laser + CUE')
     g.set_xlabels('latency to first PE (10s)')
-    saveFigCustom(g, 'opto_virus_peLatency_10s_ecdf')    
+    saveFigCustom(g, 'opto_virus_peLatency_10s_ecdf', savePath)    
     
     # # %% Old Effect of cue+laser on current trial PE latency
         
@@ -1189,317 +1197,317 @@ if __name__ == '__main__':
 
     #%% Calculate PE probability of each trial type. This is normalized so is more informative than count of trials. 
     
-   #  # #TODO: clean up and move higher to prelim analysis section
+   # #  # #TODO: clean up and move higher to prelim analysis section
     
-   #  # # outcomeProb= dfPlot[dfPlot.trialOutcomeBeh10s=='PE'].groupby(['fileID','trialID'])['trialOutcomeBeh10s'].count().index
+   # #  # # outcomeProb= dfPlot[dfPlot.trialOutcomeBeh10s=='PE'].groupby(['fileID','trialID'])['trialOutcomeBeh10s'].count().index
 
     
-   #  # #calculate Probortion of trials with PE out of all trials for each trial type
-   #  # #can use nunique() to get count of unique trialIDs with specific PE outcome per file
-   #  # #given this, can calculate Probortion as #PE/#PE+#noPE
+   # #  # #calculate Probortion of trials with PE out of all trials for each trial type
+   # #  # #can use nunique() to get count of unique trialIDs with specific PE outcome per file
+   # #  # #given this, can calculate Probortion as #PE/#PE+#noPE
    
-   #  # #subset data and save as intermediate variable dfGroup
-   #  # dfGroup= dfTidyOpto.copy()
-   #  # #for Lick+laser sessions, retain only trials with PE+lick for comparison
-   #  # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
+   # #  # #subset data and save as intermediate variable dfGroup
+   # #  # dfGroup= dfTidyOpto.copy()
+   # #  # #for Lick+laser sessions, retain only trials with PE+lick for comparison
+   # #  # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
    
-   #  # dfPlot= dfGroup.copy() 
+   # #  # dfPlot= dfGroup.copy() 
     
-   #  # #excluded trials from lick+laser sessions are all nan. don't include
-   #  # outcomes= dfTidyOpto.loc[dfTidyOpto.trialOutcomeBeh10s.notnull()].trialOutcomeBeh10s.unique()
+   # #  # #excluded trials from lick+laser sessions are all nan. don't include
+   # #  # outcomes= dfTidyOpto.loc[dfTidyOpto.trialOutcomeBeh10s.notnull()].trialOutcomeBeh10s.unique()
     
-   #  # #TODO: optimize this- combine outcomes here into one variable
-   #  # #using apply() might help? or pivot?
+   # #  # #TODO: optimize this- combine outcomes here into one variable
+   # #  # #using apply() might help? or pivot?
     
-   #  # # tester[outcomes]= dfPlot[(dfPlot.trialOutcomeBeh10s==outcomes)].reset_index().groupby(
-   #  # #     ['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
+   # #  # # tester[outcomes]= dfPlot[(dfPlot.trialOutcomeBeh10s==outcomes)].reset_index().groupby(
+   # #  # #     ['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
     
-   #  # test1= dfPlot[(dfPlot.trialOutcomeBeh10s=='PE')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
-   #  # test1.name= 'PE'
-   #  # test2= dfPlot[dfPlot.trialOutcomeBeh10s=='noPE'].reset_index().groupby(['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
-   #  # test2.name= 'noPE'    
+   # #  # test1= dfPlot[(dfPlot.trialOutcomeBeh10s=='PE')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
+   # #  # test1.name= 'PE'
+   # #  # test2= dfPlot[dfPlot.trialOutcomeBeh10s=='noPE'].reset_index().groupby(['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
+   # #  # test2.name= 'noPE'    
     
-   #  # test5= dfPlot[(dfPlot.trialOutcomeBeh10s=='PE+lick')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
-   #  # test5.name= 'PE+lick'
-   #  # test8= dfPlot[(dfPlot.trialOutcomeBeh10s=='noPE+lick')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
-   #  # test8.name= 'noPE+lick'
+   # #  # test5= dfPlot[(dfPlot.trialOutcomeBeh10s=='PE+lick')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
+   # #  # test5.name= 'PE+lick'
+   # #  # test8= dfPlot[(dfPlot.trialOutcomeBeh10s=='noPE+lick')].reset_index().groupby(['fileID','trialType','trialOutcomeBeh10s'])['trialID'].nunique()
+   # #  # test8.name= 'noPE+lick'
  
            
-   #  # ##num of unique trials per trial type per session, but still cant sum
-   #  # test6= pd.concat((test1,test2,test5,test8),ignore_index=False,axis=1)
+   # #  # ##num of unique trials per trial type per session, but still cant sum
+   # #  # test6= pd.concat((test1,test2,test5,test8),ignore_index=False,axis=1)
     
-   #  # ##reset index and groupby trialType so we can sum across columns
-   #  # test7= test6.reset_index().groupby(['fileID','trialType'])[outcomes].sum()
+   # #  # ##reset index and groupby trialType so we can sum across columns
+   # #  # test7= test6.reset_index().groupby(['fileID','trialType'])[outcomes].sum()
  
-   #  # ##calculate probability for each trial type: num trials/total num trials
-   #  # outcomeProb= test7.divide(test7.sum(axis=1),axis=0)
+   # #  # ##calculate probability for each trial type: num trials/total num trials
+   # #  # outcomeProb= test7.divide(test7.sum(axis=1),axis=0)
     
-   #  # #melt() into single column w label
-   #  # test8= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbFile')
+   # #  # #melt() into single column w label
+   # #  # test8= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbFile')
     
-   #  # #assign back to df by merging
-   #  # #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidyOpto
-   #  # # dfTidyOpto.reset_index(inplace=True) #reset index so eventID index is kept
+   # #  # #assign back to df by merging
+   # #  # #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidyOpto
+   # #  # # dfTidyOpto.reset_index(inplace=True) #reset index so eventID index is kept
     
-   #  # dfTidyOpto= dfTidyOpto.reset_index().merge(test8,'left', on=['fileID','trialType','trialOutcomeBeh10s']).copy()
+   # #  # dfTidyOpto= dfTidyOpto.reset_index().merge(test8,'left', on=['fileID','trialType','trialOutcomeBeh10s']).copy()
     
-   #  # dfTidyOpto.loc[:,'outcomeProbFile']= test8.outcomeProbFile
+   # #  # dfTidyOpto.loc[:,'outcomeProbFile']= test8.outcomeProbFile
     
          
-   #  #subset data and save as intermediate variable dfGroup
-   #  dfGroup= dfTidyOpto.copy()
+   # #  #subset data and save as intermediate variable dfGroup
+   # #  dfGroup= dfTidyOpto.copy()
      
-   #  #select data
-   #  #all trialTypes excluding ITI     
-   #  dfPlot = dfGroup[(dfGroup.trialType != 'ITI')].copy()
+   # #  #select data
+   # #  #all trialTypes excluding ITI     
+   # #  dfPlot = dfGroup[(dfGroup.trialType != 'ITI')].copy()
      
-   #  #get only PE outcomes
-   #  # dfPlot.reset_index(inplace=True)
-   #  dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE') | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
+   # #  #get only PE outcomes
+   # #  # dfPlot.reset_index(inplace=True)
+   # #  dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE') | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
      
-   #  #since we calculated aggregated proportion across all trials in session,
-   #  #take only first index. Otherwise repeated observations are redundant
-   #  dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh10s']).first().copy()
+   # #  #since we calculated aggregated proportion across all trials in session,
+   # #  #take only first index. Otherwise repeated observations are redundant
+   # #  dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh10s']).first().copy()
      
      
-   #  #sum together both PE and PE+lick for total overall PE prob
-   #  # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
+   # #  #sum together both PE and PE+lick for total overall PE prob
+   # #  # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
      
-   #  dfPlot['trialTypePEProb10s']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile10s'].sum().copy()
+   # #  dfPlot['trialTypePEProb10s']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile10s'].sum().copy()
     
-   #  #get an aggregated x axis for files per subject
-   #  fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
+   # #  #get an aggregated x axis for files per subject
+   # #  fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
      
-   #  #since grouping PE and PE+lick, we still have redundant observations
-   #  #retain only 1 per trial type per file
-   #  dfPlot= dfPlot.reset_index().loc[fileAgg]
+   # #  #since grouping PE and PE+lick, we still have redundant observations
+   # #  #retain only 1 per trial type per file
+   # #  dfPlot= dfPlot.reset_index().loc[fileAgg]
     
-   #  #% visualize peProb
+   # #  #% visualize peProb
     
     
-   #  # #subset data and save as intermediate variable dfGroup
-   #  # dfGroup= dfTidyOpto.copy()
-   #  # #for Lick+laser sessions, retain only trials with PE+lick for comparison
-   #  # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
+   # #  # #subset data and save as intermediate variable dfGroup
+   # #  # dfGroup= dfTidyOpto.copy()
+   # #  # #for Lick+laser sessions, retain only trials with PE+lick for comparison
+   # #  # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh10s=='PE+lick')].copy()
    
     
-   #  # #select data     
-   #  # dfPlot = dfTidyOpto[(dfGroup.trialType !='ITI')].copy()
-   #  #Plot probability of PE by trialType 
+   # #  # #select data     
+   # #  # dfPlot = dfTidyOpto[(dfGroup.trialType !='ITI')].copy()
+   # #  #Plot probability of PE by trialType 
     
-   #  # #get only PE outcomes
-   #  # # dfPlot.reset_index(inplace=True)
-   #  # dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE') | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
+   # #  # #get only PE outcomes
+   # #  # # dfPlot.reset_index(inplace=True)
+   # #  # dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE') | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
     
-   #  # #since we calculated aggregated probability across all trials in session,
-   #  # #take only first index. Otherwise repeated observations are redundant
-   #  # dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh10s']).first().copy()
+   # #  # #since we calculated aggregated probability across all trials in session,
+   # #  # #take only first index. Otherwise repeated observations are redundant
+   # #  # dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh10s']).first().copy()
     
     
-   #  # #sum together both PE and PE+lick for total PE prob
-   #  # # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
+   # #  # #sum together both PE and PE+lick for total PE prob
+   # #  # # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
     
-   #  # dfPlot['trialTypePEProb10s']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile'].sum().copy()
+   # #  # dfPlot['trialTypePEProb10s']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile'].sum().copy()
 
-   #  # #get an aggregated x axis for files per subject
-   #  # fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
+   # #  # #get an aggregated x axis for files per subject
+   # #  # fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
     
-   #  # #since grouping PE and PE+lick, we still have redundant observations
-   #  # #retain only 1 per trial type per file
-   #  # dfPlot= dfPlot.reset_index().loc[fileAgg]
+   # #  # #since grouping PE and PE+lick, we still have redundant observations
+   # #  # #retain only 1 per trial type per file
+   # #  # dfPlot= dfPlot.reset_index().loc[fileAgg]
 
-   # # #Plot
-   # #  #one line per per trialType per subj would be ideal. In subplots
-   # #  #manual control here of facetgrid and titles (i). 
-   # #  #Manual:
-   # #  sns.set_palette('tab20')
-   # #  g = sns.FacetGrid(dfPlot, col='subject', hue='trialType', hue_order=trialOrder, col_wrap=4)
+   # # # #Plot
+   # # #  #one line per per trialType per subj would be ideal. In subplots
+   # # #  #manual control here of facetgrid and titles (i). 
+   # # #  #Manual:
+   # # #  sns.set_palette('tab20')
+   # # #  g = sns.FacetGrid(dfPlot, col='subject', hue='trialType', hue_order=trialOrder, col_wrap=4)
 
-   # #  # Add the line over the area with the plot function
-   # #  g = g.map(plt.plot, 'fileID', 'trialTypePEProb10s')
+   # # #  # Add the line over the area with the plot function
+   # # #  g = g.map(plt.plot, 'fileID', 'trialTypePEProb10s')
     
-   # #  # Control the title of each facet
-   # #  g = g.set_titles("{col_name}")
+   # # #  # Control the title of each facet
+   # # #  g = g.set_titles("{col_name}")
      
-   # #  # Add a title for the whole plot
-   # #  plt.subplots_adjust(top=0.9)
-   # #  g = g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
+   # # #  # Add a title for the whole plot
+   # # #  plt.subplots_adjust(top=0.9)
+   # # #  g = g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
     
      
-   # #  #same with relplot:
-   # #  g= sns.relplot(data=dfPlot, x='fileID', y='trialTypePEProb10s', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line')
-   # #  # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
-   # #  g.set_titles('{col_name}')
-   # #  g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
-   # #  g.tight_layout(w_pad=0)
+   # # #  #same with relplot:
+   # # #  g= sns.relplot(data=dfPlot, x='fileID', y='trialTypePEProb10s', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, kind='line')
+   # # #  # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
+   # # #  g.set_titles('{col_name}')
+   # # #  g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
+   # # #  g.tight_layout(w_pad=0)
     
-   #  # #plot by laserDur
-   #  # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
-   #  # # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
-   #  # g.set_titles('{col_name}')
-   #  # g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
-   #  # g.tight_layout(w_pad=0)
+   # #  # #plot by laserDur
+   # #  # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
+   # #  # # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
+   # #  # g.set_titles('{col_name}')
+   # #  # g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
+   # #  # g.tight_layout(w_pad=0)
     
-   #  # #group by virus
-   #  # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', row='virus', hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
-   #  # # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
-   #  # g.set_titles('{row_name}')
-   #  # g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
-   #  # g.tight_layout(w_pad=0)
+   # #  # #group by virus
+   # #  # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', row='virus', hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
+   # #  # # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
+   # #  # g.set_titles('{row_name}')
+   # #  # g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
+   # #  # g.tight_layout(w_pad=0)
     
-   #  # #show individual subj
-   #  # # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', row='virus', units='subject', estimator=None, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
+   # #  # #show individual subj
+   # #  # # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', row='virus', units='subject', estimator=None, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
 
-   #  # #subjects run different session types on same day, so can't plot by day across subjects
-   #  # sns.set_palette('Paired')
+   # #  # #subjects run different session types on same day, so can't plot by day across subjects
+   # #  # sns.set_palette('Paired')
 
-   #  # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
-   #  # # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
-   #  # g.set_titles('{col_name}')
-   #  # g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
-   #  # g.tight_layout(w_pad=0)
+   # #  # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', col='subject', col_wrap=4, hue='trialType', hue_order=trialOrder, style='laserDur', kind='line')
+   # #  # # g.map(plt.axhline, y=0.6, color=".7", dashes=(2, 1), zorder=0)
+   # #  # g.set_titles('{col_name}')
+   # #  # g.fig.suptitle('Evolution of the trialTypePEProb10s in subjects by trialType')
+   # #  # g.tight_layout(w_pad=0)
     
-   #  #individual subj
-   #  # for subj in dfPlot.subject.unique():
-   #  #     g= sns.catplot(data=dfPlot.loc(dfPlot.subject==subj), x='laserDur', y='trialTypePEProb10s',hue='trialType')
+   # #  #individual subj
+   # #  # for subj in dfPlot.subject.unique():
+   # #  #     g= sns.catplot(data=dfPlot.loc(dfPlot.subject==subj), x='laserDur', y='trialTypePEProb10s',hue='trialType')
    
-   #  # g=sns.catplot(data= dfPlot, x='laserDur', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, col='subject', col_wrap=4, kind='point')
-   #  # g=sns.relplot(data= dfPlot, estimator=None, x='trialType', y='trialTypePEProb10s', hue='laserDur', col='subject', col_wrap=4, kind='line')
+   # #  # g=sns.catplot(data= dfPlot, x='laserDur', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, col='subject', col_wrap=4, kind='point')
+   # #  # g=sns.relplot(data= dfPlot, estimator=None, x='trialType', y='trialTypePEProb10s', hue='laserDur', col='subject', col_wrap=4, kind='line')
 
-   #  # boxplots for each trial type with individual data points
+   # #  # boxplots for each trial type with individual data points
 
-    #individual subj facet
-    g = sns.FacetGrid(data=dfPlot, col='subject',col_wrap=3)
-    g.fig.suptitle('PE probability by trialType; laser + CUE')
-    g.map_dataframe(sns.barplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', ci=68)
-    g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
-    # g.map_dataframe(sns.lineplot, estimator=None, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder,palette='Paired', size=4, alpha=0.8, linewidth=1)
-    g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
-    # g.add_legend()
-    # g.tight_layout()
-    saveFigCustom(g, 'opto_individual_peProb_10s_bar')
+   #  #individual subj facet
+   #  g = sns.FacetGrid(data=dfPlot, col='subject',col_wrap=3)
+   #  g.fig.suptitle('PE probability by trialType; laser + CUE')
+   #  g.map_dataframe(sns.barplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', ci=68)
+   #  g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
+   #  # g.map_dataframe(sns.lineplot, estimator=None, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder,palette='Paired', size=4, alpha=0.8, linewidth=1)
+   #  g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
+   #  # g.add_legend()
+   #  # g.tight_layout()
+   #  saveFigCustom(g, 'opto_individual_peProb_10s_bar')
     
 
-    #virus facet
-    g = sns.FacetGrid(data=dfPlot, row='virus')
-    g.fig.suptitle('PE probability by trialType; laser + CUE')
-    g.map_dataframe(sns.boxplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
-    g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
-    g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
-    # g.add_legend()
-    # g.tight_layout()
-    saveFigCustom(g, 'opto_virus_peProb_10s_box')
+   #  #virus facet
+   #  g = sns.FacetGrid(data=dfPlot, row='virus')
+   #  g.fig.suptitle('PE probability by trialType; laser + CUE')
+   #  g.map_dataframe(sns.boxplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
+   #  g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
+   #  g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
+   #  # g.add_legend()
+   #  # g.tight_layout()
+   #  saveFigCustom(g, 'opto_virus_peProb_10s_box')
     
-    g = sns.FacetGrid(data=dfPlot, row='virus')
-    g.fig.suptitle('PE probability by trialType; laser + CUE')
-    g.map_dataframe(sns.barplot, ci=68, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
-    g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
-    g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
-    # g.add_legend()
-    # g.tight_layout()
-    saveFigCustom(g, 'opto_virus_peProb_10s_bar')
+   #  g = sns.FacetGrid(data=dfPlot, row='virus')
+   #  g.fig.suptitle('PE probability by trialType; laser + CUE')
+   #  g.map_dataframe(sns.barplot, ci=68, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
+   #  g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
+   #  g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
+   #  # g.add_legend()
+   #  # g.tight_layout()
+   #  saveFigCustom(g, 'opto_virus_peProb_10s_bar')
     
-    #virus and sex facet
-    g = sns.FacetGrid(data=dfPlot, row='virus', col='sex')
-    g.fig.suptitle('PE probability by trialType; laser + CUE')
-    g.map_dataframe(sns.boxplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
-    g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
-    g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
-    # g.add_legend()
-    # g.tight_layout()
-    saveFigCustom(g, 'opto_virus+sex_peProb_10s_box')
+   #  #virus and sex facet
+   #  g = sns.FacetGrid(data=dfPlot, row='virus', col='sex')
+   #  g.fig.suptitle('PE probability by trialType; laser + CUE')
+   #  g.map_dataframe(sns.boxplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
+   #  g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
+   #  g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
+   #  # g.add_legend()
+   #  # g.tight_layout()
+   #  saveFigCustom(g, 'opto_virus+sex_peProb_10s_box')
     
-    g = sns.FacetGrid(data=dfPlot, row='virus', col='sex')
-    g.fig.suptitle('PE probability by trialType; laser + CUE')
-    g.map_dataframe(sns.barplot, ci=68, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
-    g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
-    g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
-    saveFigCustom(g, 'opto_virus+sex_peProb_10s_bar')
+   #  g = sns.FacetGrid(data=dfPlot, row='virus', col='sex')
+   #  g.fig.suptitle('PE probability by trialType; laser + CUE')
+   #  g.map_dataframe(sns.barplot, ci=68, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
+   #  g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
+   #  g.set_axis_labels( 'laser duration', 'probability of PE (10s)')
+   #  saveFigCustom(g, 'opto_virus+sex_peProb_10s_bar')
    
-   #trying to connect individual subj points
-    #pointplot with units=subject #seems to work well for each subj
-    g= sns.catplot(data=dfPlot, y='trialTypePEProb10s', x='trialType',  kind='point', row='virus', col='stage', units='subject', hue='subject', order=trialOrder, palette=('deep'))
-    g.fig.suptitle('PE probability by trialType; laser + CUE')
-    g.set_axis_labels( 'trialType', 'probability of PE (10s)')
-    g.map_dataframe(sns.barplot, y='trialTypePEProb10s', x='trialType', hue='trialType', hue_order=trialOrder, order=trialOrder, palette='Paired')
+   # #trying to connect individual subj points
+   #  #pointplot with units=subject #seems to work well for each subj
+   #  g= sns.catplot(data=dfPlot, y='trialTypePEProb10s', x='trialType',  kind='point', row='virus', col='stage', units='subject', hue='subject', order=trialOrder, palette=('deep'))
+   #  g.fig.suptitle('PE probability by trialType; laser + CUE')
+   #  g.set_axis_labels( 'trialType', 'probability of PE (10s)')
+   #  g.map_dataframe(sns.barplot, y='trialTypePEProb10s', x='trialType', hue='trialType', hue_order=trialOrder, order=trialOrder, palette='Paired')
 
-    saveFigCustom(g, 'opto_virus+sex_peProb_10s_point')
+   #  saveFigCustom(g, 'opto_virus+sex_peProb_10s_point')
 
    
-    # #trying to connect individual subject points...
-    # g = sns.FacetGrid(data=dfPlot, row='virus') 
-    # g.fig.suptitle('Probability of PE by trialType')
-    # g.map_dataframe(sns.boxplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
-    # #doens't line up properly
-    # # g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='subject', palette='tab20', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
-    # # g.map_dataframe(sns.lineplot, x='stage', y='trialTypePEProb10s', hue='subject', palette='tab20', size=4, alpha=0.8, linewidth=1)
-    # g.set_axis_labels( 'laser duration', 'probability of PE')
-    # g.add_legend()
+   #  # #trying to connect individual subject points...
+   #  # g = sns.FacetGrid(data=dfPlot, row='virus') 
+   #  # g.fig.suptitle('Probability of PE by trialType')
+   #  # g.map_dataframe(sns.boxplot, x='stage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
+   #  # #doens't line up properly
+   #  # # g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='subject', palette='tab20', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
+   #  # # g.map_dataframe(sns.lineplot, x='stage', y='trialTypePEProb10s', hue='subject', palette='tab20', size=4, alpha=0.8, linewidth=1)
+   #  # g.set_axis_labels( 'laser duration', 'probability of PE')
+   #  # g.add_legend()
     
-    #  #trying to connect individual subject points...
-    # g = sns.FacetGrid(data=dfPlot, row='virus', col='stage') 
-    # g.fig.suptitle('Probability of PE by trialType')
-    # g.map_dataframe(sns.boxplot, x='trialType', order= trialOrder, y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
-    # #doens't line up properly
-    # # g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='subject', palette='tab20', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
-    # g.map_dataframe(sns.pointplot, x='trialType', order= trialOrder, y='trialTypePEProb10s', hue='subject', palette='tab20', size=0.2, alpha=0.2, linewidth=0.2)
-    # g.set_axis_labels( 'trialType', 'probability of PE')
-    # g.add_legend()
+   #  #  #trying to connect individual subject points...
+   #  # g = sns.FacetGrid(data=dfPlot, row='virus', col='stage') 
+   #  # g.fig.suptitle('Probability of PE by trialType')
+   #  # g.map_dataframe(sns.boxplot, x='trialType', order= trialOrder, y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, palette='Paired')
+   #  # #doens't line up properly
+   #  # # g.map_dataframe(sns.stripplot, x='stage', y='trialTypePEProb10s', hue='subject', palette='tab20', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
+   #  # g.map_dataframe(sns.pointplot, x='trialType', order= trialOrder, y='trialTypePEProb10s', hue='subject', palette='tab20', size=0.2, alpha=0.2, linewidth=0.2)
+   #  # g.set_axis_labels( 'trialType', 'probability of PE')
+   #  # g.add_legend()
     
-    #%Plot evolution of PE probability across laser test days
+   #  #%Plot evolution of PE probability across laser test days
     
-    #individual subject facet
-    g= sns.relplot(data= dfPlot, kind='line', estimator=None, col='subject', col_wrap=3, x='trainDayThisStage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, style='stage', markers=True)
+   #  #individual subject facet
+   #  g= sns.relplot(data= dfPlot, kind='line', estimator=None, col='subject', col_wrap=3, x='trainDayThisStage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder, style='stage', markers=True)
   
-    # g= sns.relplot(data= dfPlot, kind='line', estimator=None, row='trialType', x='trainDayThisStage', y='trialTypePEProb10s', hue='virus', style='stage', markers=True)
+   #  # g= sns.relplot(data= dfPlot, kind='line', estimator=None, row='trialType', x='trainDayThisStage', y='trialTypePEProb10s', hue='virus', style='stage', markers=True)
 
 
-    #virus facet
-    g= sns.relplot(data= dfPlot, kind='line', row='virus', x='trainDayThisStage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder)
-    # g= sns.relplot(data= dfPlot, estimator=None, kind='line', row='virus', x='trainDayThisStage', y='trialTypePEProb10s', units='subject', hue='trialType', hue_order=trialOrder)
+   #  #virus facet
+   #  g= sns.relplot(data= dfPlot, kind='line', row='virus', x='trainDayThisStage', y='trialTypePEProb10s', hue='trialType', hue_order=trialOrder)
+   #  # g= sns.relplot(data= dfPlot, estimator=None, kind='line', row='virus', x='trainDayThisStage', y='trialTypePEProb10s', units='subject', hue='trialType', hue_order=trialOrder)
 
 
  
 
     #%% aggregate DS and NS trial types
-    # like above but recalculating peProb for combined laser off&on
-     #select data  
-    dfPlot = dfTidyOpto[(dfTidyOpto.trialType != 'ITI')].copy()   
+    # # like above but recalculating peProb for combined laser off&on
+    #  #select data  
+    # dfPlot = dfTidyOpto[(dfTidyOpto.trialType != 'ITI')].copy()   
     
-    #make a dict to swap values
-    trialTypes= {'laserDStrial_0':'DS', 'laserDStrial_1':'DS', 'laserNStrial_0':'NS',
-       'laserNStrial_1':'NS'}
-    dfPlot.loc[:,'trialType']= dfPlot.trialType.replace(trialTypes).copy()
+    # #make a dict to swap values
+    # trialTypes= {'laserDStrial_0':'DS', 'laserDStrial_1':'DS', 'laserNStrial_0':'NS',
+    #    'laserNStrial_1':'NS'}
+    # dfPlot.loc[:,'trialType']= dfPlot.trialType.replace(trialTypes).copy()
     
-    #get only PE outcomes
-    # dfPlot.reset_index(inplace=True)
-    dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE') | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
+    # #get only PE outcomes
+    # # dfPlot.reset_index(inplace=True)
+    # dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE') | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
     
-    #since we calculated aggregated probability across all trials in session,
-    #take only first index. Otherwise repeated observations are redundant
-    dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh10s']).first().copy()
+    # #since we calculated aggregated probability across all trials in session,
+    # #take only first index. Otherwise repeated observations are redundant
+    # dfPlot= dfPlot.groupby(['fileID','trialType','trialOutcomeBeh10s']).first().copy()
     
     
-    #sum together both PE and PE+lick for total PE prob
-    # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
+    # #sum together both PE and PE+lick for total PE prob
+    # # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
     
-    dfPlot['trialTypePEProb10s']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile'].sum().copy()
+    # dfPlot['trialTypePEProb10s']= dfPlot.groupby(['fileID','trialType'])['outcomeProbFile'].sum().copy()
 
-    #get an aggregated x axis for files per subject
-    fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
+    # #get an aggregated x axis for files per subject
+    # fileAgg= dfPlot.reset_index().groupby(['subject','fileID','trialType']).cumcount().copy()==0
     
-    #since grouping PE and PE+lick, we still have redundant observations
-    #retain only 1 per trial type per file
-    dfPlot= dfPlot.reset_index().loc[fileAgg]
+    # #since grouping PE and PE+lick, we still have redundant observations
+    # #retain only 1 per trial type per file
+    # dfPlot= dfPlot.reset_index().loc[fileAgg]
  
-    #now get just first value
-    # dfPlot= dfPlot.loc[dfPlot.groupby(['fileID','trialType']).cumcount()==0]    
+    # #now get just first value
+    # # dfPlot= dfPlot.loc[dfPlot.groupby(['fileID','trialType']).cumcount()==0]    
     
-    #visualize
-    sns.set_palette('tab10')
+    # #visualize
+    # sns.set_palette('tab10')
 
-    # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', row='virus', hue='trialType', style='stage', kind='line')
-    # g.map(plt.axhline, y=0.6, color=".2", dashes=(2, 1), zorder=0, linewidth=4)
+    # # g= sns.relplot(data=dfPlot, x='trainDayThisStage', y='trialTypePEProb10s', row='virus', hue='trialType', style='stage', kind='line')
+    # # g.map(plt.axhline, y=0.6, color=".2", dashes=(2, 1), zorder=0, linewidth=4)
 
 #%% Testing groupby()- accessing values & index of grouped data
 
@@ -1550,6 +1558,36 @@ if __name__ == '__main__':
 
     #%% TODO: evolution within session (typical trial progression)
         
+    
+    #New- rewriting
+    
+    # declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
+    levelOfAnalysis = ['fileID', 'trialID']
+    
+    # First we need to subset only one outcome per level of analysis (trial)
+    dfGroup = dfTidyOpto.loc[dfTidyOpto.groupby(levelOfAnalysis).cumcount() == 0].copy()
+    
+    # declare hierarchical grouping variables (how should the observations be separated)
+    groupHierarchy = groupHierarchyTrialID
+    
+    # here want percentage of each behavioral outcome per trialID per above groupers
+    colToCalc = 'trialOutcomeBeh10s'
+    
+    dfTemp = groupPercentCalc(dfGroup, levelOfAnalysis, groupHierarchy, colToCalc)
+    
+    #instead of 1 col per probability, melt into single column that matches up to outcome
+    dfTemp= dfTemp.reset_index().melt(
+        id_vars=groupHierarchy, value_name='trialIDoutcomeBehProb10s')
+    
+    #merge to save as new column in dfTidyOpto
+    dfTidyOpto = dfTidyOpto.merge(dfTemp, how='left', on=groupHierarchy+[colToCalc])
+    
+    #calculate PE probability by trialID
+    dfGroup= percentPortEntryCalc(dfGroup, groupHierarchy, colToCalc)
+    
+    
+    #OLD
+    
     #get data, only trials (not ITI)
     dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
     #only trials
@@ -1587,6 +1625,14 @@ if __name__ == '__main__':
     
     #melt() outcomeProb into single column w label
     dfTemp= outcomeProb.reset_index().melt(id_vars=['subject','trialID','stage','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbSubjTrialID')
+    
+    
+    dfPlot = dfTemp.copy()
+    #viz
+    g= sns.catplot(data=dfPlot, col='stage', row='trialType', x='trialID', y='outcomeProbSubjTrialID', hue= 'subject', palette=subjPalette)
+    g= sns.relplot(data=dfPlot, col='stage', col_wrap=3, x='trialID', hue= 'subject', palette=subjPalette, kind='line')
+
+    g.set_xlabels('trialID')
     
     #assign back to df by merging
     #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidyOpto
@@ -1637,159 +1683,159 @@ if __name__ == '__main__':
     
     g= sns.relplot(data= dfPlot, x='trialID', y='trialTypePEProb10s', hue='trialType', row='stage', kind='line')
     
-    #%%
-    #old code:
+  #   #%%
+  #%% old code:
        
-      #get data, only trials (not ITI)
-    dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
+  #     #get data, only trials (not ITI)
+  #   dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
     
-    sns.set_palette('Paired')
+  #   sns.set_palette('Paired')
     
-    #aggregated measure, but trialIDs repeat, so just restrict to first one
-    trialAgg= dfGroup.groupby(['fileID','trialID'])['trialID'].cumcount()==0
+  #   #aggregated measure, but trialIDs repeat, so just restrict to first one
+  #   trialAgg= dfGroup.groupby(['fileID','trialID'])['trialID'].cumcount()==0
 
-    dfGroup= dfGroup.loc[trialAgg].copy()   
-   #counts of each trial type by trialID
-   #trial count seems biased? many more DS?
-    # dfPlot= dfPlot.groupby(['subject','trialID','trialType'])['laserDur'].value_counts()#.reset_index(name='count')
+  #   dfGroup= dfGroup.loc[trialAgg].copy()   
+  #  #counts of each trial type by trialID
+  #  #trial count seems biased? many more DS?
+  #   # dfPlot= dfPlot.groupby(['subject','trialID','trialType'])['laserDur'].value_counts()#.reset_index(name='count')
     
-    #take count of each trialType for each trialID within each level of session vars (e.g. stage or laserDur) 
-    #this is the total count which will act as divisor for probability calc
-    dfPlot= dfGroup.groupby(['subject','trialID','stage'])['trialType'].value_counts()
+  #   #take count of each trialType for each trialID within each level of session vars (e.g. stage or laserDur) 
+  #   #this is the total count which will act as divisor for probability calc
+  #   dfPlot= dfGroup.groupby(['subject','trialID','stage'])['trialType'].value_counts()
     
-    #for some reason value_counts() isn't giving 0 count for all categories. Fill these with 0 so we have a count for each possibility
-    dfPlot= dfPlot.unstack(fill_value=0).stack().reset_index(name='count')
+  #   #for some reason value_counts() isn't giving 0 count for all categories. Fill these with 0 so we have a count for each possibility
+  #   dfPlot= dfPlot.unstack(fill_value=0).stack().reset_index(name='count')
 
-    #temporary df to store all
-    dfTemp= dfPlot.copy()
+  #   #temporary df to store all
+  #   dfTemp= dfPlot.copy()
 
-    # sns.relplot(data=dfPlot, row='laserDur', x='trialID', y='count', hue='trialType',  hue_order= trialOrder, kind='line')
+  #   # sns.relplot(data=dfPlot, row='laserDur', x='trialID', y='count', hue='trialType',  hue_order= trialOrder, kind='line')
     
-    #####repeat for behavior outcome
-      #get data, only trials (not ITI)
-    dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
+  #   #####repeat for behavior outcome
+  #     #get data, only trials (not ITI)
+  #   dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
     
-    sns.set_palette('Paired')
+  #   sns.set_palette('Paired')
     
-    #aggregated measure, but trialIDs repeat, so just restrict to first one
-    trialAgg= dfGroup.groupby(['fileID','trialID'])['trialID'].cumcount()==0
+  #   #aggregated measure, but trialIDs repeat, so just restrict to first one
+  #   trialAgg= dfGroup.groupby(['fileID','trialID'])['trialID'].cumcount()==0
 
-    dfPlot= dfGroup.loc[trialAgg].copy()   
+  #   dfPlot= dfGroup.loc[trialAgg].copy()   
        
-   #counts of each trial type by trialID
-   #trial count seems biased? many more DS?
-    # dfPlot= dfPlot.groupby(['subject','trialID','trialType'])['laserDur'].value_counts()#.reset_index(name='count')
+  #  #counts of each trial type by trialID
+  #  #trial count seems biased? many more DS?
+  #   # dfPlot= dfPlot.groupby(['subject','trialID','trialType'])['laserDur'].value_counts()#.reset_index(name='count')
     
-    dfPlot= dfPlot.groupby(['subject','trialID','stage','trialType'])['trialOutcomeBeh10s'].value_counts()
+  #   dfPlot= dfPlot.groupby(['subject','trialID','stage','trialType'])['trialOutcomeBeh10s'].value_counts()
     
-    #for some reason value_counts() isn't giving 0 count for all categories. Fill these with 0 so we have a count for each possibility
-    dfPlot= dfPlot.unstack(fill_value=0).stack().reset_index(name='count')
+  #   #for some reason value_counts() isn't giving 0 count for all categories. Fill these with 0 so we have a count for each possibility
+  #   dfPlot= dfPlot.unstack(fill_value=0).stack().reset_index(name='count')
     
-    # sns.relplot(data=dfPlot, row='laserDur', x='trialID', y='count', hue='trialOutcomeBeh10s', style='trialType', kind='line')
-    # sns.catplot(data=dfPlot, row='stage', x='trialID', hue='trialOutcomeBeh10s', kind='count')
+  #   # sns.relplot(data=dfPlot, row='laserDur', x='trialID', y='count', hue='trialOutcomeBeh10s', style='trialType', kind='line')
+  #   # sns.catplot(data=dfPlot, row='stage', x='trialID', hue='trialOutcomeBeh10s', kind='count')
 
     
-    ###
-   #  #get data, only trials (not ITI)
-   #  dfPlot= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
+  #   ###
+  #  #  #get data, only trials (not ITI)
+  #  #  dfPlot= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
        
-   #  #aggregated measure, but trialIDs repeat, so just restrict to first one
-   #  trialAgg= dfPlot.groupby(['fileID','trialID']).cumcount()==0    
+  #  #  #aggregated measure, but trialIDs repeat, so just restrict to first one
+  #  #  trialAgg= dfPlot.groupby(['fileID','trialID']).cumcount()==0    
     
-   #  dfPlot= dfPlot.loc[trialAgg]
+  #  #  dfPlot= dfPlot.loc[trialAgg]
     
-   #  #estimate response profile by subject and laserDur (session type), and trialType
-   #  dfPlot= dfPlot.groupby(['subject','laserDur','trialType','trialID'])['trialOutcomeBeh10s'].value_counts().reset_index(name='count')
+  #  #  #estimate response profile by subject and laserDur (session type), and trialType
+  #  #  dfPlot= dfPlot.groupby(['subject','laserDur','trialType','trialID'])['trialOutcomeBeh10s'].value_counts().reset_index(name='count')
 
 
-   #  sns.set_palette('tab20')
+  #  #  sns.set_palette('tab20')
     
-   #  g=sns.relplot(data=dfPlot, col='subject', col_wrap=4, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='line')
+  #  #  g=sns.relplot(data=dfPlot, col='subject', col_wrap=4, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='line')
     
-   #  #TODO: UNITS should be fileID
-   #  dfPlot= dfTidyOpto.merge(dfPlot, how='right', on=['subject','laserDur','trialType','trialID']).copy()
+  #  #  #TODO: UNITS should be fileID
+  #  #  dfPlot= dfTidyOpto.merge(dfPlot, how='right', on=['subject','laserDur','trialType','trialID']).copy()
     
-   #  g=sns.relplot(data=dfPlot, units='fileID', estimator=None, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='line')
+  #  #  g=sns.relplot(data=dfPlot, units='fileID', estimator=None, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='line')
         
-   #  for sesType in dfPlot.laserDur.unique():
-   #      g=sns.displot(data=dfPlot.loc[dfPlot.laserDur==sesType], col='subject', col_wrap=4, 
-   #                    x='trialID', hue='trialOutcomeBeh10s', kind='hist', 
-   #                    stat='count', multiple='dodge')
-   #      # g=sns.relplot(data=dfPlot.loc[dfPlot.laserDur==sesType], col='subject', col_wrap=4, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='line')
+  #  #  for sesType in dfPlot.laserDur.unique():
+  #  #      g=sns.displot(data=dfPlot.loc[dfPlot.laserDur==sesType], col='subject', col_wrap=4, 
+  #  #                    x='trialID', hue='trialOutcomeBeh10s', kind='hist', 
+  #  #                    stat='count', multiple='dodge')
+  #  #      # g=sns.relplot(data=dfPlot.loc[dfPlot.laserDur==sesType], col='subject', col_wrap=4, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='line')
         
-   #      g.set_titles('{col_name}')
-   #      g.fig.suptitle('Evolution of behavior within sessions by trialID; laser='+sesType)
-   #      g.tight_layout(w_pad=0)
+  #  #      g.set_titles('{col_name}')
+  #  #      g.fig.suptitle('Evolution of behavior within sessions by trialID; laser='+sesType)
+  #  #      g.tight_layout(w_pad=0)
     
-   #  sns.catplot(data=dfPlot, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='bar')
+  #  #  sns.catplot(data=dfPlot, x='trialID', y='count', hue='trialOutcomeBeh10s', kind='bar')
     
  
     
-   #  #
-   #  sns.relplot(data=dfPlot,x='trialID',y='trialOutcomeBeh10s')
+  #  #  #
+  #  #  sns.relplot(data=dfPlot,x='trialID',y='trialOutcomeBeh10s')
     
-   # #count # of each outcomes?
-   #  count= dfPlot.groupby(['fileID','trialType'])['trialOutcomeBeh10s'].value_counts().unstack()
-    
-    
-   #  #merge 
-   #  test = dfPlot.merge(count,
-   #             left_on=['fileID','trialType'], 
-   #             right_index=True)
+  #  # #count # of each outcomes?
+  #  #  count= dfPlot.groupby(['fileID','trialType'])['trialOutcomeBeh10s'].value_counts().unstack()
     
     
-   #  #set index for plotting
-   #  dfPlot=dfPlot.set_index(['fileID','trialType'])
+  #  #  #merge 
+  #  #  test = dfPlot.merge(count,
+  #  #             left_on=['fileID','trialType'], 
+  #  #             right_index=True)
     
-   #  sns.catplot(data=dfPlot, x='fileID', y=count,hue='trialOutcomeBeh10s', kind='bar')
     
-    # %% Effect of laser on current trial lick behavior
-       #select data corresponding to first lick from valid trials
-    dfPlot = dfTidyOpto[(dfTidyOpto.trialType!= 'ITI') & (dfTidyOpto.trialLick10s == 0)].copy()
+  #  #  #set index for plotting
+  #  #  dfPlot=dfPlot.set_index(['fileID','trialType'])
     
-    # lick latency: virus x laserDur
-    g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
-                    col='stage', row='virus', kind='ecdf', hue_order= trialOrder)
-    g.fig.suptitle('First lick latency by trial type; laser + CUE')
-    g.set_ylabels('First lick latency from epoch start (s)')
+  #  #  sns.catplot(data=dfPlot, x='fileID', y=count,hue='trialOutcomeBeh10s', kind='bar')
     
-    #lick latency: virus individual subj
-    # g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='subject', kind='bar', hue_order=trialOrder)
-    # g.fig.suptitle('First lick latency by trial type; laser + CUE')
-    # g.set_ylabels('First lick latency from epoch start (s)')
+  #   # %% Effect of laser on current trial lick behavior
+  #      #select data corresponding to first lick from valid trials
+  #   dfPlot = dfTidyOpto[(dfTidyOpto.trialType!= 'ITI') & (dfTidyOpto.trialLick10s == 0)].copy()
     
-    #TODO:
-    #     #bar with overlay individual trial overlay
-    # plt.figure()
-    # plt.subplot(1, 1, 1)
-    # sns.barplot(data=dfPlot, y='eventLatency', x='trialType',hue='trialType',hue_order=trialOrder)
-    # sns.lineplot(data=dfPlot, estimator=None, y='eventLatency', x='trialType',hue='subject', alpha=0.5, size=2)
+  #   # lick latency: virus x laserDur
+  #   g = sns.displot(data=dfPlot, x='eventLatency', hue='trialType',
+  #                   col='stage', row='virus', kind='ecdf', hue_order= trialOrder)
+  #   g.fig.suptitle('First lick latency by trial type; laser + CUE')
+  #   g.set_ylabels('First lick latency from epoch start (s)')
     
-        #bar for group with individual connected subj lines
-    # g = sns.FacetGrid(data=dfPlot, row='virus', col='stage') 
-    # g.map_dataframe(sns.barplot, x='trialType', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', ci=68)
-    # g.map_dataframe(sns.lineplot, estimator=None, x='trialType', y='eventLatency', hue='subject', palette='tab20', alpha=0.5)
-    # # g.map_dataframe(sns.scatterplot, x='trialType', y='eventLatency', hue='subject', palette='tab20', alpha=0.5)
+  #   #lick latency: virus individual subj
+  #   # g=sns.catplot(data=dfPlot,y='eventLatency',hue='trialType', x='subject', kind='bar', hue_order=trialOrder)
+  #   # g.fig.suptitle('First lick latency by trial type; laser + CUE')
+  #   # g.set_ylabels('First lick latency from epoch start (s)')
+    
+  #   #TODO:
+  #   #     #bar with overlay individual trial overlay
+  #   # plt.figure()
+  #   # plt.subplot(1, 1, 1)
+  #   # sns.barplot(data=dfPlot, y='eventLatency', x='trialType',hue='trialType',hue_order=trialOrder)
+  #   # sns.lineplot(data=dfPlot, estimator=None, y='eventLatency', x='trialType',hue='subject', alpha=0.5, size=2)
+    
+  #       #bar for group with individual connected subj lines
+  #   # g = sns.FacetGrid(data=dfPlot, row='virus', col='stage') 
+  #   # g.map_dataframe(sns.barplot, x='trialType', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', ci=68)
+  #   # g.map_dataframe(sns.lineplot, estimator=None, x='trialType', y='eventLatency', hue='subject', palette='tab20', alpha=0.5)
+  #   # # g.map_dataframe(sns.scatterplot, x='trialType', y='eventLatency', hue='subject', palette='tab20', alpha=0.5)
 
-  # box for group with individual data points
-    g = sns.FacetGrid(data=dfPlot, row='virus')
-    g.fig.suptitle('First lick latency by trial type; laser + CUE')
-    g.map_dataframe(sns.boxplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
-    g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
-    g.set_axis_labels( 'laser duration', 'First lick latency from epoch start (s)')
-    g.add_legend()
+  # # box for group with individual data points
+  #   g = sns.FacetGrid(data=dfPlot, row='virus')
+  #   g.fig.suptitle('First lick latency by trial type; laser + CUE')
+  #   g.map_dataframe(sns.boxplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
+  #   g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
+  #   g.set_axis_labels( 'laser duration', 'First lick latency from epoch start (s)')
+  #   g.add_legend()
     
-    saveFigCustom(g, 'opto_virus_lickLatency_10s_box')
+  #   saveFigCustom(g, 'opto_virus_lickLatency_10s_box')
     
-    # bar for group with individual data points
-    g = sns.FacetGrid(data=dfPlot, row='virus')
-    g.fig.suptitle('First lick latency by trial type; laser + CUE')
-    g.map_dataframe(sns.barplot, ci=68, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
-    g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
-    g.set_axis_labels( 'laser duration', 'First lick latency from epoch start (s)')
-    g.add_legend()
+  #   # bar for group with individual data points
+  #   g = sns.FacetGrid(data=dfPlot, row='virus')
+  #   g.fig.suptitle('First lick latency by trial type; laser + CUE')
+  #   g.map_dataframe(sns.barplot, ci=68, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired')
+  #   g.map_dataframe(sns.stripplot, x='stage', y='eventLatency', hue='trialType', hue_order=trialOrder, palette='Paired', dodge='True', size=4, alpha=0.8, edgecolor='gray', linewidth=1)
+  #   g.set_axis_labels( 'laser duration', 'First lick latency from epoch start (s)')
+  #   g.add_legend()
     
-    saveFigCustom(g, 'opto_virus_lickLatency_10s_bar')
+  #   saveFigCustom(g, 'opto_virus_lickLatency_10s_bar')
     
     
     # %% Laser effect on subsequent trial(s)
