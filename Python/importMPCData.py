@@ -57,12 +57,20 @@ import seaborn as sns
 # metaPathSes= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx"
 
         
+# # dp test MSNs
+datapath= r'C:\Users\Dakota\Desktop\_mpc2excel_test\\'
+colToImport= 'A:Q' #dakota vp-vta-fp
+metaPathSubj= r"K:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
+metaPathSes= r"K:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
+
+
+
 # #DP GAD-VP-OPTO DS Task
-experimentType= 'Opto'
-datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
-colToImport= 'A:W'  #dp opto 
-metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
-metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
+# experimentType= 'Opto'
+# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
+# colToImport= 'A:W'  #dp opto 
+# metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
+# metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
 
 
 #DP GAD-VP-OPTO Instrumental Transfer
@@ -115,12 +123,48 @@ for excelfiles in allfiles:
     #Also leaving out first few columns
     raw_excel = pd.read_excel(excelfiles, sheet_name= None, usecols=colToImport)
     
-    dfRaw = dfRaw.append(raw_excel, ignore_index=True)
+    # dfRaw = dfRaw.append(raw_excel, ignore_index=True)
+    
+    # Add metadata as well from MSNs sheet
+    #'MSNs' worksheet contains metadata about session (e.g. Box, MSN) 
+    for file in raw_excel['MSNs'].index: 
+    
+        
+        
+        #each entry in the MSNs sheet corresponds to one medpc file (should be key matching this subject ID containing worksheet of that session's data)
+        fileMeta= []
+        fileMeta= raw_excel['MSNs'].iloc[file]
+        
+        #find data matching metadata...'ID' here = 'subject'
+        #use the subject ID as key to find the matching data
+        ind=[]
+        ind= fileMeta.ID
+        raw_excel[ind]
+        
+        #add metadata to the raw_excel observations
+        raw_excel[ind]['MSN']= fileMeta.MSN
+        
+          
+        #append this date's excel file's data to the rest
+        dfRaw = dfRaw.append(raw_excel, ignore_index=True)
+        
+#drop unneeded MSNs sheet post-merging
+dfRaw.drop('MSNs',axis=1,inplace=True)
+
     
 #dfRaw is now nested df, each column is a subject and each row is a session
 
-#eliminate data from 'MSNs' sheets for now, not informative currently
-#TODO: this could be nice to get, but requires changing the mpc2excel scripts
+#eliminate data from 'MSNs' sheets for now
+#TODO: this could be nice to get, updated mpc2excel has data
+# instead of below looping scheme, use the MSNs sheet and find matching subj
+
+#'MSNs' worksheet contains metadata about session (e.g. Box, MSN) 
+# for MSN in dfRaw.MSNs: 
+    
+#%%
+
+#old loop scheme
+
 dfRaw.drop('MSNs',axis=1,inplace=True)
 
 #loop through nested df and append data. Now we have all data in one df

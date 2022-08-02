@@ -32,7 +32,9 @@ cd(CurrentDir)
 % [~,~,raw] = xlsread("OptoStimDayAnalysis051121.xlsx");
 
 %slow to read entire allses xlsx
-[~,~,raw] = xlsread("christelle_opto_data_allSessions_withMSN_stripped_dp.xlsx"); %dp new all ses xlsx
+% [~,~,raw] = xlsread("christelle_opto_data_allSessions_withMSN_stripped_dp.xlsx"); %dp new all ses xlsx
+[~,~,raw] = xlsread("christelle_opto_data_allSessions_withMSN_stripped_dp_manualUpdates.xlsx"); %dp new all ses xlsx
+
 
 % [~,~,ratinfo] =  xlsread('Christelle Opto Summary Record.xlsx');
 [~,~,ratinfo] = xlsread('Christelle Opto Summary Record_dp.xlsx');
@@ -105,6 +107,9 @@ Data= Data(ind,:);
 
 %% -- Use Christelle's spreadsheet to find StimLength for sessions
 %- StimLength seems manually added by Christelle per session in .xlsx
+
+% TODO: I think incorrect subjects are in some of the MPC files (e.g. 200123). So my sheet is apparently wrong. Should use
+% another variable to match up correctly...fixed manually for now tho
 
 %initialize StimLength field
 Data{:,"StimLength"}= {nan};%cell(size(Data,1));
@@ -538,6 +543,7 @@ ResponseProb=vertcat(DSStimulation.DSNoLaser10sResponseProb,DSStimulation.DSLase
 StimLength=vertcat(DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength);
 Group=vertcat(DSStimulation.Group,DSStimulation.Group,DSStimulation.Group,DSStimulation.Group);
 Subject=vertcat(DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID);
+Sex=vertcat(DSStimulation.Sex,DSStimulation.Sex,DSStimulation.Sex,DSStimulation.Sex);
 Expression=vertcat(DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression);
 Mode=vertcat(DSStimulation.ExpType,DSStimulation.ExpType,DSStimulation.ExpType,DSStimulation.ExpType);
 Subject=vertcat(DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID);
@@ -584,6 +590,7 @@ RelLatency=RelLatency(ind);
 ResponseProb= ResponseProb(ind);
 StimLength=StimLength(ind);
 Subject= Subject(ind);
+Sex= Sex(ind);
 Expression= Expression(ind);
 Mode= Mode(ind);
 DSRatio= DSRatio(ind);
@@ -591,13 +598,14 @@ DSNSRatio= DSNSRatio(ind);
 Learner= Learner(ind);
 CueTypeLabel= CueTypeLabel(ind);
 
+
 %% dp reorganizing data into table for table fxns and easy faceting
 
 stimTable= table();
 
 %list of vars to include in table as columns
 tableVars= {'Group','CueType','CueTypeLabel','RelLatency','ResponseProb'...
-    'StimLength','Subject','Expression','Mode','DSRatio','DSNSRatio','Learner'};
+    'StimLength','Subject','Sex','Expression','Mode','DSRatio','DSNSRatio','Learner'};
 
 
 
@@ -842,7 +850,7 @@ g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodg
 g(1,1).set_color_options('map',cmapGrand); 
 
 g(1,1).set_names('x','Cue Type','y','PE Probability', 'column', 'StimLength length')
-g(1,1).set_title('Stim Laser Day Latency')
+g(1,1).set_title('Stim Laser Day PE Probability')
 
 g.set_text_options(text_options_DefaultStyle{:}); 
 
@@ -1103,59 +1111,59 @@ for thisStimLength= 1:numel(allStimLength)
             lme1
             diary off
             
-            %viz
-            printStr= strcat('data subset CueID = ',data4.CueID{1}, '--StimLength = ', num2str(allStimLength(thisStimLength)));
-            group= []; %var by which to group
-
-            figure(); clear g;
-            g= gramm('x', data4.LaserTrial, 'y', data4.RelLatency, 'color', data4.LaserTrial);
-            g.geom_point();
-%             g.stat_summary('type','sem','geom','bar');
-            g().stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
-            g().set_color_options('map',cmapBlueGrayGrand); 
-            g().set_names('x','LaserState','y','Latency')
-            g().set_title(printStr)
-
-            g.draw();
-%              
-%             %update subj lines
-            group= data4.Subject;
-            g.update('x',data4.LaserTrial,'y',data4.RelLatency,'color',[], 'group', group);
-            g.stat_summary('type','sem','geom',{'line'})%,'bar' 'black_errorbar'});
-%             g.geom_line()
-            g.set_color_options('chroma',0);
-            g.draw();
-
-               %update subj points
-            group= data4.Subject;
-            g.update('x',data4.LaserTrial,'y',data4.RelLatency,'color',data4.LaserTrial, 'group', group);
-            g.stat_summary('type','sem','geom',{'point'})%,'bar' 'black_errorbar'});
-
-%               g.geom_point();
-            g.set_color_options('map',cmapBlueGraySubj);
-            
-            g.draw();
-
-%             %viz distribution? 
+%             %viz
+%             printStr= strcat('data subset CueID = ',data4.CueID{1}, '--StimLength = ', num2str(allStimLength(thisStimLength)));
+%             group= []; %var by which to group
+% 
 %             figure(); clear g;
-% 
-%             g= gramm('x', data4.RelLatency, 'color', data4.LaserTrial);
-% 
-%             g.facet_grid(data4.LaserTrial,[]);
-%             
-%             g().set_names('x','Latency','color','LaserTrial')
-% 
-%             g().stat_bin()
-%                        
+%             g= gramm('x', data4.LaserTrial, 'y', data4.RelLatency, 'color', data4.LaserTrial);
+%             g.geom_point();
+% %             g.stat_summary('type','sem','geom','bar');
+%             g().stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+%             g().set_color_options('map',cmapBlueGrayGrand); 
+%             g().set_names('x','LaserState','y','Latency')
 %             g().set_title(printStr)
 % 
-%             g.draw()
-
-                %try anova?
-                % %anova 
-%                 [p, tableAnova, stats, terms]= anovan(data4.RelLatency, {data4.LaserTrial});
-
-            
+%             g.draw();
+% %              
+% %             %update subj lines
+%             group= data4.Subject;
+%             g.update('x',data4.LaserTrial,'y',data4.RelLatency,'color',[], 'group', group);
+% %             g.stat_summary('type','sem','geom',{'line'})%,'bar' 'black_errorbar'});
+%             g.geom_line()
+%             g.set_color_options('chroma',0);
+%             g.draw();
+% 
+%                %update subj points
+%             group= data4.Subject;
+%             g.update('x',data4.LaserTrial,'y',data4.RelLatency,'color',data4.LaserTrial, 'group', group);
+%             g.stat_summary('type','sem','geom',{'point'})%,'bar' 'black_errorbar'});
+% 
+% %               g.geom_point();
+%             g.set_color_options('map',cmapBlueGraySubj);
+%             
+%             g.draw();
+% 
+% %             %viz distribution? 
+% %             figure(); clear g;
+% % 
+% %             g= gramm('x', data4.RelLatency, 'color', data4.LaserTrial);
+% % 
+% %             g.facet_grid(data4.LaserTrial,[]);
+% %             
+% %             g().set_names('x','Latency','color','LaserTrial')
+% % 
+% %             g().stat_bin()
+% %                        
+% %             g().set_title(printStr)
+% % 
+% %             g.draw()
+% 
+%                 %try anova?
+%                 % %anova 
+% %                 [p, tableAnova, stats, terms]= anovan(data4.RelLatency, {data4.LaserTrial});
+% 
+%             
         end
 
     
@@ -1170,88 +1178,88 @@ end
 % 
 % data3= data2(ind,:);
 
-%% -- STAT Comparison of above PE behavior by laser
-
-%copying dataset above prior to dummy coding variables
-data2= data; 
-
-% STAT Testing
-%are mean nosepokes different by laser state/virus etc?... lme with random subject intercept
-
-%- dummy variable conversion
-% % converting to dummies(retains only one column, as 2+ is redundant)
+%% -- old stat STAT Comparison of above PE behavior by laser
 % 
-% %convert CueType to dummy variable 
-% dummy=[];
-% dummy= categorical(data2.CueType);
-% dummy= dummyvar(dummy); 
+% %copying dataset above prior to dummy coding variables
+% data2= data; 
 % 
-% data2.CueType= dummy(:,1); %is this correct? reducing to 2 instead of 4 values...should take first 3?
+% % STAT Testing
+% %are mean nosepokes different by laser state/virus etc?... lme with random subject intercept
 % 
-% % %convert StimLength to dummy variable 
+% %- dummy variable conversion
+% % % converting to dummies(retains only one column, as 2+ is redundant)
+% % 
+% % %convert CueType to dummy variable 
 % % dummy=[];
-% % dummy= categorical(data2.StimLength);
+% % dummy= categorical(data2.CueType);
 % % dummy= dummyvar(dummy); 
+% % 
+% % data2.CueType= dummy(:,1); %is this correct? reducing to 2 instead of 4 values...should take first 3?
+% % 
+% % % %convert StimLength to dummy variable 
+% % % dummy=[];
+% % % dummy= categorical(data2.StimLength);
+% % % dummy= dummyvar(dummy); 
+% % 
+% % % data2.StimLength= dummy(:,1);
 % 
-% % data2.StimLength= dummy(:,1);
-
-%--Run LME
-lme1=[];
-
-lme1= fitlme(data2, 'RelLatency~ CueType*StimLength + (1|Subject)');
-
+% %--Run LME
+% lme1=[];
+% 
+% lme1= fitlme(data2, 'RelLatency~ CueType*StimLength + (1|Subject)');
+% 
+% % lme1
+% 
+% 
+% %print and save results to file
+% %seems diary keeps running log to same file (e.g. if code rerun seems prior output remains)
+% diary('DS Task Stim Day- old All trials Latency Stats lmeDetails.txt')
 % lme1
-
-
-%print and save results to file
-%seems diary keeps running log to same file (e.g. if code rerun seems prior output remains)
-diary('DS Task Stim Day- All trials Latency Stats lmeDetails.txt')
-lme1
-diary off
-
-%---- Followup simple comparison for CueType effect
-%- Simple comparison: Run DS subset and NS subset separately?
-
-%subset data
-ind= [];
-%DS only
-ind= (data2.CueType == 1 | data2.CueType == 2);
-
-data3= data2(ind,:);
-
-%-Run LME
-lme1=[];
-
-lme1= fitlme(data3, 'RelLatency~ CueType*StimLength + (1|Subject)');
-
+% diary off
+% 
+% %---- Followup simple comparison for CueType effect
+% %- Simple comparison: Run DS subset and NS subset separately?
+% 
+% %subset data
+% ind= [];
+% %DS only
+% ind= (data2.CueType == 1 | data2.CueType == 2);
+% 
+% data3= data2(ind,:);
+% 
+% %-Run LME
+% lme1=[];
+% 
+% lme1= fitlme(data3, 'RelLatency~ CueType*StimLength + (1|Subject)');
+% 
+% % lme1
+% 
+% diary('DS Task Stim Day- DS trials only Latency Stats lmeDetails.txt')
 % lme1
-
-diary('DS Task Stim Day- DS trials only Latency Stats lmeDetails.txt')
-lme1
-diary off
-
-% Same for NS
-
-%subset data
-ind= [];
-%DS only
-ind= (data2.CueType == 3 | data2.CueType == 4);
-
-data3= data2(ind,:);
-
-%-Run LME
-lme1=[];
-
-lme1= fitlme(data3, 'RelLatency~ CueType*StimLength + (1|Subject)');
-
+% diary off
+% 
+% % Same for NS
+% 
+% %subset data
+% ind= [];
+% %DS only
+% ind= (data2.CueType == 3 | data2.CueType == 4);
+% 
+% data3= data2(ind,:);
+% 
+% %-Run LME
+% lme1=[];
+% 
+% lme1= fitlme(data3, 'RelLatency~ CueType*StimLength + (1|Subject)');
+% 
+% % lme1
+% 
+% diary('DS Task Stim Day- NS trials only Latency Stats lmeDetails.txt');
 % lme1
-
-diary('DS Task Stim Day- NS trials only Latency Stats lmeDetails.txt');
-lme1
-diary off
-
-% %anova 
-% [p, tableAnova, stats, terms]= anovan(data3.RelLatency, {data3.CueType, data3.StimLength});
+% diary off
+% 
+% % %anova 
+% % [p, tableAnova, stats, terms]= anovan(data3.RelLatency, {data3.CueType, data3.StimLength});
 
 %% Plot Post-Stim Session
 

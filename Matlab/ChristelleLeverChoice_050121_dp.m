@@ -15,7 +15,8 @@ figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
 
 
 % %--christelle opto data
-CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
+% CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
+CurrentDir = 'C:\Users\Dakota\Desktop\_dp_christelle_opto_workingDir';
 cd(CurrentDir)
 
 
