@@ -198,16 +198,22 @@ lmeVTAActive=fitlme(VTATable,'Active~Session+(1|Rat)')
 lmeVTAInactive=fitlme(VTATable,'Inactive~Session+(1|Rat)')
 
 
-%% DP Subset data for vp--> vta group only
+%% DP Subset data for specific projection (vp--> vta / MDthal) group only
+
+modeProjection= 1; %VTA
+% modeProjection= 0; % MDthal
+
+
 
 ind=[];
-ind= ~(ICSS.ProjGroup==1);
+ind= ~(ICSS.ProjGroup==modeProjection);
 
 %loop thru fields and eliminate data
 allFields= fieldnames(ICSS);
 for field= 1:numel(allFields)
     ICSS.(allFields{field})(ind)= [];
 end
+
 
 
 
