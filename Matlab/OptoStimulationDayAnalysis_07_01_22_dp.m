@@ -6,7 +6,7 @@ clc
 %% Figure options
 figPath= strcat(pwd,'\_output\_DS_task_stimDay\');
 
-figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
+figFormats= {'.png'} %list of formats to save figures as (for saveFig.m)
 
 %% Set GRAMM defaults for plots
 
@@ -566,37 +566,37 @@ CueTypeLabel= {labels{CueType(:)}}';
 
 
 %% DP Subset data for vp--> vta group only
-
-ind=[];
-% ind= ~(DSStimulation.Projection==1);
-ind= ~strcmp(DSStimulation.Projection, 'VTA');
-
-%loop thru fields and eliminate data
-allFields= fieldnames(DSStimulation);
-for field= 1:numel(allFields)
-    DSStimulation.(allFields{field})(ind)= [];
-end
-
-
-ind=[];
-% ind= ~(DSStimulation.Projection==1);
-ind= strcmp(Group, 'OV');
-
-
-%eliminate data
-Group= Group(ind);
-CueType= CueType(ind);
-RelLatency=RelLatency(ind);
-ResponseProb= ResponseProb(ind);
-StimLength=StimLength(ind);
-Subject= Subject(ind);
-Sex= Sex(ind);
-Expression= Expression(ind);
-Mode= Mode(ind);
-DSRatio= DSRatio(ind);
-DSNSRatio= DSNSRatio(ind);
-Learner= Learner(ind);
-CueTypeLabel= CueTypeLabel(ind);
+% 
+% ind=[];
+% % ind= ~(DSStimulation.Projection==1);
+% ind= ~strcmp(DSStimulation.Projection, 'VTA');
+% 
+% %loop thru fields and eliminate data
+% allFields= fieldnames(DSStimulation);
+% for field= 1:numel(allFields)
+%     DSStimulation.(allFields{field})(ind)= [];
+% end
+% 
+% 
+% ind=[];
+% % ind= ~(DSStimulation.Projection==1);
+% ind= strcmp(Group, 'OV');
+% 
+% 
+% %eliminate data
+% Group= Group(ind);
+% CueType= CueType(ind);
+% RelLatency=RelLatency(ind);
+% ResponseProb= ResponseProb(ind);
+% StimLength=StimLength(ind);
+% Subject= Subject(ind);
+% Sex= Sex(ind);
+% Expression= Expression(ind);
+% Mode= Mode(ind);
+% DSRatio= DSRatio(ind);
+% DSNSRatio= DSNSRatio(ind);
+% Learner= Learner(ind);
+% CueTypeLabel= CueTypeLabel(ind);
 
 
 %% dp reorganizing data into table for table fxns and easy faceting
@@ -643,17 +643,40 @@ stimTable(:,"LaserTrial")= {labels{CueType(:)}}';
 
 %histogram to determine which animals learned
 
-% histogram of NS PE Ratio calculated by MPC
-selection= DSStimulation.StimLength==0
+%- histogram of NS PE Ratio calculated by MPC
+
+%subset only laser days
+selection= DSStimulation.StimLength==0 
 learn= DSStimulation.NSPERatio(selection)
 animal= DSStimulation.Subject (selection)
 BinNums = [0:.1:1]
 
-figure()
+figure(); subplot(3,1,1);
 histogram (learn, BinNums)
+title('NS PE ratio, pre-stim sessions');
 
-selection2 = DSStimulation.DSPERatio(selection) >= 0.6 & DSStimulation.NSPERatio(selection) <= 0.5
-learned= DSStimulation.Subject (selection2)
+%subplot DS NS and NS/DS Ratio
+y2= [];
+y2= DSStimulation.DSPERatio(selection);
+subplot(3,1,2); hold on; title('DS PE ratio, pre-stim sessions');
+histogram (y2, BinNums)
+
+y3=[];
+y3= DSStimulation.DSNSRatio(selection);
+subplot(3,1,3); hold on; title('DS/NS PE Ratio, pre-stim sessions');
+
+BinNums = [0:.1:5];
+
+histogram (y3, BinNums)
+% histogram (y3)
+
+
+figTitle=('DStask-behavior-distribution- pre-stim PE ratios');
+saveFig(gcf, figPath,figTitle,figFormats);
+
+figure();
+scatter(y2,y3);
+title('DS vs DS/NS Ratio')
 
 %- plot ratio being used here
 figure; clear i;
@@ -666,11 +689,59 @@ learn= DSStimulation.NSNoLaser10sResponseProb(selection);
 animal= DSStimulation.Subject (selection);
 BinNums = [0:.1:1];
 
-figure(); hold on;
-histogram (learn, BinNums);
+figure(); subplot(3,1,1);
+histogram (learn, BinNums)
+title('NS 10s PE ratio, pre-stim sessions');
 
+%subplot DS NS and NS/DS Ratio
+y2= [];
+y2= DSStimulation.DSNoLaser10sResponseProb(selection);
+subplot(3,1,2); hold on; title('DS 10s PE ratio, pre-stim sessions');
+histogram (y2, BinNums)
+
+
+%calculate the 'no laser' NSDS ratio?
+DSStimulation.DSNS10sNoLaserRatio= DSStimulation.DSNoLaser10sResponseProb./DSStimulation.NSNoLaser10sResponseProb;
+
+y3=[];
+y3= DSStimulation.DSNS10sNoLaserRatio(selection);
+
+BinNums = [0:.1:5];
+
+
+subplot(3,1,3); hold on; title('DS/NS 10s PE Ratio, pre-stim sessions');
+histogram (y3, BinNums)
+% histogram (y3)
+
+
+figTitle=('DStask-behavior-distribution- pre-stim 10s PE ratios');
+saveFig(gcf, figPath,figTitle,figFormats);
+
+
+figure();
+scatter(y2,y3);
+title('10s DS vs DS/NS Ratio')
+
+subset
+
+%TODO 
+%ds/ns ratio
+
+% DSStimulation.DSNSRatio=DSStimulation.DSPERatio./DSStimulation.NSPERatio
+
+
+
+
+%Now -subset those subjects meeting criteria 
+criteriaDS= 0.6
+criteriaNS= 0.5
+
+selection2 = DSStimulation.DSPERatio(selection) >= criteriaDS & DSStimulation.NSPERatio(selection) <= criteriaNS
+learned= DSStimulation.Subject (selection2)
 
 %% Plot Stim Day 0
+
+%--- note this is plotting subjects meeting only specific criteria 
 
 %Latency
 figure; clear g; 

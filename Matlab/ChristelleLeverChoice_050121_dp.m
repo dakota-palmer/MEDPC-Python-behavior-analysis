@@ -126,12 +126,91 @@ choiceTaskTable(ind, "trainPhase")= {'choiceTask-Extinction Session'};
 %days this will be session-5 (assume all ran 5 days of first phase)
 choiceTaskTable(:, "trainDayThisPhase")= table(nan); %initialize
 
-choiceTaskTable(:, "trainDayThisPhase")= table(choiceTaskTable.Session); %start by prefilling w session
+% choiceTaskTable(:, "trainDayThisPhase")= table(choiceTaskTable.Session); %start by prefilling w session
 
-choiceTaskTable(ind, "trainDayThisPhase")= table(choiceTaskTable.Session(ind)-5); %carrying over ind of later phase, subtract n first phase sessions from this
+%incorrect assumes -5
+% choiceTaskTable(ind, "trainDayThisPhase")= table(choiceTaskTable.Session(ind)-5); %carrying over ind of later phase, subtract n first phase sessions from this
+
+%simple inefficient loop through and manual counting of trainDayThisPhase 
+% subjects= unique(choiceTaskTable.Subject);
+% for subj= 1:numel(subjects)
+%    ind=[];
+%    
+% %    ind= strcmp();
+%    for 
+%    
+%    end
+% 
+% end
+% 
+
+%TODO: for efficiency, want matlab equivalent of python pandas groupby.transform('cumcount')
+
+%try groupsummary - GroupCount could be used...
+groupers= ["Subject","trainPhase"];
+test= groupsummary(choiceTaskTable, groupers, "min", "Session")
 
 
+% maybe https://www.mathworks.com/help/matlab/ref/double.grouptransform.html
 
+test2= grouptransform(choiceTaskTable, groupers, "linearfill", "Session")
+
+
+% maybe https://www.mathworks.com/help/matlab/ref/double.groupcounts.html
+test3= groupcounts(choiceTaskTable, groupers)
+
+%maybe splitapply
+%define a cumcount() function?
+% cumcount = @(x) var(x+1);
+
+%with cumsum()? 
+% test4= splitapply(cumsum, choiceTaskTable, groupers)
+
+%use findgroups
+%findgroups will return a numerical value corresponding to groupID by
+%see "group by table variables" here https://www.mathworks.com/help/matlab/ref/findgroups.html
+
+% test= findgroups(choiceTaskTable,choiceTaskTable.Box)
+
+% test= findgroups(choiceTaskTable.Box{:})
+
+% test= findgroups(choiceTaskTable.Session)
+
+
+% ind= [];
+% ind= findgroups(choiceTaskTable.Subject);
+
+%use findgroups to groupby subject,trainPhase and manually cumcount() for
+%sessions within-trainPhase
+
+groupIDs= [];
+groupIDs= findgroups(choiceTaskTable.Subject,choiceTaskTable.trainPhase);
+
+groupIDsUnique= [];
+groupIDsUnique= unique(groupIDs);
+
+for thisGroupID= 1:numel(groupIDsUnique)
+    %for each groupID, find index matching groupID
+    ind= [];
+    ind= find(groupIDs==groupIDsUnique(thisGroupID));
+    
+    %for each groupID, get the table data matching this group
+    thisGroup=[];
+    thisGroup= choiceTaskTable(ind,:);
+
+    %now cumulative count of observations in this group
+    %make default value=1 for each, and then cumsum() to get cumulative count
+    thisGroup(:,'cumcount')= table(1);
+    thisGroup(:,'cumcount')= cumsum(thisGroup.cumcount);
+    
+    %specific code for trainDayThisPhase
+    %assign back into table
+    choiceTaskTable(ind, 'trainDayThisPhase')= thisGroup.cumcount;
+    
+end 
+
+
+ind2= findgroups(choiceTaskTable.Subject,choiceTaskTable.trainPhase)
 
 %% --- dp new plots from table ---
 

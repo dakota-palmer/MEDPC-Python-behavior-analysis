@@ -4,7 +4,7 @@ clc
 %% Figure options
 figPath= strcat(pwd,'\_output\_DS_task\');
 
-figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
+figFormats= {'.png'} %list of formats to save figures as (for saveFig.m)
 
 %% Import Data 
 
