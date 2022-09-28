@@ -339,13 +339,13 @@ s3,
 
 S.S.6, \ DS control
 S1,
-#Z2: Z12; SET H(B(17))=B(13)/100--->S2
+#Z2: Z12; SET H(B(17))=B(13)/100; ON ^greenLight--->S2
 \ #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100;  ON ^greenLight--->S2
 
 S2,
  A(2)*B(0)#T: Z13;  ---> S1
 \A(2)*B(0)#T: OFF^NSwhiteNoise; OFF ^greenLight ---> S1
- #R^PortEntry: Z13 --->S1
+ #R^PortEntry: Z13; OFF ^greenLight --->S1
 \#R^PortEntry: OFF^NSwhiteNoise; OFF ^greenLight--->S1
 
 
@@ -364,11 +364,11 @@ S3,
 
 S.S.8, \ NS control
 S1,
- #Z6: ON ^NSwhiteNoise; SET I(B(18))=B(13)/100--->S2
+ #Z6: ON ^NSwhiteNoise; SET I(B(18))=B(13)/100;  ON ^redLight --->S2
 \#Z6: Z12; SET I(B(18))=B(13)/100;  ON ^redLight--->S2
 
 S2,
-  A(2)*B(0)#T: OFF ^NSwhiteNoise--->S1
+  A(2)*B(0)#T: OFF ^NSwhiteNoise;  OFF ^redLight--->S1
  \A(2)*B(0)#T: Z13;  OFF^redLight--->S1
 
 
