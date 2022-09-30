@@ -6,6 +6,7 @@ figPath= strcat(pwd,'\_output\_choiceTask\');
 
 figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
 
+set_gramm_plot_defaults;
 
 
 %% load data
@@ -90,48 +91,92 @@ for field= 1:numel(allFields)
 end
 
 
-%--dp add trainPhase variable for distinct session types (e.g. active side reversal)
+%-dp add virus variable for labelling stim vs inhibition
+%initialize
+choiceTaskTable(:,"virusType")= {''};
+
+
+% expType= [0,1]%
+expTypesAll= [0,1];
+% %1= excitation, 0= inhibition
+expTypeLabels= {'inhibition','stimulation'};
+
+%loop thru and assign labels
+for thisExpType= 1:numel(expTypesAll)
+    
+    choiceTaskTable(:,"virusType")= expTypeLabels(thisExpType);
+    
+end
+
+% %1= excitation, 0= inhibition
+% ind= [];
+% ind= choiceTaskTable.ExpType==1;
+% 
+% choiceTaskTable(:,"virusType")= {'ChR2'};
+% 
+% ind= [];
+% ind= choiceTaskTable.ExpType==1;
+% 
+% choiceTaskTable(:,"virusType")= {'eNpHR'};
+
+
+%% --dp add trainPhaseLabel variable for distinct session types (e.g. active side reversal)
 
 %initialize
 
-choiceTaskTable(:,"trainPhase")= {''};
+choiceTaskTable(:,"trainPhase")= table(nan);
+choiceTaskTable(:,"trainPhaseLabel")= {''};
 
-% sessions 1-6 = 'reversal'
+% sessions 1-7 = 'free choice'
 ind= [];
 ind= choiceTaskTable.Session < 7;
 
-choiceTaskTable(ind, "trainPhase")= {'choiceTask-Free-Choice-OG-active-side'};
+choiceTaskTable(ind,'trainPhase')= table(1);
+choiceTaskTable(ind, "trainPhaseLabel")= {'1-Free-Choice-OG-active-side'};
 
-% sessions 7-12 = 'reversal'
+% sessions 8-10 = free choice 'reversal'
 ind= [];
-ind= (choiceTaskTable.Session> 6) & (choiceTaskTable.Session < 13);
+ind= (choiceTaskTable.Session>= 7) & (choiceTaskTable.Session < 10);
 
-choiceTaskTable(ind, "trainPhase")= {'choiceTask-Free-Choice-Reversal-active-side'};
+choiceTaskTable(ind,'trainPhase')= table(2);
+choiceTaskTable(ind, "trainPhaseLabel")= {'2-Free-Choice-Reversal-active-side'};
 
-%for this session 13 = 'choice session'
+% sessions 10-12 = 'forced choice' trials introduced because of
+% perseverating/not sampling stim lever... trials in which only one lever was inserted and the session did not continue until it was pressed.
+ind= [];
+ind= (choiceTaskTable.Session>= 10) & (choiceTaskTable.Session <= 12);
+
+choiceTaskTable(ind,'trainPhase')= table(3);
+choiceTaskTable(ind, "trainPhaseLabel")= {'3-Forced-Choice-Reversal-active-side'};
+
+
+%for this session 13 = 'Free choice session' post-forced choice
 ind= [];
 ind= choiceTaskTable.Session == 13;
 
-choiceTaskTable(ind, "trainPhase")= {'choiceTask-Forced Choice Session'};
+choiceTaskTable(ind,'trainPhase')= table(4);
+choiceTaskTable(ind, "trainPhaseLabel")= {'4-Free Choice Test session'};
 
 
+% for this session 14= 'extinction test'  an “extinction test” in which sucrose was no longer delivered, but rats still received optogenetic stimulation during licking after presses on the stimulation lever
 ind= [];
 ind= choiceTaskTable.Session == 14;
 
-choiceTaskTable(ind, "trainPhase")= {'choiceTask-Extinction Session'};
+choiceTaskTable(ind,'trainPhase')= table(5);
+choiceTaskTable(ind, "trainPhaseLabel")= {'5-Extinction Test session'};
 
 %14 == 'exctinction'
 
-%-dp add trainDayThisPhase for best plotting of trainPhase facet, for late
+%-dp add trainDayThisPhase for best plotting of trainPhaseLabel facet, for late
 
 %initialize
 choiceTaskTable(:, "trainDayThisPhase")= table(nan); %initialize
 
-%use findgroups to groupby subject,trainPhase and manually cumcount() for
-%sessions within-trainPhase
+%use findgroups to groupby subject,trainPhaseLabel and manually cumcount() for
+%sessions within-trainPhaseLabel
 
 groupIDs= [];
-groupIDs= findgroups(choiceTaskTable.Subject,choiceTaskTable.trainPhase);
+groupIDs= findgroups(choiceTaskTable.Subject,choiceTaskTable.trainPhaseLabel);
 
 groupIDsUnique= [];
 groupIDsUnique= unique(groupIDs);
@@ -156,7 +201,202 @@ for thisGroupID= 1:numel(groupIDsUnique)
     
 end 
 
+%% dp analyses- compute probability of each LP type
+
+
+
 %% --- dp new plots from table ---
+
+% Calculate *Proportion* of active vs inactive Lever Presses for normalized measure
+
+% first get total count
+choiceTaskTable(:,"leverPressTotal")= table(choiceTaskTable.ActiveLeverPress+choiceTaskTable.InactiveLeverPress);
+
+% proportion = count/total count
+choiceTaskTable(:,"probActiveLP")= table(choiceTaskTable.ActiveLeverPress./choiceTaskTable.leverPressTotal);
+
+choiceTaskTable(:,"probInactiveLP")= table(choiceTaskTable.InactiveLeverPress./choiceTaskTable.leverPressTotal);
+
+
+%% dp plot of lever press Count by phase over time- mean and individual
+cmapSubj= cmapBlueGraySubj;
+cmapGrand= cmapBlueGrayGrand;
+
+%run separately based on stim vs inhibition
+expTypesAll= unique(choiceTaskTable.ExpType);
+
+for thisExpType= 1:numel(expTypesAll)
+
+    thisExpTypeLabel= expTypeLabels{thisExpType};
+
+    %subset data- by expType/virus
+    ind=[];
+    ind= choiceTaskTable.ExpType==expTypesAll(thisExpType);
+
+    data= choiceTaskTable(ind,:);
+   
+    %stack() to make inactive/active LP a variable
+    data= stack(data, {'ActiveLeverPress', 'InactiveLeverPress'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'countLP');
+
+    %generate figure
+    figure; clear d;
+
+    %-- individual subj
+    group= data.Subject;
+
+    d=gramm('x',data.Session,'y',data.countLP,'color',data.typeLP, 'group', group)
+
+    % %facet by trainPhaseLabel - ideally could set sharex of facets false but idk w gramm
+    % d.facet_grid([],data.trainPhaseLabel);
+
+    % %facet by virus, trainPhaseLabel
+    d.facet_grid(data.Projection,data.trainPhaseLabel);
+
+    % %facet by virus
+    % d.facet_grid(data.Projection,[]);
+
+
+    d.stat_summary('type','sem','geom','area');
+    d.set_names('x','Session','y','Number of Lever Presses','color','Lever Side')
+
+    d().set_line_options('base_size',linewidthSubj);
+    d.set_color_options('map', cmapSubj);
+
+    d.no_legend(); %prevent legend duplicates if you like
+
+
+    %set text options
+    d.set_text_options(text_options_DefaultStyle{:}); 
+
+
+    d.draw()
+
+    %-- btwn subj mean as well
+    group= [];
+
+    d.update('x',data.Session,'y',data.countLP,'color',data.typeLP, 'group', group)
+
+    d.stat_summary('type','sem','geom','area');
+    % d.stat_boxplot();
+
+
+    d.set_names('x','Session','y','Number of Lever Presses','color','Lever Side')
+
+    d().set_line_options('base_size',linewidthGrand);
+    d.set_color_options('map', cmapGrand);
+
+
+    figTitle= strcat('choiceTask-',thisExpTypeLabel,'-','LP-Count-across-sessions-all');   
+    d.set_title(figTitle);   
+
+    %Zoom in on lower LP subjects if desired
+    % d().axe_property( 'YLim',[0 300]) %low responders
+    % d().axe_property( 'YLim',[0, 1200]) %high responders
+
+    % SET X TICK = 1 SESSION
+    % d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
+
+
+    d.draw();
+    
+    saveFig(gcf, figPath,figTitle,figFormats);
+
+
+end %end expType/virus loop
+
+
+%% dp plot of lever press Proportion by phase over time- mean and individual
+cmapSubj= cmapBlueGraySubj;
+cmapGrand= cmapBlueGrayGrand;
+
+%run separately based on stim vs inhibition
+expTypesAll= unique(choiceTaskTable.ExpType);
+
+for thisExpType= 1:numel(expTypesAll)
+
+    thisExpTypeLabel= expTypeLabels{thisExpType};
+
+    %subset data- by expType/virus
+    ind=[];
+    ind= choiceTaskTable.ExpType==expTypesAll(thisExpType);
+
+    data= choiceTaskTable(ind,:);
+   
+    %stack() to make inactive/active LP a variable
+    data= stack(data, {'probActiveLP', 'probInactiveLP'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'probLP');
+
+    %generate figure
+    figure; clear d;
+
+    %-- individual subj
+    group= data.Subject;
+
+    d=gramm('x',data.Session,'y',data.probLP,'color',data.typeLP, 'group', group)
+
+    % %facet by trainPhaseLabel - ideally could set sharex of facets false but idk w gramm
+    % d.facet_grid([],data.trainPhaseLabel);
+
+    % %facet by virus, trainPhaseLabel
+    d.facet_grid(data.Projection,data.trainPhaseLabel);
+
+    % %facet by virus
+    % d.facet_grid(data.Projection,[]);
+
+
+    d.stat_summary('type','sem','geom','area');
+    d.set_names('x','Session','y','Proportion of Lever Presses','color','Lever Side')
+
+    d().set_line_options('base_size',linewidthSubj);
+    d.set_color_options('map', cmapSubj);
+
+    d.no_legend(); %prevent legend duplicates if you like
+
+
+    %set text options
+    d.set_text_options(text_options_DefaultStyle{:}); 
+
+
+    d.draw()
+
+    %-- btwn subj mean as well
+    group= [];
+
+    d.update('x',data.Session,'y',data.probLP,'color',data.typeLP, 'group', group)
+
+    d.stat_summary('type','sem','geom','area');
+    % d.stat_boxplot();
+
+
+    d.set_names('x','Session','y','Number of Lever Presses','color','Lever Side')
+
+    d().set_line_options('base_size',linewidthGrand);
+    d.set_color_options('map', cmapGrand);
+
+
+    figTitle= strcat('choiceTask-',thisExpTypeLabel,'-','LP-Proportion-across-sessions-all');   
+    d.set_title(figTitle);   
+
+    %Zoom in on lower LP subjects if desired
+    % d().axe_property( 'YLim',[0 300]) %low responders
+    % d().axe_property( 'YLim',[0, 1200]) %high responders
+
+    % SET X TICK = 1 SESSION
+    % d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
+
+
+    d.draw();
+    
+    saveFig(gcf, figPath,figTitle,figFormats);
+
+
+end %end expType/virus loop
+
+
+%% -dp box plot of test and extinction days
+
+
+
+
 
 %% 
 
