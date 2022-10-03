@@ -146,6 +146,44 @@ cmapCustomCue= cmapCustomCue/255;
 cmapCueGrand= cmapCustomCue([1,7],:); %dark
 cmapCueSubj= cmapCustomCue([2,5],:); %light
 
+    figure();
+    rgbplot(cmapCueGrand);
+    hold on
+    colormap(cmapCueGrand)
+    colorbar('Ticks',[])
+    title('cmapCueGrand');
+
+%-- Cue+Laser cmap colormap for DS vs NS Laser NoLaser
+%- want 4 categories (DS,DS+Laser,NS,NS+Laser) and 2 lightness levels each (grand vs subj)
+% so at least 8 colors
+%based on https://colorbrewer2.org/#type=diverging&scheme=BrBG&n=11
+cmapCueLaser= [84,48,5; %1- dark brown
+    140,81,10;
+    191,129,45;
+    223,194,125;
+    246,232,195; %5- light brown
+    245,245,245; %6- whitish
+    199,234,229; %7- light teal
+    128,205,193;
+    53,151,143;
+    1,102,94;
+    0,60,48] %11- dark teal
+
+cmapCueLaser= cmapCueLaser/255;
+
+%assume order of DS, DS+Laser, NS, NS+Laser
+% will pair 2nd to last darkest (n) with n+/-2 shades lighter for noLaser
+% so Grand: DS= 10, DS+Laser= 8, NS=2, NS+Laser=4
+%and Subj: DS= 9, DS+Laser= 7, NS=3, NS+Laser=5
+cmapCueLaserGrand= cmapCueLaser([10,8,2,4],:); %dark
+cmapCueLaserSubj= cmapCueLaser([9,7,3,5],:); %light
+  
+    figure();
+    rgbplot(cmapCueLaserGrand);
+    hold on
+    colormap(cmapCueLaserGrand)
+    colorbar('Ticks',[])
+    title('cmapCueLaserGrand');
 
 %--Active vs Inactive cmaps (e.g. laser-paired vs unpaired operand)
 

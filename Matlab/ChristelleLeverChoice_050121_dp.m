@@ -652,9 +652,9 @@ end %end expType/virus loop
 
 %% TODO: could loop through phasesToInclude instead of doubling code
 
-%% ~~~~~-dp CHOICE TASK FIGURE 2- Reversal (Phase 2) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%% ~~~~~-dp CHOICE TASK FIGURE 2- Forced Choice (Phase 3) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-%subset data from Phase 2
+%subset data from Phase 3
 
 %1a) Acquisition of lever pressing + Probability
 %1b) Proportion of active vs inactive LP
@@ -678,7 +678,7 @@ for thisExpType= 1:numel(expTypesAll)
     data0= choiceTaskTable(ind,:);
     
     %subset data- by trainPhase
-    phasesToInclude= [2]; %list of phases to include 
+    phasesToInclude= [3]; %list of phases to include 
     
     ind=[];
     
@@ -831,7 +831,7 @@ for thisExpType= 1:numel(expTypesAll)
         d(thisProjection,2).no_legend(); %prevent legend duplicates if you like
 
          
-        figTitle= strcat('choiceTask-FIGURE-2-',thisExpTypeLabel,'-','LP-Reversal');   
+        figTitle= strcat('choiceTask-FIGURE-2-',thisExpTypeLabel,'-','LP-ForcedChoice');   
         d(thisProjection,2).set_title(figTitle);   
 
         
@@ -895,7 +895,7 @@ for thisExpType= 1:numel(expTypesAll)
     end %end projection/target loop
     
     %draw only at end?
-            figTitle= strcat('choiceTask-FIGURE-2-',thisExpTypeLabel,'-','LP-Reversal');   
+            figTitle= strcat('choiceTask-FIGURE-2-',thisExpTypeLabel,'-','LP-ForcedChoice');   
             d().set_title(figTitle);   
             d.draw(); 
             saveFig(gcf, figPath,figTitle,figFormats);
