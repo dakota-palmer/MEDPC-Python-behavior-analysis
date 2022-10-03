@@ -427,9 +427,9 @@ for thisExpType= 1:numel(expTypesAll)
     
     ind=[];
     
-    ind= ismember(choiceTaskTable.trainPhase, phasesToInclude);
+    ind= ismember(data0.trainPhase, phasesToInclude);
 
-    data0= choiceTaskTable(ind,:);
+    data0= data0(ind,:);
 
     %---manual faceting by target/projection (& data subsetting)
    clear d; figure;
@@ -485,7 +485,7 @@ for thisExpType= 1:numel(expTypesAll)
         d(thisProjection,1).set_text_options(text_options_DefaultStyle{:}); 
 
 
-        d(thisProjection,1).draw()
+%         d(thisProjection,1).draw()
 %         d.draw();
 
         %-- btwn subj mean as well
@@ -503,6 +503,7 @@ for thisExpType= 1:numel(expTypesAll)
 
         d(thisProjection,1).set_line_options('base_size',linewidthGrand);
         d(thisProjection,1).set_color_options('map', cmapGrand);
+        d(thisProjection,1).no_legend(); %prevent legend duplicates if you like
 
 
         figTitle= strcat('choiceTask-',thisExpTypeLabel,'-','LP-Count-across-sessions-all');   
@@ -516,7 +517,7 @@ for thisExpType= 1:numel(expTypesAll)
         % d.axe_property('XTick',[min(data2.trainDayThisPhase):1:max(data2.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
 
 
-        d(thisProjection,1).draw();
+%         d(thisProjection,1).draw();
 %         d.draw();
 
 
@@ -527,7 +528,7 @@ for thisExpType= 1:numel(expTypesAll)
         %~~~~~~~~~~~~~~~~~~~~~B) Proportion LP ~~~~~~~~~~~~~~~~~~~~~~~~
         %stack() to make inactive/active LP a variable
         data2=[];
-        data2= stack(data0, {'probActiveLP', 'probInactiveLP'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'probLP');
+        data2= stack(data, {'probActiveLP', 'probInactiveLP'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'probLP');
 
         %-- individual subj
         group= data2.Subject;
@@ -555,7 +556,7 @@ for thisExpType= 1:numel(expTypesAll)
          d(thisProjection,2).set_text_options(text_options_DefaultStyle{:}); 
 
         
-         d(thisProjection,2).draw()
+%          d(thisProjection,2).draw()
 %          d.draw();   
          
         %-- btwn subj mean as well
@@ -572,9 +573,196 @@ for thisExpType= 1:numel(expTypesAll)
          d(thisProjection,2).set_line_options('base_size',linewidthGrand);
          d(thisProjection,2).set_color_options('map', cmapGrand);
 
+        d(thisProjection,2).no_legend(); %prevent legend duplicates if you like
 
+         
         figTitle= strcat('choiceTask-FIGURE-1-',thisExpTypeLabel,'-','LP-Acquisition');   
         d(thisProjection,2).set_title(figTitle);   
+
+        
+        %~~~~~~~~~~~~~~~~~~~C) Licks per Reward ~~~~~~~~~~~~~~~~~~~~~~~
+                %TODO: all trials instead of aggregate? confirm how is this
+                %calculated
+
+          %stack() to make inactive/active LP a variable
+        data2=[];
+        data2= stack(data, {'LicksPerReward', 'LicksPerRewardInactive'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'licksPerReward');
+
+        %-- individual subj
+        group= data2.Subject;
+
+        d(thisProjection,3)=gramm('x',data2.Session,'y',data2.licksPerReward,'color',data2.typeLP, 'group', group)
+
+        % %facet by virus, trainPhaseLabel
+    %     d.facet_grid(data2.Projection,data2.trainPhaseLabel);
+
+        % %facet by virus
+%          d(thisProjection,2).facet_grid(data2.Projection,[]);
+
+
+         d(thisProjection,3).stat_summary('type','sem','geom','area');
+    %     d.set_names('x','Session','y','Proportion of Lever Presses','color','Lever Side')
+         d(thisProjection,3).set_names('row','Target','column','Phase','x','Session','y','Licks per Reward','color','Lever Side')
+
+        d(thisProjection,3).set_line_options('base_size',linewidthSubj);
+        d(thisProjection,3).set_color_options('map', cmapSubj);
+
+        d(thisProjection,3).no_legend(); %prevent legend duplicates if you like
+
+
+        %set text options
+         d(thisProjection,3).set_text_options(text_options_DefaultStyle{:}); 
+
+        
+%          d(thisProjection,2).draw()
+%          d.draw();   
+         
+        %-- btwn subj mean as well
+        group= [];
+
+         d(thisProjection,3).update('x',data2.Session,'y',data2.licksPerReward,'color',data2.typeLP, 'group', group)
+
+         d(thisProjection,3).stat_summary('type','sem','geom','area');
+        % d.stat_boxplot();
+
+
+         d(thisProjection,3).set_names('x','Session','y','Licks per reward','color','Lever Side')
+
+         d(thisProjection,3).set_line_options('base_size',linewidthGrand);
+         d(thisProjection,3).set_color_options('map', cmapGrand);
+
+        d(thisProjection,3).no_legend(); %prevent legend duplicates if you like
+
+        figTitle= strcat(projectionsAll{thisProjection},'licks per reward');   
+        d(thisProjection,3).set_title('TEST');   
+
+
+    end %end projection/target loop
+    
+    %draw only at end?
+            figTitle= strcat('choiceTask-FIGURE-1-',thisExpTypeLabel,'-','LP-Acquisition');   
+            d().set_title(figTitle);   
+            d.draw(); 
+            saveFig(gcf, figPath,figTitle,figFormats);
+
+    
+end %end expType/virus loop
+
+
+
+%% TODO: could loop through phasesToInclude instead of doubling code
+
+%% ~~~~~-dp CHOICE TASK FIGURE 2- Reversal (Phase 2) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+%subset data from Phase 2
+
+%1a) Acquisition of lever pressing + Probability
+%1b) Proportion of active vs inactive LP
+%1c) Licks per reward
+
+cmapSubj= cmapBlueGraySubj;
+cmapGrand= cmapBlueGrayGrand;
+
+%run separately based on stim vs inhibition
+expTypesAll= unique(choiceTaskTable.ExpType);
+
+for thisExpType= 1:numel(expTypesAll)
+
+    thisExpTypeLabel= expTypeLabels{thisExpType};
+
+    %subset data- by expType/virus
+    ind=[];
+    ind= choiceTaskTable.ExpType==expTypesAll(thisExpType);
+
+    data0=[];
+    data0= choiceTaskTable(ind,:);
+    
+    %subset data- by trainPhase
+    phasesToInclude= [2]; %list of phases to include 
+    
+    ind=[];
+    
+    ind= ismember(data0.trainPhase, phasesToInclude);
+
+    data0= data0(ind,:);
+
+    %---manual faceting by target/projection (& data subsetting)
+   clear d; figure;
+%    d= gramm(numel(projectionsAll),3);
+    %---Subset further by projection/target for manual facet------
+    projectionsAll= unique(data0.Projection);
+    
+    for thisProjection= 1:numel(projectionsAll)
+        data=[];
+        
+     % Subset further by projection/target for manual facet
+        ind=[]
+        ind= strcmp(data0.Projection,projectionsAll{thisProjection});
+        
+        data= data0(ind,:);
+        
+       % ~~~~~~~~~~~~~~~A) Count LP ~~~~~~~~~~~~~~~~~~~~~~
+    
+            %stack() to make inactive/active LP a variable
+            data2= [];
+            data2= stack(data, {'ActiveLeverPress', 'InactiveLeverPress'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'countLP');
+
+            %generate figure
+%             figure; %clear d;
+        
+        %-- individual subj
+        group= data2.Subject;
+
+        d(thisProjection,1)=gramm('x',data2.Session,'y',data2.countLP,'color',data2.typeLP, 'group', group)
+
+        % %facet by trainPhaseLabel - ideally could set sharex of facets false but idk w gramm
+        % d.facet_grid([],data2.trainPhaseLabel);
+
+        % %facet by virus, trainPhaseLabel
+%         d.facet_grid(data2.Projection,data2.trainPhaseLabel);
+
+        % %facet by virus
+%         d.facet_grid(data2.Projection,[]);
+
+
+        d(thisProjection,1).stat_summary('type','sem','geom','area');
+    %     d.set_names('x','Session','y','Number of Lever Presses','color','Lever Side')
+        d(thisProjection,1).set_names('row','Target','column','Phase','x','Session','y','Number of Lever Presses','color','Lever Side')
+
+
+        d(thisProjection,1).set_line_options('base_size',linewidthSubj);
+        d(thisProjection,1).set_color_options('map', cmapSubj);
+
+        d(thisProjection,1).no_legend(); %prevent legend duplicates if you like
+
+
+        %set text options
+        d(thisProjection,1).set_text_options(text_options_DefaultStyle{:}); 
+
+
+%         d(thisProjection,1).draw()
+%         d.draw();
+
+        %-- btwn subj mean as well
+        group= [];
+
+        d(thisProjection,1).update('x',data2.Session,'y',data2.countLP,'color',data2.typeLP, 'group', group)
+
+        d(thisProjection,1).stat_summary('type','sem','geom','area');
+        % d.stat_boxplot();
+
+
+        d(thisProjection,1).set_names('x','Session','y','Number of Lever Presses','color','Lever Side')
+    %     d.set_names('row','Target','column','Phase','x','Session','y','Number of Lever Presses','color','Lever Side')
+
+
+        d(thisProjection,1).set_line_options('base_size',linewidthGrand);
+        d(thisProjection,1).set_color_options('map', cmapGrand);
+        d(thisProjection,1).no_legend(); %prevent legend duplicates if you like
+
+
+        figTitle= strcat('choiceTask-',thisExpTypeLabel,'-','LP-Count-across-sessions-all');   
+        d(thisProjection,1).set_title(figTitle);   
 
         %Zoom in on lower LP subjects if desired
         % d().axe_property( 'YLim',[0 300]) %low responders
@@ -584,38 +772,136 @@ for thisExpType= 1:numel(expTypesAll)
         % d.axe_property('XTick',[min(data2.trainDayThisPhase):1:max(data2.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
 
 
-         d(thisProjection,2).draw();
+%         d(thisProjection,1).draw();
 %         d.draw();
 
-% 
-%         %-------- plot B
-%         %add 2nd column plot with count?
-% 
-%         %stack() to make inactive/active LP a variable
-%         data2= stack(data2, {'ActiveLP', 'InactiveLP'}, 'IndexVariableName', 'typeLP', 'Newdata2VariableName', 'countLP');
-% 
-% 
-%         d=gramm('x',data2.Session,'y',data2.countLP,'color',data2.typeLP, 'group', group)
-% 
-% 
-%         d.stat_summary('type','sem','geom','area');
-%     %     d.set_names('x','Session','y','Proportion of Lever Presses','color','Lever Side')
-%         d.set_names('row','Target','column','Phase','x','Session','y','Proportion of Lever Presses','color','Lever Side')
-% 
-%         d().set_line_options('base_size',linewidthSubj);
-%         d.set_color_options('map', cmapSubj);
-%         d.draw()
 
 
 
-        %     saveFig(gcf, figPath,figTitle,figFormats);
+
+
+        %~~~~~~~~~~~~~~~~~~~~~B) Proportion LP ~~~~~~~~~~~~~~~~~~~~~~~~
+        %stack() to make inactive/active LP a variable
+        data2=[];
+        data2= stack(data, {'probActiveLP', 'probInactiveLP'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'probLP');
+
+        %-- individual subj
+        group= data2.Subject;
+
+        d(thisProjection,2)=gramm('x',data2.Session,'y',data2.probLP,'color',data2.typeLP, 'group', group)
+
+        % %facet by virus, trainPhaseLabel
+    %     d.facet_grid(data2.Projection,data2.trainPhaseLabel);
+
+        % %facet by virus
+%          d(thisProjection,2).facet_grid(data2.Projection,[]);
+
+
+         d(thisProjection,2).stat_summary('type','sem','geom','area');
+    %     d.set_names('x','Session','y','Proportion of Lever Presses','color','Lever Side')
+         d(thisProjection,2).set_names('row','Target','column','Phase','x','Session','y','Proportion of Lever Presses','color','Lever Side')
+
+        d(thisProjection,2).set_line_options('base_size',linewidthSubj);
+        d(thisProjection,2).set_color_options('map', cmapSubj);
+
+        d(thisProjection,2).no_legend(); %prevent legend duplicates if you like
+
+
+        %set text options
+         d(thisProjection,2).set_text_options(text_options_DefaultStyle{:}); 
+
+        
+%          d(thisProjection,2).draw()
+%          d.draw();   
+         
+        %-- btwn subj mean as well
+        group= [];
+
+         d(thisProjection,2).update('x',data2.Session,'y',data2.probLP,'color',data2.typeLP, 'group', group)
+
+         d(thisProjection,2).stat_summary('type','sem','geom','area');
+        % d.stat_boxplot();
+
+
+         d(thisProjection,2).set_names('x','Session','y','Proportion of Lever Presses','color','Lever Side')
+
+         d(thisProjection,2).set_line_options('base_size',linewidthGrand);
+         d(thisProjection,2).set_color_options('map', cmapGrand);
+
+        d(thisProjection,2).no_legend(); %prevent legend duplicates if you like
+
+         
+        figTitle= strcat('choiceTask-FIGURE-2-',thisExpTypeLabel,'-','LP-Reversal');   
+        d(thisProjection,2).set_title(figTitle);   
+
+        
+        %~~~~~~~~~~~~~~~~~~~C) Licks per Reward ~~~~~~~~~~~~~~~~~~~~~~~
+                %TODO: all trials instead of aggregate? confirm how is this
+                %calculated
+
+          %stack() to make inactive/active LP a variable
+        data2=[];
+        data2= stack(data, {'LicksPerReward', 'LicksPerRewardInactive'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'licksPerReward');
+
+        %-- individual subj
+        group= data2.Subject;
+
+        d(thisProjection,3)=gramm('x',data2.Session,'y',data2.licksPerReward,'color',data2.typeLP, 'group', group)
+
+        % %facet by virus, trainPhaseLabel
+    %     d.facet_grid(data2.Projection,data2.trainPhaseLabel);
+
+        % %facet by virus
+%          d(thisProjection,2).facet_grid(data2.Projection,[]);
+
+
+         d(thisProjection,3).stat_summary('type','sem','geom','area');
+    %     d.set_names('x','Session','y','Proportion of Lever Presses','color','Lever Side')
+         d(thisProjection,3).set_names('row','Target','column','Phase','x','Session','y','Licks per Reward','color','Lever Side')
+
+        d(thisProjection,3).set_line_options('base_size',linewidthSubj);
+        d(thisProjection,3).set_color_options('map', cmapSubj);
+
+        d(thisProjection,3).no_legend(); %prevent legend duplicates if you like
+
+
+        %set text options
+         d(thisProjection,3).set_text_options(text_options_DefaultStyle{:}); 
+
+        
+%          d(thisProjection,2).draw()
+%          d.draw();   
+         
+        %-- btwn subj mean as well
+        group= [];
+
+         d(thisProjection,3).update('x',data2.Session,'y',data2.licksPerReward,'color',data2.typeLP, 'group', group)
+
+         d(thisProjection,3).stat_summary('type','sem','geom','area');
+        % d.stat_boxplot();
+
+
+         d(thisProjection,3).set_names('x','Session','y','Licks per reward','color','Lever Side')
+
+         d(thisProjection,3).set_line_options('base_size',linewidthGrand);
+         d(thisProjection,3).set_color_options('map', cmapGrand);
+
+        d(thisProjection,3).no_legend(); %prevent legend duplicates if you like
+
+        figTitle= strcat(projectionsAll{thisProjection},'licks per reward');   
+        d(thisProjection,3).set_title('TEST');   
 
 
     end %end projection/target loop
     
+    %draw only at end?
+            figTitle= strcat('choiceTask-FIGURE-2-',thisExpTypeLabel,'-','LP-Reversal');   
+            d().set_title(figTitle);   
+            d.draw(); 
+            saveFig(gcf, figPath,figTitle,figFormats);
+
+    
 end %end expType/virus loop
-
-
 
 
 %% 
