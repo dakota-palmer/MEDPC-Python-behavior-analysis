@@ -154,6 +154,7 @@ cmapCueSubj= cmapCustomCue([2,5],:); %light
     title('cmapCueGrand');
 
 %-- Cue+Laser cmap colormap for DS vs NS Laser NoLaser
+ %this is like a Paired colormap supporting 2 categories with 2 conditions
 %- want 4 categories (DS,DS+Laser,NS,NS+Laser) and 2 lightness levels each (grand vs subj)
 % so at least 8 colors
 %based on https://colorbrewer2.org/#type=diverging&scheme=BrBG&n=11

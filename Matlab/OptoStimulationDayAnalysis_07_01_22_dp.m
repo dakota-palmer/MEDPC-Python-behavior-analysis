@@ -542,19 +542,24 @@ RelLatency=vertcat(DSStimulation.DSNoLaserRelLatMean,DSStimulation.DSLaserRelLat
 ResponseProb=vertcat(DSStimulation.DSNoLaser10sResponseProb,DSStimulation.DSLaser10sResponseProb,DSStimulation.NSNoLaser10sResponseProb,DSStimulation.NSLaser10sResponseProb);
 StimLength=vertcat(DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength,DSStimulation.StimLength);
 Group=vertcat(DSStimulation.Group,DSStimulation.Group,DSStimulation.Group,DSStimulation.Group);
-Subject=vertcat(DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID);
+Subject=vertcat(DSStimulation.Subject,DSStimulation.Subject,DSStimulation.Subject,DSStimulation.Subject);
+RatID=vertcat(DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID);
+
 Sex=vertcat(DSStimulation.Sex,DSStimulation.Sex,DSStimulation.Sex,DSStimulation.Sex);
 Expression=vertcat(DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression,DSStimulation.Expression);
 Mode=vertcat(DSStimulation.ExpType,DSStimulation.ExpType,DSStimulation.ExpType,DSStimulation.ExpType);
-Subject=vertcat(DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID,DSStimulation.RatID);
 DSRatio=vertcat(DSStimulation.DSPERatio,DSStimulation.DSPERatio,DSStimulation.DSPERatio,DSStimulation.DSPERatio);
 DSNSRatio=vertcat(DSStimulation.DSNSRatio,DSStimulation.DSNSRatio,DSStimulation.DSNSRatio,DSStimulation.DSNSRatio);
 Learner=vertcat(DSStimulation.Learner,DSStimulation.Learner,DSStimulation.Learner,DSStimulation.Learner);
 
+Projection= vertcat(DSStimulation.Projection, DSStimulation.Projection, DSStimulation.Projection, DSStimulation.Projection);
+
 Learner=cell2mat(Learner);
 Expression=cell2mat(Expression);
 Mode=cell2mat(Mode);
-Subject=cell2mat(Subject);
+RatID= cell2mat(RatID);
+% Subject=cell2mat(Subject);
+
 
 %dp add cueType label
 % make list of labels and use values for cueType as ind to match
@@ -605,7 +610,7 @@ stimTable= table();
 
 %list of vars to include in table as columns
 tableVars= {'Group','CueType','CueTypeLabel','RelLatency','ResponseProb'...
-    'StimLength','Subject','Sex','Expression','Mode','DSRatio','DSNSRatio','Learner'};
+    'StimLength','Subject','Sex','Expression','Mode','DSRatio','DSNSRatio','Learner','Projection','RatID'};
 
 
 
@@ -645,6 +650,10 @@ for thisExpType= 1:numel(expTypesAll)
 end
 
 
+%DP converting "Group" to "Projection" label for consistency between analyses scripts/figures
+
+
+
 % TODO: may be good to add fileID
 % %actually GROUP should = fileID? since observations paired by group within-file
 % data(:,"fileID")= table(nan);
@@ -652,7 +661,13 @@ end
 % 
 % group= data.fileID;
 
-%% plots
+%% Behavioral Criteria plots
+
+criteriaDS= 0.6; %require at least 60% responding to DS
+
+
+criteriaDSNS= 1.5;  %require 50% more responding to DS than NS
+
 
 %histogram to determine which animals learned
 
@@ -673,27 +688,36 @@ y2= [];
 y2= DSStimulation.DSPERatio(selection);
 subplot(3,1,2); hold on; title('DS PE ratio, pre-stim sessions');
 histogram (y2, BinNums)
+plot([criteriaDS, criteriaDS], ylim, 'r--'); %DS criteria overlay
+
 
 y3=[];
 y3= DSStimulation.DSNSRatio(selection);
 subplot(3,1,3); hold on; title('DS/NS PE Ratio, pre-stim sessions');
 
+
 BinNums = [0:.1:5];
 
 histogram (y3, BinNums)
-% histogram (y3)
+plot([criteriaDSNS, criteriaDSNS],ylim, 'r--'); %DS/NS criteria overlay
 
 
 figTitle=('DStask-behavior-distribution- pre-stim PE ratios');
 saveFig(gcf, figPath,figTitle,figFormats);
 
-figure();
+%scatter of DS vs DS/NS
+figure(); hold on;
 scatter(y2,y3);
+%overlay criteria
+plot([criteriaDS, criteriaDS], ylim, 'r--'); %DS criteria overlay
+plot(xlim,[criteriaDSNS, criteriaDSNS], 'r--'); %DS/NS criteria overlay
 title('DS vs DS/NS Ratio')
 
-%- plot ratio being used here
-figure; clear i;
+figTitle=('DStask-behavior-scatter- pre-stim PE ratios');
+saveFig(gcf, figPath,figTitle,figFormats);
 
+
+%- plot ratio being used here
 
 %- histogram of 10s NS PE Ratio
 % histogram of NS PE Ratio calculated by MPC
@@ -711,6 +735,7 @@ y2= [];
 y2= DSStimulation.DSNoLaser10sResponseProb(selection);
 subplot(3,1,2); hold on; title('DS 10s PE ratio, pre-stim sessions');
 histogram (y2, BinNums)
+plot([criteriaDS, criteriaDS], ylim, 'r--'); %DS criteria overlay
 
 
 %calculate the 'no laser' NSDS ratio?
@@ -724,16 +749,22 @@ BinNums = [0:.1:5];
 
 subplot(3,1,3); hold on; title('DS/NS 10s PE Ratio, pre-stim sessions');
 histogram (y3, BinNums)
-% histogram (y3)
-
+plot([criteriaDSNS, criteriaDSNS],ylim, 'r--'); %DS/NS criteria overlay
 
 figTitle=('DStask-behavior-distribution- pre-stim 10s PE ratios');
 saveFig(gcf, figPath,figTitle,figFormats);
 
 
-figure();
+figure(); hold on;
 scatter(y2,y3);
+%overlay criteria
+plot([criteriaDS, criteriaDS], ylim, 'r--'); %DS criteria overlay
+plot(xlim,[criteriaDSNS, criteriaDSNS], 'r--'); %DS/NS criteria overlay
 title('10s DS vs DS/NS Ratio')
+
+figTitle=('DStask-behavior-scatter- pre-stim 10s PE ratios');
+saveFig(gcf, figPath,figTitle,figFormats);
+
 
 % subset
 
@@ -746,11 +777,59 @@ title('10s DS vs DS/NS Ratio')
 
 
 %Now -subset those subjects meeting criteria 
-criteriaDS= 0.6
-criteriaNS= 0.5
+% criteriaDS= 0.6
+% criteriaNS= 0.5
+% 
+% selection2 = DSStimulation.DSPERatio(selection) >= criteriaDS & DSStimulation.NSPERatio(selection) <= criteriaNS
+% learned= DSStimulation.Subject (selection2) 
 
-selection2 = DSStimulation.DSPERatio(selection) >= criteriaDS & DSStimulation.NSPERatio(selection) <= criteriaNS
-learned= DSStimulation.Subject (selection2) 
+%% dp EXCLUDE SUBJECTS based on behavioral criteria
+% modeExcludeBehavioral= 'DS'; %exclude based on DS ratio alone
+
+modeExcludeBehavioral= 'DS & DS/NS'; %exclude based on DS/NS discrimination 
+
+% %1- subset data from pre-laser days
+% %2- check if meeting criteria
+% %3- if not, record the subject names
+% %4- exclude these subjects from table 
+
+
+%1- subset on pre-laser days
+ind= [];
+ind= stimTable.StimLength==0;
+
+data= [];
+data= stimTable(ind,:);
+
+
+%2- check if meet criteria
+if strcmp(modeExcludeBehavioral, 'DS & DS/NS') %run based on both criteria
+    
+    ind= [];
+    ind= (data.DSRatio <= criteriaDS) & (data.DSNSRatio <= criteriaDSNS);
+    
+  
+elseif strcmp(modeExcludeBehavioral, 'DS') %run based on DS responding alone
+    
+    ind= [];
+    ind= (data.DSRatio <= criteriaDS); 
+    
+end
+
+%3- find subjects not meeting criteria
+subjectsToExclude= {};
+subjectsToExclude= data(ind,'Subject'); 
+
+
+%4- actually exclude data from table
+%find data containing subjectsToExclude and remove
+ind= [];
+
+ind= contains(stimTable.Subject, subjectsToExclude{:,:});
+
+stimTable(ind,:)= [];
+
+
 
 %% Plot Stim Day 0
 
@@ -839,8 +918,11 @@ saveFig(gcf, figPath,figTitle,figFormats);
 
 %plot default settings 
  %if only 2 groupings, brewer2 and brewer_dark work well 
-cmapGrand= 'brewer_dark';
-cmapSubj= 'brewer2';
+% cmapGrand= 'brewer_dark';
+% cmapSubj= 'brewer2';
+cmapGrand= cmapCueLaserGrand;
+cmapSubj= cmapCueLaserSubj;
+
 
 dodge= 	1; %if dodge constant between point and bar, will align correctly
 width=3.8; %good for bar w dodge >=1
@@ -874,7 +956,7 @@ for thisExpType= 1:numel(expTypesAll)
     % dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
 
     g=gramm('x',data.CueType,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
-    g.facet_grid(data.Group,data.StimLength)
+    g.facet_grid(data.Projection,data.StimLength)
 
     % g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}) 
     % g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
@@ -948,7 +1030,7 @@ for thisExpType= 1:numel(expTypesAll)
     % dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
 
     g(1,1)=gramm('x',data.CueType,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
-    g(1,1).facet_grid(data.Group,data.StimLength)
+    g(1,1).facet_grid(data.Projection,data.StimLength)
 
     g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
     g(1,1).set_color_options('map',cmapGrand); 
