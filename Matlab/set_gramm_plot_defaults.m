@@ -176,9 +176,13 @@ cmapCueLaser= cmapCueLaser/255;
 % will pair 2nd to last darkest (n) with n+/-2 shades lighter for noLaser
 % so Grand: DS= 10, DS+Laser= 8, NS=2, NS+Laser=4
 %and Subj: DS= 9, DS+Laser= 7, NS=3, NS+Laser=5
-cmapCueLaserGrand= cmapCueLaser([10,8,2,4],:); %dark
-cmapCueLaserSubj= cmapCueLaser([9,7,3,5],:); %light
+% cmapCueLaserGrand= cmapCueLaser([10,8,2,4],:); %dark
+% cmapCueLaserSubj= cmapCueLaser([9,7,3,5],:); %light
   
+cmapCueLaserGrand= cmapCueLaser([8,10,4,2],:); %dark
+cmapCueLaserSubj= cmapCueLaser([7,9,5,3],:); %light
+  
+
     figure();
     rgbplot(cmapCueLaserGrand);
     hold on

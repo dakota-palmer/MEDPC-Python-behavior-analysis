@@ -554,6 +554,9 @@ Learner=vertcat(DSStimulation.Learner,DSStimulation.Learner,DSStimulation.Learne
 
 Projection= vertcat(DSStimulation.Projection, DSStimulation.Projection, DSStimulation.Projection, DSStimulation.Projection);
 
+StartDate= vertcat(DSStimulation.StartDate, DSStimulation.StartDate, DSStimulation.StartDate, DSStimulation.StartDate);
+
+
 Learner=cell2mat(Learner);
 Expression=cell2mat(Expression);
 Mode=cell2mat(Mode);
@@ -561,10 +564,11 @@ RatID= cell2mat(RatID);
 % Subject=cell2mat(Subject);
 
 
+
 %dp add cueType label
 % make list of labels and use values for cueType as ind to match
 labels= {};
-labels= {'DS_noLaser','DS+Laser','NS_noLaser','NS+Laser'};
+labels= {'DS','DS+Laser','NS','NS+Laser'};
 
 CueTypeLabel=[];
 CueTypeLabel= {labels{CueType(:)}}';
@@ -610,7 +614,7 @@ stimTable= table();
 
 %list of vars to include in table as columns
 tableVars= {'Group','CueType','CueTypeLabel','RelLatency','ResponseProb'...
-    'StimLength','Subject','Sex','Expression','Mode','DSRatio','DSNSRatio','Learner','Projection','RatID'};
+    'StimLength','Subject','Sex','Expression','Mode','DSRatio','DSNSRatio','Learner','Projection','RatID', 'StartDate'};
 
 
 
@@ -660,6 +664,53 @@ end
 % data(:,"fileID")= table([1:size(data,1)]');
 % 
 % group= data.fileID;
+
+%% DP check for duplicate sessions
+
+%if there are duplicate sessions, then the # of unique groupIDsUnique would be >
+%than the size of of each variable in DSStimulation
+
+numSessions= numel(DSStimulation.Subject);
+
+groupIDs= [];
+% ------dp stimTable has the 4x repeats for trialtypes so try running on
+% DSStimulation?
+groupIDs= findgroups(DSStimulation.Subject,DSStimulation.StartDate);
+
+groupIDsUnique= [];
+groupIDsUnique= unique(groupIDs);
+
+%compare for equality
+numSessions==numel(groupIDsUnique)
+
+%todo: duplicates are present, so find them:
+
+%method a
+[uniqueA i j] = unique(groupIDs,'first');
+indexToDupes = find(not(ismember(1:numel(groupIDs),i)))
+
+
+%method b
+[U, I] = unique(groupIDs, 'first');
+x = 1:length(groupIDs); 
+%go through each value and retain only the first (I)
+x(I) = []; %groupIDs remaining, which are duplicates
+
+dupes= table()
+for thisGroupID= 1:numel(indexToDupes)
+ 
+    %for each groupID, find index matching groupID
+    ind= [];
+    ind= find(groupIDs==groupIDsUnique(thisGroupID));
+    
+    %for each groupID, get the table data matching this group
+    thisGroup=[];
+    thisGroup= stimTable(ind,:);
+    
+    %save to table
+    dupes(thisGroupID,:)= thisGroup;
+   
+end
 
 %% Behavioral Criteria plots
 
@@ -784,9 +835,9 @@ saveFig(gcf, figPath,figTitle,figFormats);
 % learned= DSStimulation.Subject (selection2) 
 
 %% dp EXCLUDE SUBJECTS based on behavioral criteria
-% modeExcludeBehavioral= 'DS'; %exclude based on DS ratio alone
+modeExcludeBehavioral= 'DS'; %exclude based on DS ratio alone
 
-modeExcludeBehavioral= 'DS & DS/NS'; %exclude based on DS/NS discrimination 
+% modeExcludeBehavioral= 'DS & DS/NS'; %exclude based on DS/NS discrimination 
 
 % %1- subset data from pre-laser days
 % %2- check if meeting criteria
@@ -925,7 +976,7 @@ cmapSubj= cmapCueLaserSubj;
 
 
 dodge= 	1; %if dodge constant between point and bar, will align correctly
-width=3.8; %good for bar w dodge >=1
+width=3.5; %good for bar w dodge >=1
 
 
 
@@ -1032,7 +1083,7 @@ for thisExpType= 1:numel(expTypesAll)
     g(1,1)=gramm('x',data.CueType,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
     g(1,1).facet_grid(data.Projection,data.StimLength)
 
-    g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+    g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge, 'width', width) 
     g(1,1).set_color_options('map',cmapGrand); 
 
     g(1,1).set_names('x','Cue Type','y','PE Probability', 'column', 'StimLength length')
@@ -1072,6 +1123,14 @@ for thisExpType= 1:numel(expTypesAll)
 
     g.no_legend(); %avoid duplicate legend for subj
 
+    
+    %set x lims and ticks (a bit more manual good for bars)
+    lims= [min(data.CueType)-.6,max(data.CueType)+.6];
+
+    g.axe_property('XLim',lims);
+    g.axe_property('XTick',round([lims(1):1:lims(2)]));
+
+    
     g.draw();
 
     figTitle= strcat('DSTask_Opto-',thisExpTypeLabel,'-','LaserDay_peProb_wIndividualLines');   
