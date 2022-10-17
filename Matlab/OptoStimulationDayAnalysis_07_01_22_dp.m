@@ -1140,6 +1140,200 @@ for thisExpType= 1:numel(expTypesAll)
 
 end %end expType (mode; stim/inhib) loop
 
+%% 2022-10-13 dp Figure 4c
+
+%-------Figure 4c--------------------
+
+%copying from above plot code but updating so axes are shared
+
+
+
+%plot default settings 
+ %if only 2 groupings, brewer2 and brewer_dark work well 
+% cmapGrand= 'brewer_dark';
+% cmapSubj= 'brewer2';
+cmapGrand= cmapCueLaserGrand;
+cmapSubj= cmapCueLaserSubj;
+
+
+dodge= 	.6; %if dodge constant between point and bar, will align correctly
+width= .5; %good for bar w dodge >=1
+
+
+
+for thisExpType= 1:numel(expTypesAll)
+
+    thisExpTypeLabel= expTypeLabels{thisExpType};
+
+    %subset data- by expType/virus
+    ind=[];
+    ind= stimTable.Mode==expTypesAll(thisExpType);
+
+    data0= stimTable(ind,:);
+
+    %%Stimulation Latency
+    clear g;
+    figure; 
+
+    %subset data- by expression & behavioral criteria
+    ind=[];
+    ind= data0.Expression>0 & data0.Learner==1;
+
+    data= data0(ind,:);
+
+    %dp make stimLength categorical
+    data.StimLength= categorical(data.StimLength);
+    
+    % -- 1 = subplot of stimulation PE latency
+    %- Bar of btwn subj means (group = [] or Group)
+    group= []; %var by which to group
+
+    % dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
+
+    g=gramm('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
+    g.facet_grid(data.Projection,[]);%data.StimLength)
+
+    % g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}) 
+    % g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+    % g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'},'width',width) 
+
+    g.stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge,'width',width) 
+
+
+    g(1,1).set_color_options('map',cmapGrand); 
+
+    g(1,1).set_names('row','','x','Laser Duration (s)','y','Latency')
+    
+    
+    figTitle= strcat(thisExpTypeLabel,'-','Laser Day Latency');   
+    g(1,1).set_title(figTitle);
+
+    g.set_text_options(text_options_DefaultStyle{:}); 
+
+    g.draw();
+
+% 
+% TODO: can't get individual lines to line up correctly with this faceting
+%     %- Draw lines between individual subject points (group= subject, color=[]);
+% 
+%     group= data.Subject;
+% 
+%     g(1,1).update('x', data.StimLength,'y',data.RelLatency,'color',[], 'group', group)
+% 
+%      %here specifically multiple observations
+%     % per subject so using stat_summary to get mean line
+%     g(1,1).stat_summary('type','sem','geom',{'line'});
+%     % g(1,1).geom_line;%('alpha',0.3);
+% 
+%     g(1,1).set_line_options('base_size',linewidthSubj);
+% 
+%     g(1,1).set_color_options('chroma', chromaLineSubj); %black lines connecting points
+% 
+%     %set x lims and ticks (a bit more manual good for bars)
+% %     lims= [1-.6,numel(data.StimLength)+.6];
+% % 
+% %     g.axe_property('XLim',lims);
+%     g.axe_property('XTick',round([lims(1):1:lims(2)]));
+% 
+% 
+% 
+%     g.draw();
+
+
+    %- Update with point of individual subj points (group= subject)
+    group= data.Subject;
+    g(1,1).update('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
+    g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+
+    g(1,1).set_color_options('map',cmapSubj);
+
+    g.no_legend(); %avoid duplicate legend for subj
+
+    g.draw();
+
+    
+    figTitle= strcat('Figure3-','DSTask_Opto-',thisExpTypeLabel,'-','LaserDay_peLatency_wIndividualLines');   
+
+    saveFig(gcf, figPath,figTitle,figFormats);
+
+    %----Stimulation PE Probability
+    figure; clear g;
+
+    % -- 1 = subplot of stimulation PE latency
+    %- Bar of btwn subj means (group = [] or Group)
+    group= []; %var by which to group
+
+    % dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
+
+    g(1,1)=gramm('x',data.StimLength,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
+    g(1,1).facet_grid(data.Projection, [])
+
+    g(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge, 'width', width) 
+    g(1,1).set_color_options('map',cmapGrand); 
+
+    g(1,1).set_names('row','','x','Laser Duration (s)','y','PE Probability')
+
+    figTitle= strcat(thisExpTypeLabel,'-','Laser Day PE Probability');   
+    g(1,1).set_title(figTitle);
+
+    g.set_text_options(text_options_DefaultStyle{:}); 
+
+    g.draw();
+
+
+    %TODO: given this faceting can't get individual subj points to line up
+    %properly (I think bc x has multiple categories with hue so is
+    %ambiguous)
+    
+%     %- Draw lines between individual subject points (group= subject, color=[]);
+% 
+%     group= data.Subject;
+%     
+%     %still need color for this particular plot to connect dots
+%     g(1,1).update('x', data.StimLength,'y',data.ResponseProb,'color',[], 'group', group)
+% 
+% %     g(1,1).update('x', data.StimLength,'y',data.ResponseProb,'color',[], 'group', group)
+% 
+%      %here specifically multiple observations
+%     % per subject so using stat_summary to get mean line
+%     g(1,1).stat_summary('type','sem','geom',{'line'});
+%     % g(1,1).geom_line;%('alpha',0.3);
+% 
+%     g(1,1).set_line_options('base_size',linewidthSubj);
+% 
+%     g(1,1).set_color_options('chroma', chromaLineSubj); %black lines connecting points
+% 
+%     g.draw();
+
+
+    %- Update with point of individual subj points (group= subject)
+    group= data.Subject;
+    g(1,1).update('x',data.StimLength,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
+    g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+
+    g(1,1).set_color_options('map',cmapSubj);
+
+    g.no_legend(); %avoid duplicate legend for subj
+
+    
+    %set x lims and ticks (a bit more manual good for bars)
+%     lims= [min(data.StimLength)-.6,max(data.CueType)+.6];
+
+%     g.axe_property('XLim',lims);
+%     g.axe_property('XTick',round([lims(1):1:lims(2)]));
+
+    
+    g.draw();
+
+    figTitle= strcat('Figure3-','DSTask_Opto-',thisExpTypeLabel,'-','LaserDay_peProb_wIndividualLines');   
+
+    saveFig(gcf, figPath,figTitle,figFormats);
+
+
+end %end expType (mode; stim/inhib) loop
+
+
+
 %% Plot Stim Days - dp new
 
 %TODO: connect individual subj points. tried this but was just drawing
