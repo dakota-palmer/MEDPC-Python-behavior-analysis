@@ -199,20 +199,20 @@ lmeVTAInactive=fitlme(VTATable,'Inactive~Session+(1|Rat)')
 
 
 %% DP Subset data for specific projection (vp--> vta / MDthal) group only
-
-modeProjection= 1; %VTA
-% modeProjection= 0; % MDthal
-
-
-
-ind=[];
-ind= ~(ICSS.ProjGroup==modeProjection);
-
-%loop thru fields and eliminate data
-allFields= fieldnames(ICSS);
-for field= 1:numel(allFields)
-    ICSS.(allFields{field})(ind)= [];
-end
+% 
+% modeProjection= 1; %VTA
+% % modeProjection= 0; % MDthal
+% 
+% 
+% 
+% ind=[];
+% ind= ~(ICSS.ProjGroup==modeProjection);
+% 
+% %loop thru fields and eliminate data
+% allFields= fieldnames(ICSS);
+% for field= 1:numel(allFields)
+%     ICSS.(allFields{field})(ind)= [];
+% end
 
 
 
@@ -444,7 +444,7 @@ group= data.Subject;
 d=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
 
 %facet by trainPhase - ideally could set sharex of facets false but idk w gramm
-d.facet_grid([],data.trainPhase);
+d.facet_grid(data.Projection,data.trainPhase);
 
 d.stat_summary('type','sem','geom','line');
 d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
@@ -516,7 +516,7 @@ group= data.Subject;
 d=gramm('x',data.trainDayThisPhase,'y',data.logNP,'color',data.typeNP, 'group', group)
 
 %facet by trainPhase - ideally could set sharex of facets false but idk w gramm
-d.facet_grid([],data.trainPhase);
+d.facet_grid(data.Projection,data.trainPhase);
 
 d.stat_summary('type','sem','geom','line');
 d.set_names('x','Session','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
@@ -580,6 +580,8 @@ clear d; figure();
 group= []; %var by which to group
 
 d=gramm('x',data.typeNP,'y',data.countNP,'color',data.typeNP, 'group', group)
+
+d.facet_grid(data.Projection,[]);
 
 d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge);
 % d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge, 'width', width) 
@@ -648,6 +650,8 @@ group= []; %var by which to group
 
 d=gramm('x',data.typeNP,'y',data.logNP,'color',data.typeNP, 'group', group)
 
+d.facet_grid(data.Projection,[]);
+
 d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
 d(1,1).set_color_options('map',cmapGrand); 
 
@@ -686,6 +690,10 @@ d.draw();
 
 saveFig(gcf, figPath,figTitle,figFormats);
 
+
+%% === ---------------------DP Figure 6 2022-10-17 ----------
+
+% do figure 5 first. use that as template
 
 %% ----Stat comparison of ICSS active v inactive nosepokes
 

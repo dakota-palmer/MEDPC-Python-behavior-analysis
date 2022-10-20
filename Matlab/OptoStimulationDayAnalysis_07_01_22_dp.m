@@ -1140,7 +1140,7 @@ for thisExpType= 1:numel(expTypesAll)
 
 end %end expType (mode; stim/inhib) loop
 
-%% 2022-10-13 dp Figure 4c
+%% 2022-10-13 dp Figure 4c/d
 
 %-------Figure 4c--------------------
 
@@ -1212,18 +1212,52 @@ for thisExpType= 1:numel(expTypesAll)
 
     g.draw();
 
+% % 
+% % TODO: can't get individual lines to line up correctly with this faceting
+% %     %- Draw lines between individual subject points (group= subject, color=[]);
 % 
-% TODO: can't get individual lines to line up correctly with this faceting
-%     %- Draw lines between individual subject points (group= subject, color=[]);
+% %- Group for this should be Subject,Session
+% still not working
+% %     
+%     groupIDs= [];
+%     groupIDs= findgroups(data.Subject,data.StartDate);
 % 
-%     group= data.Subject;
+%     groupIDsUnique= [];
+%     groupIDsUnique= unique(groupIDs);
 % 
-%     g(1,1).update('x', data.StimLength,'y',data.RelLatency,'color',[], 'group', group)
+%     for thisGroupID= 1:numel(groupIDsUnique)
+%         %for each groupID, find index matching groupID
+%         ind= [];
+%         ind= find(groupIDs==groupIDsUnique(thisGroupID));
 % 
+%         %for each groupID, get the table data matching this group
+%         thisGroup=[];
+%         thisGroup= data(ind,:);
+% 
+%         %now cumulative count of observations in this group
+%         %make default value=1 for each, and then cumsum() to get cumulative count
+% %         thisGroup(:,'cumcount')= table(1);
+% %         thisGroup(:,'cumcount')= table(cumsum(thisGroup.cumcount));
+% 
+%         %specific code for trainDayThisPhase
+%         %assign back into table
+%         data(ind, 'observationID')= table(thisGroupID);
+% 
+%     end 
+% 
+%     group= data.observationID;
+% 
+%     
+% %     g(1,1).update('x', data.StimLength,'y',data.RelLatency,'color',[], 'group', group)
+%     g(1,1).update('x', data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group)
+% 
+%     
 %      %here specifically multiple observations
 %     % per subject so using stat_summary to get mean line
-%     g(1,1).stat_summary('type','sem','geom',{'line'});
-%     % g(1,1).geom_line;%('alpha',0.3);
+%     g(1,1).stat_summary('type','sem','geom',{'line'}, 'dodge', dodge); %points working, no line tho
+% %     g(1,1).geom_line;%('alpha',0.3);
+% %     g(1,1).geom_line('dodge',dodge);%('alpha',0.3);
+% 
 % 
 %     g(1,1).set_line_options('base_size',linewidthSubj);
 % 
@@ -1245,6 +1279,7 @@ for thisExpType= 1:numel(expTypesAll)
     g(1,1).update('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
     g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
 
+    
     g(1,1).set_color_options('map',cmapSubj);
 
     g.no_legend(); %avoid duplicate legend for subj

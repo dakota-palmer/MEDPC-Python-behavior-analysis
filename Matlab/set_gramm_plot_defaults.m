@@ -57,6 +57,8 @@ lightnessRangeGrand= [10,10]; %lightness facet with lightness range doesn't work
 % (e.g. bar plot with points overlaid)
 chromaLineSubj= 0; %black lines connecting points
 
+linewidthReference= 2;
+
 %% ------ Notes about faceting Color & Lightness ----------
  %- 2 strategies for plotting individual subject observations 'lighter' with darker
  % grand means:
