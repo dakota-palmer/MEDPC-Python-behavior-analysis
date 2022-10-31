@@ -454,7 +454,7 @@ S1,
  \   #Z2: ON^NSwhiteNoise; SET H(B(17))=B(13)/100;  ON ^greenLight--->S2 \white noise DS line
 
 S2,
-  A(2)*B(0)#T: Z13; OFF ^greenLight ---> S1 siren DS
+  A(2)*B(0)#T: Z13; OFF ^greenLight ---> S1 \siren DS
  \   A(2)*B(0)#T: OFF^NSwhiteNoise; OFF ^greenLight ---> S1 \wn ds
 
 
