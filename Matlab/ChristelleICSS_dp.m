@@ -416,6 +416,108 @@ ICSStable(:, "trainDayThisPhase")= table(ICSStable.Session); %start by prefillin
 ICSStable(ind, "trainDayThisPhase")= table(ICSStable.Session(ind)-5); %carrying over ind of later phase, subtract n first phase sessions from this
 
 
+%-dp add virus variable for labelling stim vs inhibition
+%initialize
+ICSStable(:,"virusType")= {''};
+
+
+% expType= [0,1]%
+expTypesAll= [0,1];
+% %1= excitation, 0= inhibition
+expTypeLabels= {'inhibition','stimulation'};
+
+%loop thru and assign labels
+for thisExpType= 1:numel(expTypesAll)
+    
+    %TODO- label actually needs to match with find
+    
+    ICSStable(:,"virusType")= expTypeLabels(thisExpType);
+    
+end
+
+
+%% dp compute N- Count of subjects by sex for each group
+
+expTypesAll= unique(ICSStable.ExpType);
+expTypeLabels= unique(ICSStable.virusType);
+
+for thisExpType= 1:numel(expTypesAll)
+
+    thisExpTypeLabel= expTypeLabels{expTypesAll==thisExpType};
+
+    %subset data- by expType/virus
+    ind=[];
+    ind= ICSStable.ExpType==expTypesAll(thisExpType);
+
+    data= ICSStable(ind,:);
+
+%     %subset data- by expression %& behavioral criteria
+    ind=[];
+    ind= data.Expression>0 %& data.Learner==1;
+
+    data= data(ind,:);
+
+
+    nTable= table;
+
+   
+    %initialize variable for cumcount of subjects
+    data(:,"cumcountSubj")= table(nan);
+    
+    %- now limit to one unique subject observation within this subset
+    %(findGroups)
+    
+
+    groupIDs= [];
+
+    groupIDs= findgroups(data.Projection,data.Sex, data.Subject);
+
+    groupIDsUnique= [];
+    groupIDsUnique= unique(groupIDs);
+
+    for thisGroupID= 1:numel(groupIDsUnique)
+
+        %for each groupID, find index matching groupID
+        ind= [];
+        ind= find(groupIDs==groupIDsUnique(thisGroupID));
+
+        %for each groupID, get the table data matching this group
+        thisGroup=[];
+        thisGroup= data(ind,:);
+
+        %now cumulative count of observations in this group
+        %make default value=1 for each, and then cumsum() to get cumulative count
+        thisGroup(:,'cumcount')= table(1);
+        thisGroup(:,'cumcount')= table(cumsum(thisGroup.cumcount));    
+        
+        %assign cumulative count for this subject's sessions back to data
+        %table, this will be used to limit to first observation only for
+        %count of unique subjects
+        data(ind,"cumcountSubject")= thisGroup(:,'cumcount');
+        
+    end
+    
+    %- finally subset to 1 row per subject and count this data
+    ind=[];
+    ind= data.cumcountSubject==1;
+    
+    data= data(ind,:);
+    
+    nTable= groupsummary(data, ["virusType","Projection","Sex"]);
+       
+    %- save this along with figures
+    titleFile= [];
+    titleFile= strcat(thisExpTypeLabel,'-N-subjects');
+
+    %save as .csv
+    titleFile= strcat(figPath,titleFile,'.csv');
+    
+    writetable(nTable,titleFile)
+
+end
+
+
+
 %% dp plot mean and individuals 
 
 % cmapSubj= 'brewer2';
@@ -810,6 +912,8 @@ lme1= fitlme(data2, 'logNP~ typeNP* Session * activeSideReversal + (1|Subject)')
 diary('ICSS allSessions-Stats lmeDetails.txt')
 lme1
 diary off
+
+
 
 %% Individual Data
 

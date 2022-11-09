@@ -6,7 +6,10 @@ clc
 %% Figure options
 figPath= strcat(pwd,'\_output\_DS_task_stimDay\');
 
-figFormats= {'.png'} %list of formats to save figures as (for saveFig.m)
+% figFormats= {'.png'} %list of formats to save figures as (for saveFig.m)
+figFormats= {'.svg'} %list of formats to save figures as (for saveFig.m)
+
+
 
 %% Set GRAMM defaults for plots
 
@@ -649,7 +652,15 @@ expTypeLabels= {'inhibition','stimulation'};
 %loop thru and assign labels
 for thisExpType= 1:numel(expTypesAll)
     
+    %2022-11-09
+    %TODO: need to match the labels up actually with expType...
+%     ind= [];
+%     ind= expTypeLabels
+%     
     stimTable(:,"virusType")= expTypeLabels(thisExpType);
+    
+    %todo- doesnt match with 'mode'
+%     stimTable(:,"ExpType")= table(expTypesAll(thisExpType)); %binary 0 or 1 for consistency w other scripts
     
 end
 
@@ -879,6 +890,85 @@ ind= [];
 ind= contains(stimTable.Subject, subjectsToExclude{:,:});
 
 stimTable(ind,:)= [];
+
+
+
+%% dp compute N- Count of subjects by sex for each group
+
+for thisExpType= 1:numel(expTypesAll)
+
+    thisExpTypeLabel= expTypeLabels{thisExpType};
+
+    %subset data- by expType/virus
+    ind=[];
+    ind= stimTable.Mode==expTypesAll(thisExpType);
+
+    data= stimTable(ind,:);
+
+    %subset data- by expression & behavioral criteria
+    ind=[];
+    ind= data.Expression>0 & data.Learner==1;
+
+    data= data(ind,:);
+
+
+    nTable= table;
+
+   
+    %initialize variable for cumcount of subjects
+    data(:,"cumcountSubj")= table(nan);
+    
+    %- now limit to one unique subject observation within this subset
+    %(findGroups)
+    
+
+    groupIDs= [];
+
+    groupIDs= findgroups(data.Projection,data.Sex, data.Subject);
+
+    groupIDsUnique= [];
+    groupIDsUnique= unique(groupIDs);
+
+    for thisGroupID= 1:numel(groupIDsUnique)
+
+        %for each groupID, find index matching groupID
+        ind= [];
+        ind= find(groupIDs==groupIDsUnique(thisGroupID));
+
+        %for each groupID, get the table data matching this group
+        thisGroup=[];
+        thisGroup= data(ind,:);
+
+        %now cumulative count of observations in this group
+        %make default value=1 for each, and then cumsum() to get cumulative count
+        thisGroup(:,'cumcount')= table(1);
+        thisGroup(:,'cumcount')= table(cumsum(thisGroup.cumcount));    
+        
+        %assign cumulative count for this subject's sessions back to data
+        %table, this will be used to limit to first observation only for
+        %count of unique subjects
+        data(ind,"cumcountSubject")= thisGroup(:,'cumcount');
+        
+    end
+    
+    %- finally subset to 1 row per subject and count this data
+    ind=[];
+    ind= data.cumcountSubject==1;
+    
+    data= data(ind,:);
+    
+    nTable= groupsummary(data, ["Mode","Projection","Sex"]);
+       
+    %- save this along with figures
+    titleFile= [];
+    titleFile= strcat(thisExpTypeLabel,'-N-subjects');
+
+    %save as .csv
+    titleFile= strcat(figPath,titleFile,'.csv');
+    
+    writetable(nTable,titleFile)
+
+end
 
 
 
