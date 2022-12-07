@@ -56,35 +56,55 @@ LeverChoice.InactiveLicks=cell2mat(LeverChoice.InactiveLicks)
 
 %% Elminates animals who didn't lever press enough
 
+% %exclude data based on behavioral criteria
+% %more specifically, only calculates relevant metrics (proportion;licks per reward) based on behavioral
+% %criteria, otherwise make = nan
+% 
+% %----Original exclusion method & criteria ------ 
+% 
+% %Original criteria: at least 10 trials completed for proportion calculation ;  
+% %For licks per reward calculation, at least 3 active lever presses + at least 3 inactive lever
+% %presses (so have sufficient samples to compare two)
+% criteriaTrialsComplete= 10;
+% criteriaPressActive= 3;
+% criteriaPressInactive= 3;
+% 
+% 
+% for i =1 : size(LeverChoice.Subject,1)
+%     if LeverChoice.TrialsCompleted(i,1)>=10
+%         LeverChoice.Proportion(i,1)=LeverChoice.ActiveLeverPress(i,1)/LeverChoice.TrialsCompleted(i,1);
+%     else
+%         LeverChoice.Proportion(i,1)=NaN;
+%     end
+% end
+% 
+% for i =1 : size(LeverChoice.Subject,1)
+%     if LeverChoice.ActiveLeverPress(i,1)>=3 & LeverChoice.TrialsCompleted(i,1)>=10
+%         LeverChoice.LicksPerReward(i,1)=LeverChoice.ActiveLicks(i,1)/LeverChoice.ActiveLeverPress(i,1);
+%     else
+%         LeverChoice.LicksPerReward(i,1)=NaN
+%     end
+% end
+% 
+% for i =1 : size(LeverChoice.Subject,1)
+%     if LeverChoice.InactiveLeverPress(i,1)>=3 & LeverChoice.TrialsCompleted(i,1)>=10
+%     LeverChoice.LicksPerRewardInactive(i,1)=LeverChoice.InactiveLicks(i,1)/LeverChoice.InactiveLeverPress(i,1); 
+%     else
+%         LeverChoice.LicksPerRewardInactive(i,1)=NaN;
+%     end
+% end 
 
-%criteria 
-
-% at least 10 trials for proportion & licks per reward calculation
-
+% %todo: 
+% % 2022-12-01 new exclusion method & criteria
+% % simply calculate for all sessions then exclude data post-hoc accordingly
+% % based on trainPhase
+% % Just calculate values here, exclude data after reformatting into table
 
 for i =1 : size(LeverChoice.Subject,1)
-    if LeverChoice.TrialsCompleted(i,1)>=10
-        LeverChoice.Proportion(i,1)=LeverChoice.ActiveLeverPress(i,1)/LeverChoice.TrialsCompleted(i,1);
-    else
-        LeverChoice.Proportion(i,1)=NaN;
-    end
-end
-
-for i =1 : size(LeverChoice.Subject,1)
-    if LeverChoice.ActiveLeverPress(i,1)>=3 & LeverChoice.TrialsCompleted(i,1)>=10
-        LeverChoice.LicksPerReward(i,1)=LeverChoice.ActiveLicks(i,1)/LeverChoice.ActiveLeverPress(i,1);
-    else
-        LeverChoice.LicksPerReward(i,1)=NaN
-    end
-end
-
-for i =1 : size(LeverChoice.Subject,1)
-    if LeverChoice.InactiveLeverPress(i,1)>=3 & LeverChoice.TrialsCompleted(i,1)>=10
+    LeverChoice.Proportion(i,1)=LeverChoice.ActiveLeverPress(i,1)/LeverChoice.TrialsCompleted(i,1);
+    LeverChoice.LicksPerReward(i,1)=LeverChoice.ActiveLicks(i,1)/LeverChoice.ActiveLeverPress(i,1);
     LeverChoice.LicksPerRewardInactive(i,1)=LeverChoice.InactiveLicks(i,1)/LeverChoice.InactiveLeverPress(i,1); 
-    else
-        LeverChoice.LicksPerRewardInactive(i,1)=NaN;
-    end
-end 
+end
 
 
 %% dp reorganizing data into table for table fxns and easy faceting
@@ -207,6 +227,194 @@ for thisGroupID= 1:numel(groupIDsUnique)
     choiceTaskTable(ind, 'trainDayThisPhase')= table(thisGroup.cumcount);
     
 end 
+
+%% dp viz criteria for data exclusion based on behavioral criteria
+
+%exclude data from sessions with low responding
+
+%todo: overlay criteria line
+
+%subset data for plotting
+data= choiceTaskTable;
+
+%viz distribution over time to set criteria
+% clear g;
+% figure; 
+
+%viz
+%trials completed, active presses, inactive presses
+% subplot(3,2,1);
+% histogram(choiceTaskTable.
+
+%use gramm to facet by trainPhase
+%this is a good example of facet_grid within GRAMM subplots
+figure(); clear g;
+
+g(1,1)= gramm('x', data.TrialsCompleted); %, 'color', data.Subject);
+
+g(1,1).facet_grid([], data.trainPhaseLabel);
+
+g(1,1).set_names('x','Trials Completed')
+
+g(1,1).stat_bin()
+
+g.draw()
+
+g(2,1)= gramm('x', data.ActiveLeverPress);
+
+g(2,1).facet_grid([], data.trainPhaseLabel);
+
+g(2,1).stat_bin()
+
+g(2,1).set_names('x','Active LP')
+
+g.draw();
+
+
+g(3,1)= gramm('x', data.InactiveLeverPress);
+
+g(3,1).facet_grid([], data.trainPhaseLabel);
+
+g(3,1).stat_bin()
+
+g(3,1).set_names('x','Inactive LP')
+
+g.draw();
+
+% Time series plot across sessions
+
+figure(); clear g;
+
+group= data.Subject;
+
+g(1,1)= gramm('x', data.trainDayThisPhase, 'y', data.TrialsCompleted, 'group',group, 'color', data.Subject);
+
+g(1,1).facet_grid(data.Projection, data.trainPhaseLabel);
+
+g(1,1).set_names('x', 'Session', 'y','Trials Completed')
+
+g(1,1).geom_line()
+g(1,1).geom_point()
+
+g.draw()
+
+
+% presses - licks per reward
+figure(); clear g;
+
+group= data.Subject;
+
+g(1,1)= gramm('x', data.trainDayThisPhase, 'y', data.ActiveLeverPress, 'group',group, 'color', data.Subject);
+
+g(1,1).facet_grid(data.Projection, data.trainPhaseLabel);
+
+g(1,1).set_names('x', 'Session', 'y','Active Presses')
+
+g(1,1).geom_line()
+g(1,1).geom_point()
+
+g.draw()
+
+group= data.Subject;
+
+g(3,1)= gramm('x', data.trainDayThisPhase, 'y', data.InactiveLeverPress, 'group',group, 'color', data.Subject);
+
+g(3,1).facet_grid(data.Projection, data.trainPhaseLabel);
+
+g(3,1).set_names('x', 'Session', 'y','Active Presses')
+
+g(3,1).geom_line()
+g(3,1).geom_point()
+
+g.draw()
+
+
+%---- 2022-12-17 finding duplicate sessions
+
+ind= [];
+
+ind= data.trainPhase>=4;
+
+data2= data(ind,:);
+
+test= groupsummary(data2, ["Subject","trainPhaseLabel"]);
+
+% test2= data2(strcmp(data2.Subject, 'OV17'),:);
+
+%-- now looking for missing test sessions (subjects should have 2 files)
+test2= groupsummary(data2, ["Subject"]);
+
+
+
+% 
+% g(2,1)= gramm('x', data.ActiveLeverPress);
+% 
+% g(2,1).facet_grid([], data.trainPhaseLabel);
+% 
+% g(2,1).stat_bin()
+% 
+% g(2,1).set_names('x','Active LP')
+% 
+% g.draw();
+% 
+% 
+% g(3,1)= gramm('x', data.InactiveLeverPress);
+% 
+% g(3,1).facet_grid([], data.trainPhaseLabel);
+% 
+% g(3,1).stat_bin()
+% 
+% g(3,1).set_names('x','Inactive LP')
+% 
+% g.draw();
+
+
+%% DP Exclude data based on behavioral criteria
+
+%require at least 10 trials 
+criteriaTrialsComplete= 10;
+
+%for licks per reward, require at least 3 of each trialType
+criteriaPressActive= 3;
+criteriaPressInactive= 3;
+
+
+%Only apply criteria to non-extinction sessions
+
+data= choiceTaskTable;
+
+%2- mark for exclusion based on criteria
+
+% only apply criteria to non-extinction sessions
+indCriteriaPhase= [];
+indCriteriaPhase= data.trainPhase<5;
+
+% compare against criteria and mark for exclusion if desired
+indCriteriaA= [];
+indCriteriaA= data.TrialsCompleted >= criteriaTrialsComplete; 
+
+indCriteriaA= indCriteriaA & indCriteriaPhase;
+
+indCriteriaB= [];
+indCriteriaB= (data.ActiveLeverPress >= criteriaPressActive) & (data.InactiveLeverPress >= criteriaPressInactive);
+
+indCriteriaB= indCriteriaB & indCriteriaPhase;
+
+
+%3- overwrite with nan
+%require only trials completed/responding for proportion
+data(indCriteriaA, 'Proportion') = table(nan);
+data(indCriteriaA, 'probActiveLP') = table(nan);
+data(indCriteriaA, 'probInactiveLP') = table(nan);
+
+
+%require only # press count for licks per reward?
+data(indCriteriaB, 'LicksPerReward') = table(nan);
+data(indCriteriaB, 'LicksPerRewardInactive') = table(nan);
+
+
+%4- assign back to table
+choiceTaskTable= data;
 
 
 %% dp compute N- Count of subjects by sex for each group
