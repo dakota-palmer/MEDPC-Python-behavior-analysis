@@ -341,8 +341,19 @@ test= groupsummary(data2, ["Subject","trainPhaseLabel"]);
 
 % test2= data2(strcmp(data2.Subject, 'OV17'),:);
 
-%-- now looking for missing test sessions (subjects should have 2 files)
+%-dp 2022-12-07 now looking for MISSING test sessions (subjects should have 2 files)
 test2= groupsummary(data2, ["Subject"]);
+
+%subject OV19 missing a file, found to be 20190907
+
+%TODO: check for missing observations among all subjects
+
+%subjects should have 14 sessions according to breakdown of phases
+test3= groupsummary(data, ["Subject"]);
+
+%OM30 = 1 ; OV16= 11 ; OV5-12 ; OV9= 13
+%several have >15 sessions......... including OV17 with 19. Why
+test4= data(strcmp(data.Subject,'OV17'),:);
 
 
 
