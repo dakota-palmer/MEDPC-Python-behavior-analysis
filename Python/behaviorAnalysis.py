@@ -112,6 +112,13 @@ dfTidy.trainDayThisStage = dfTidy.groupby(
 # g= sns.relplot(data=dfTidy, col='subject', col_wrap=4, x='date', y='date', hue='stage', kind='scatter')
 
 
+# %%- Add trainDay variable (cumulative count of sessions within each subject)
+dfGroup = dfTidy.loc[dfTidy.groupby(['subject', 'fileID']).cumcount() == 0]
+dfTidy.loc[:, 'trainDay'] = dfGroup.groupby(
+    ['subject'])['fileID'].transform('cumcount')
+dfTidy.loc[:, 'trainDay'] = dfTidy.groupby(
+    ['subject', 'fileID']).fillna(method='ffill')
+
 # %% Declare hierarchical grouping variables for analysis
 # e.g. for aggregated measures, how should things be calculated and grouped?
 
@@ -159,10 +166,15 @@ dfTidy.loc[:, 'eventLatency'] = ((dfTidy.eventTime)-(dfTidy.trialStart)).copy()
 # TODO: exception needs to be made for first ITI; for now fill w nan
 dfTidy.loc[dfTidy.trialID == -999, 'eventLatency'] = np.nan
 
-# %%- Count events in each trial (PE and lick)
+#ensure float dtype
+dfTidy.eventLatency = dfTidy.eventLatency.astype('float')  # TODO: correct dtypes early in code
+
+
+# %%- Count behavioral events in each trial 
+# (PE and lick)
 # use cumcount() of event times within file & trial
 
-# todo- Include all eventVars
+# TODO: Include all eventVars
 
 # converting to float for some reason
 dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
@@ -172,60 +184,8 @@ dfTidy['trialPE'] = dfTidy.loc[(dfTidy.eventType == 'PEtime')].groupby([
 dfTidy['trialLick'] = dfTidy.loc[(dfTidy.eventType == 'lickTime')].groupby([
     'fileID', 'trialID']).cumcount().copy()
 
-# %%- Add trainDay variable (cumulative count of sessions within each subject)
-dfGroup = dfTidy.loc[dfTidy.groupby(['subject', 'fileID']).cumcount() == 0]
-dfTidy.loc[:, 'trainDay'] = dfGroup.groupby(
-    ['subject'])['fileID'].transform('cumcount')
-dfTidy.loc[:, 'trainDay'] = dfTidy.groupby(
-    ['subject', 'fileID']).fillna(method='ffill')
 
-# #%%- Add cumulative count of trials within- and between-stage (could be useful for viz of raw training data e.g. latency including every trial)
-# #subset to 1 obs per trial for counting
-# -commenting this out to save memory, probs not necessary unless you want it
-# dfTemp= subsetLevelObs(dfTidy, groupHierarchyTrialID).copy()
-
-# #cumulative between-stage trialCount
-# dfTemp.loc[:,'trialCountThisSubj']= dfTemp.groupby(['virus','sex','subject']).transform('cumcount').copy()
-
-# #within-stage trialCount
-# dfTemp.loc[:,'trialCountThisStage']= dfTemp.groupby(['virus','sex','stage','subject']).transform('cumcount').copy()
-            
-# #merge to save as new column in dfTidy
-# dfTemp= dfTemp.loc[:,groupHierarchyTrialID+['trialCountThisSubj']+['trialCountThisStage']]
-
-# dfTidy = dfTidy.merge(dfTemp, how='left', on=groupHierarchyTrialID).copy()
-
-
-
-
-#%% ----- Correct dtypes ------
-#TODO: should be done earlier in code, on import
-dfTidy.eventLatency = dfTidy.eventLatency.astype('float')  # TODO: correct dtypes early in code
-
-
-
-#%% Consider saving specific ind for different level of observations 
-# May be efficient but removing bc clutter
- #e.g. trial, file, could very quickly subset data or store alt dataframe
-
-# #index of first entry per file
-# obsFile= dfTidy.groupby(groupHierarchyFileID).cumcount()==0
-
-# #e.g. 
-# # dfFile= dfTidy[obsFile].copy()
-
-# #index of first entry per trialType
-# obsTrialType= dfTidy.groupby(groupHierarchyTrialType).cumcount()==0
-
-# #index of first entry per trial
-# obsTrial= dfTidy.groupby(groupHierarchyTrialID).cumcount()==0
-
-
-# #index of first event per type per trial (e.g. mean latency of each event)
-# obsEventType= dfTidy.groupby(groupHierarchyEventType).cumcount()==0
-
-
-# %% Count events within 10s of cue onset (cue duration in final stage)
+# %%- Count behavioral events within first 10s for each trial (cue duration in final stage)
 # this is mainly for comparing progression/learning between stages since cueDuration varies by stage
 
 dfTemp = dfTidy.loc[((dfTidy.eventLatency <= 10) &
@@ -237,9 +197,7 @@ dfTidy['trialPE10s'] = dfTemp.loc[(dfTemp.eventType == 'PEtime')].groupby([
 dfTidy['trialLick10s'] = dfTemp.loc[(dfTemp.eventType == 'lickTime')].groupby([
     'fileID', 'trialID'])['eventTime'].cumcount().copy()
 
-# %% Define behavioral (pe,lick) outcome for each trial.
-# For my lick+laser sessions I need
-# to isolate trials with both a PE+lick to measure effect of laser
+# %%- Define behavioral (pe,lick) outcome for each trial.
 
 # For each trial (trialID >=0),
 # count the number of PEs per trial. if >0, they entered the port and earned sucrose. If=0, they did not.
@@ -265,7 +223,7 @@ trialOutcomeBeh.loc[outcome >
 
 # set index to file,trial and
 # fill in matching file,trial with trialOutcomeBeh
-# TODO: I think there is a more efficient way to do this assignment, doens't take too long tho
+# TODO: optimize; I think there is a more efficient way to do this assignment, doesn't take too long tho
 
 dfTidy = dfTidy.reset_index().set_index(['fileID', 'trialID'])
 
@@ -274,7 +232,7 @@ dfTidy.loc[trialOutcomeBeh.index, 'trialOutcomeBeh'] = trialOutcomeBeh
 # reset index to eventID
 dfTidy = dfTidy.reset_index().set_index(['eventID'])
 
-# %% same as above but behavioral outcome within first 10s of each trial
+# %%- Define behavioral (pe,lick) outcome within first 10s for each trial.
 outcome = dfTidy.groupby(['fileID', 'trialID'], dropna=False)[
     'trialPE10s'].nunique()
 
@@ -304,7 +262,7 @@ dfTidy.loc[trialOutcomeBeh.index, 'trialOutcomeBeh10s'] = trialOutcomeBeh
 # reset index to eventID
 dfTidy = dfTidy.reset_index().set_index(['eventID'])
 
-# %% Calculate Probability of behavioral outcome for each trial type.
+# %%- Calculate within-session Probability of behavioral outcome for each trial type.
 # This is normalized so is more informative than simple count of trials.
 
 # declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
@@ -331,7 +289,7 @@ dfTemp= dfTemp.reset_index().melt(
 #merge to save as new column in dfTidy
 dfTidy = dfTidy.merge(dfTemp, how='left', on=groupHierarchy+[colToCalc])
 
-#%% Calculate PE probability for each trialType
+#%%- Calculate PE probability for each trialType
 #(combines all outcomes with PE vs all outcomes with no PE)
 
 dfTemp= dfTidy.copy()
@@ -352,92 +310,11 @@ dfTemp= dfTemp.rename(columns= {'PE':'trialTypePEProb10s'})
 
 dfTidy= dfTidy.merge(dfTemp, how='left', on=groupHierarchy)
 
-# # %% old code
-# # calculate Proportion of trials with PE out of all trials for each trial type
-# # can use nunique() to get count of unique trialIDs with specific PE outcome per file
-# # given this, can calculate Probortion as #PE/#PE+#noPE
+# %%----- PLOTS ------------------:
 
-# # subset data and save as intermediate variable dfGroup
-# # get only one entry per trial
-# dfGroup = dfTidy.loc[dfTidy.groupby(
-#     ['fileID', 'trialID']).cumcount() == 0].copy()
+# %%- Plot event counts across sessions (check for outlier sessions/event counts)
+#TODO: more work in identifying outlier files/data anomolies to be removed 
 
-# # for Lick+laser sessions, retain only trials with PE+lick for comparison (OPTO specific)
-# # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh=='PE+lick')].copy()
-
-# dfPlot = dfGroup.copy()
-
-# # for each unique behavioral outcome, loop through and get count of trials in file
-# # fill null counts with 0
-# dfTemp = dfPlot.groupby(
-#     ['fileID', 'trialType', 'trialOutcomeBeh'], dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
-
-
-# # calculate proportion for each trial type: num trials with outcome/total num trials of this type
-
-# trialCount = dfTemp.sum(axis=1)
-
-
-# outcomeProb = dfTemp.divide(dfTemp.sum(axis=1), axis=0)
-
-# # melt() into single column w label
-# dfTemp = outcomeProb.reset_index().melt(id_vars=[
-#     'fileID', 'trialType'], var_name='trialOutcomeBeh', value_name='outcomeProbFile')
-
-# # assign back to df by merging
-# # TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
-# # dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
-
-# dfTidy = dfTidy.reset_index().merge(
-#     dfTemp, 'left', on=['fileID', 'trialType', 'trialOutcomeBeh']).copy()
-
-# # %% Same as above but probability of behavioral outcome within first 10s of trial
-# # This is normalized so is more informative than simple count of trials.
-
-# # calculate Proportion of trials with PE out of all trials for each trial type
-# # can use nunique() to get count of unique trialIDs with specific PE outcome per file
-# # given this, can calculate Probortion as #PE/#PE+#noPE
-
-# # subset data and save as intermediate variable dfGroup
-# # get only one entry per trial
-# dfGroup = dfTidy.loc[dfTidy.groupby(
-#     ['fileID', 'trialID']).cumcount() == 0].copy()
-
-# # for Lick+laser sessions, retain only trials with PE+lick for comparison (OPTO specific)
-# # dfGroup.loc[dfGroup.laserDur=='Lick',:]= dfGroup.loc[(dfGroup.laserDur=='Lick') & (dfGroup.trialOutcomeBeh=='PE+lick')].copy()
-
-# dfPlot = dfGroup.copy()
-
-# # for each unique behavioral outcome, loop through and get count of trials in file
-# # fill null counts with 0
-# dfTemp = dfPlot.groupby(
-#     ['fileID', 'trialType', 'trialOutcomeBeh10s'], dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
-
-
-# # calculate proportion for each trial type: num trials with outcome/total num trials of this type
-
-# trialCount = dfTemp.sum(axis=1)
-
-
-# outcomeProb = dfTemp.divide(dfTemp.sum(axis=1), axis=0)
-
-# # melt() into single column w label
-# dfTemp = outcomeProb.reset_index().melt(id_vars=[
-#     'fileID', 'trialType'], var_name='trialOutcomeBeh10s', value_name='trialTypeOutcomeBehProb10s')
-
-# # assign back to df by merging
-# # TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
-# # dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
-
-# dfTidy = dfTidy.reset_index().merge(
-#     dfTemp, 'left', on=['fileID', 'trialType', 'trialOutcomeBeh10s']).copy()
-
-
-
-
-# %%----- PLOTS:
-
-# %% Plot event counts across sessions (check for outlier sessions/event counts)
 sns.set_palette('tab20')  # good for plotting by many subj
 
 
@@ -458,14 +335,14 @@ g.fig.suptitle('Total event count across sessions by type- check for outliers')
 g.set_ylabels('# of events')
 g.set_ylabels('session')
 
-saveFigCustom(g, 'individual_eventCounts_line', savePath)
+saveFigCustom(g, 'fileOverview-individual_eventCounts_line', savePath)
 
 # %%--Training: Plot PE probability by trialType (within 10s of trial start)
 # sns.set_palette('Paired')  # default  #tab10
 sns.set_palette('tab20')
 
-# subset data corresponding to apprpriate level of observation for variable
-dfPlot = dfTidy.loc[obsTrialType].copy()
+# subset data corresponding to apprpriate level of observation for variable - (fileID, trialType)
+dfPlot= subsetLevelObs(dfTidy, groupHierarchyTrialType)
 
 # define subset further based on stage, trialTypes, eventTypes
 stagesToPlot= dfPlot.stage.unique()
@@ -475,6 +352,7 @@ stagesToPlot= dfPlot.stage.unique()
 
 trialTypesToPlot= ['DStime','NStime']
 eventsToPlot= dfPlot.eventType.unique()
+
 
 ##use custom fxn to subset
 dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
