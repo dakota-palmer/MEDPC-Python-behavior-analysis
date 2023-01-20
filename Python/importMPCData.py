@@ -34,7 +34,7 @@ import seaborn as sns
 #TODO: this might need to change based on stage/MPC code (perhaps variables are introduced in different .MPCs that mess with the order of things)
 
 #metapath= paths to 1) subject metadata spreadsheet (e.g. virus type, sex) and 2) session metadata spreadsheet (e.g. laser parameters, DREADD manipulations)
-#excludeDate= specific date you might want to exclude
+#excludeDate= specific date(s) you might want to exclude
 
 #eventVars= event type labels for recorded timestamps
 #idVars=  subject & session metadata labels for recorded timestamps 
@@ -42,7 +42,6 @@ import seaborn as sns
 #TODO: may consider adding subjVars and sessionVars depending on your experiment 
 
 #experimentType= just a gate now for opto-specific code. = 'Opto' for opto specific code
-#TODO: could maybe add this as metadata column in spreadsheet?
 # experimentType= 'Opto'
 # experimentType= 'OptoInstrumentalTransfer'
 # experimentType= 'photometry'
@@ -100,26 +99,13 @@ metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" 
 # colToImport= 'A:Q' #ally dreadd
 
 
-#%% ID and import raw data .xlsx
-# your path to folder containing excel files 
-# datapath = r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_dataRaw\\'#dp vp-vta-stgtacr opto
-
-# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
-# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\\'
-# datapath= r'J:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
-# datapath= r'C:\Users\Dakota\Desktop\_example_gaddreadd\MED-PC Files July-TBD 2021\All\\' #ally dreadd
+#%%----- ID and import raw data .xlsx from datapath ------------------------
 
 # set all .xls files in your folder to list
 allfiles = glob.glob(datapath + "*.xls*")
 
 #initialize list to store data from each file
 dfRaw = pd.DataFrame()
-
-#define columns in your .xlsx for specific variables you want (e.g. A:Z for all)
-# colToImport= 'A:W'# 'F:S,U:X' #dp opto 
-# colToImport= 'A:Z'# gad-vp-opto instrumental transfer 
-# colToImport= 'A:Q' #dakota vp-vta-fp
-# colToImport= 'A:Q' #ally dreadd
 
 
 #for loop to aquire all excel files in folder
@@ -175,11 +161,8 @@ dfRaw.drop('MSNs',axis=1,inplace=True)
 #'MSNs' worksheet contains metadata about session (e.g. Box, MSN) 
 # for MSN in dfRaw.MSNs: 
     
-#%%
-# getting only single date for gad-vp-opto dataset
+#%% ----- Reorganize raw data into single dataframe --------
 #old loop scheme
-
-# dfRaw.drop('MSNs',axis=1,inplace=True)
 
 #loop through nested df and append data. Now we have all data in one df
 df= pd.DataFrame()
@@ -205,7 +188,7 @@ for subject in dfRaw.columns:
         except: 
             print(allfiles[file]+'_'+subject+' has no data')
 
-#%% ID and import metadata .xlsx
+#%% ---- ID and import metadata .xlsx ----------
 #TODO: for now assuming separate excel files for these data
 
 #convert subject and date variables to string datatype to ensure easy matching (excel number formatting can be weird)
@@ -213,37 +196,29 @@ df.subject= df.subject.astype('str')
 df.date= df.date.astype('str')
 
 # Match and insert subject metadata based on subject
-# metaPathSubj= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" #dp vp-vta-stgtacr opto
-# metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
-# metaPathSubj= r"J:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
-
 dfRaw= pd.read_excel(metaPathSubj).astype('str') 
 
 df= df.merge(dfRaw.astype('str'), how='left', on=['subject'])
 
 # Match and insert session metadata based on date and subject
 
-# metaPathSes= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx" #dp vp-vta-stgtacr opto
-# metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
-# metaPathSes= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
-# metaPathSes= r"J:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
-
 #ensure that date is read as string
 dfRaw= pd.read_excel(metaPathSes, converters={'date': str, 'subject': str})#.astype('str') 
-
-# df= df.merge(dfRaw.astype('str'), how='left', on=['subject','date'])
 
 df= df.merge(dfRaw, how='left', on=['subject','date'])
 
 
-# %% Exclude data
+# %% ----- Exclude data ----------------
+
+#here manually exclude sessions if you like
 
 excludeDate= ['20210604']
 
 # Exclude specific date(s)
 df= df[~df.date.isin(excludeDate)]
 
-# %% Remove parentheses from variable names 
+# %% ---- Clean variable names ---------
+#Remove spaces and parentheses from variable names (may be present from medpc2excel python package)
 
 import re
 #use regex to replace text between () with empty string
@@ -254,7 +229,7 @@ for col in df.columns:
 #rename columns to labels
 df.columns= labels
 
-#%% for instrumental transfer sessions, remove duplicate columnns
+#%%- for instrumental transfer sessions, remove duplicate columnns
 #this happens when different .MPC codes share variable name labels but save to different arrays
 if experimentType== 'OptoInstrumentalTransfer':
     # dfTemp= df.PEtime.copy()
@@ -273,7 +248,11 @@ if experimentType== 'OptoInstrumentalTransfer':
         df.loc[:,col]= dfTemp.loc[:,col].groupby(by=dfTemp.loc[:,col].columns, axis=1).sum().copy()
 
 
-#%% Add unique fileID for each session (subject & date)
+
+# %%---- Add other variables if necessary before tidying ------------
+
+#%% -Add unique fileID for each session (subject & date)
+# ** NOTE- this assumes only 1 file per subject per date **
 
 #sort by date and subject
 # test= df.sort_values(['date','subject'])
@@ -282,13 +261,11 @@ df= df.sort_values(['date','subject'])
 
 df.loc[:,'fileID'] = df.groupby(['date', 'subject']).ngroup()
 
-# %% Add other variables if necessary before tidying
-
-# # calculate port exit time estimate using PEtime and peDur, save this as a new variable
+#%% -Calculate port exit time estimate using PEtime and peDur, save this as a new variable
 df = df.assign(PExEst=df.PEtime + df.PEdur)
 
-# save cue duration (in DS task this is A(2))
-#TODO: may be better to put this in session metadata.xlsx? just to keep things parallel with photometry TDT data analysis (assume we won't import MPC as well)
+# %% -Define cue duration (assumes DS task this is A(2))
+# *NOTE* : may be better to put this in session metadata.xlsx or define later depending on stage? just to keep things parallel with photometry TDT data analysis (assume we won't import MPC as well)
 
 #group by fileID then retrieve the 2nd value in stageParams 
 grouped= df.groupby('fileID')
@@ -300,12 +277,13 @@ grouped.stageParams.nth(2)
 #convert 'date' to datetime format
 df.date= pd.to_datetime(df.date)
 
+#%% ----- Define Variables for your experiment ---------------------------
 
-#%% Define Event variables for your experiment 
+#%% -Define Event variables for your experiment
 #make a list of all of the Event Types so that we can melt them together into one variable
 #instead of one column for each event's timestamps, will get one single column for timestamps and another single column for the eventType label
 
-#these should match the labels in your .MPC file
+#these should match the labels in your .MPC file!
 
 ## e.g. for DS task with no Opto  
 eventVars= ['PEtime',  'PExEst', 'lickTime', 'DStime', 'NStime', 'UStime']
@@ -326,7 +304,7 @@ if experimentType== 'OptoInstrumentalTransfer':
     #             'laserTime', 'laserOffTime']
     eventVars.extend(['activeLPtime','inactiveLPtime','rewardTime', 'laserOffTime'])
 
-#%% Define ID variables for your sessions
+#%% -Define ID variables for your sessions
 #these are identifying variables per sessions that should be matched up with the corresponding event variables and timestamps
 #they should variables in your session and subject metadata spreadsheets
 
@@ -337,7 +315,7 @@ idVars= ['fileID','subject', 'virus', 'sex', 'date', 'stage', 'cueDur', 'note']
 if  experimentType.__contains__('Opto'):
     idVars= ['fileID','subject', 'virus', 'sex', 'date', 'stage', 'cueDur', 'laserDur', 'laserFreq', 'note']
 
-#%% Define Trial variables for your experiment
+#%% -Define Trial variables for your experiment
 # If you have variables corresponding to each individual trial 
 #e.g. different trial types in addition to DS vs NS (e.g. laser ON vs laser OFF trials; TODO: variable reward outcome)
 #TODO: consider making cueType it's own trialVar... then can use for stats easy later on
@@ -350,7 +328,8 @@ if  experimentType.__contains__('Opto'):
     #the laserDStrial and laserNS trial variables will later be melted() into a new variable called 'laserState' with their values
 
 
-#%% Change dtypes of variables if necessary (might help with grouping & calculations later on)
+#%% ----- Change dtypes of variables if necessary (might help with grouping & calculations later on)-------
+#TODO: spend more time on doing this up-front should save memory and ensure correct calculations
 
 #binary coded 0/1 laser variables were being imported as floats, converting them to pandas dtype Int64 which supports NA values
 if experimentType.__contains__('Opto'):
@@ -359,7 +338,9 @@ if experimentType.__contains__('Opto'):
 #change stage to str dtype
 df.stage= df.stage.astype('str')
 
-#%% Tidying: All events in single column, add trialID and trialType that matches trial 1-60 through each session.
+#%%--- Tidying ------------------------------------------------------------------    
+    
+#%%-Reorganize, melt() All events in single column 
 
 #First, am melting columns of behavioral events into single column of event label and column of individual timestamps (value_vars= want to melt)
 dfEventAll = df.melt(id_vars=idVars, value_vars=eventVars, var_name='eventType', value_name='eventTime') #, ignore_index=False)
@@ -371,6 +352,7 @@ dfEventAll= dfEventAll[dfEventAll.eventTime.notna()]
 # TODO: seem to be removing legitimate port exits with peDur==0, not sure how to deal with this so just excluding
 dfEventAll = dfEventAll[dfEventAll.eventTime != 0]
 
+#%% -add trialID and trialType (defined by cue onset) that matches trial 1-60 through each session 
 # add trialID column by cumulative counting each DS or NS within each file
 # now we have ID for trials 0-59 matching DS or NS within each session, nan for other events
 dfEventAll['trialID'] = dfEventAll[(dfEventAll.eventType == 'DStime') | (
@@ -379,7 +361,7 @@ dfEventAll['trialID'] = dfEventAll[(dfEventAll.eventType == 'DStime') | (
 #add trialType label using eventType (which will be DS or NS for valid trialIDs)
 dfEventAll['trialType']= dfEventAll[dfEventAll.trialID.notna()].eventType
 
-#%% Assign more specific trialTypes based on trialVars (OPTO ONLY specific for now)
+#%% -Assign more specific trialTypes based on trialVars (OPTO ONLY specific for now)
 if experimentType.__contains__('Opto'):
     # melt() trialVars, get trialID for each trial and use this to merge label back to df 
     dfTrial = df.melt(id_vars= idVars, value_vars=trialVars, var_name='laserType', value_name='laserState')#, ignore_index=False)
@@ -409,7 +391,7 @@ if experimentType.__contains__('Opto'):
     #now drop redundant columns
     # dfEventAll= dfEventAll.drop(['laserType','laserState'], axis=1)
      
-#%% Exclude false cue times due to MPC code bugs
+#%% -Exclude false cue times due to MPC code bugs 
 #need to get rid of false first cue onsets
 #DS training code error caused final cue time to overwrite first cue time (dim of array needed to be +1)
 #TODO: I think we do have the US times so could still do analyses of those
@@ -460,7 +442,7 @@ dfEventAll.reset_index(drop=True, inplace=True)
 
 
 
-#%% Sort events by chronological order within-file, correct trialID, and save as dfTidy
+#%% -Sort events by chronological order within-file, correct trialID, and save as dfTidy- 
 dfTidy = dfEventAll.sort_values(by=['fileID', 'eventTime'])
 
 #drop old, unsorted eventID
@@ -474,7 +456,7 @@ dfTidy.reset_index(inplace=True)
 dfTidy.trialID= dfTidy[dfTidy.trialID.notna()].groupby('fileID').cumcount()
 
 
-#%% Add trialID & trialType labels to other events (events during trials and ITIs) 
+#%% -Add trialID & trialType labels to other events (events during trials and ITIs) 
 # fill in intermediate trialID values... We have absolute trialIDs now for each Cue but other events have trialID=nan
 # we can't tell for certain if events happened during a trial or ITI at this point but we do have all of the timestamps
 # and we know the cue duration, so we can calculate and assign events to a trial using this.
@@ -593,7 +575,7 @@ dfTidy.loc[((dfTidy.trialID < 0) & (dfTidy.trialID % 1 == 0)), 'trialType'] = 'I
 
 #good here
 
-#%% add "dummy" placeholder entries for any  missing trialIDs 
+#%% -add "dummy" placeholder entries for any  missing trialIDs 
 #since ITI/pre-cue trial definitions are contingent on behavioral events, if no events occur during a particular ITI 
 #then that epoch won't be included in calculations later on (e.g. probability calculations based on total count of each trialType)
 
@@ -740,7 +722,7 @@ dfTidy= dfCat.copy()
 
 test= dfTidy.groupby('fileID')['trialID'].unique().explode()
 
-#%% Add trialStart time (this is helpful when calculating latencies later on)
+#%% -Add trialStart time (this is helpful when calculating latencies later on)
 # dfGroup= dfTidy.groupby(['fileID','trialID']).transform('cumcount')==0
 
 dfGroup= dfTidy.groupby(['fileID','trialID']).cumcount().copy()
@@ -854,7 +836,7 @@ dfTidy= dfTidy.merge(dfGroup[['fileID','trialID','trialStart']],'left',on=['file
 #     # dfTidy.loc[dfTidy.trialID>=0,'trialType']= dfTidy[dfTidy.trialID>=0].groupby('fileID')['trialType'].fillna(method='ffill').copy()
     
 
-#%% ffill idVars for empty trials
+#%% -ffill idVars for empty trials
 # dfTidy.loc[:,idVars]= dfTidy.groupby('fileID')['trialType'][idVars].fillna(method='ffill').copy()
 # test= dfTidy.copy()
 dfTidy.loc[:,idVars]= dfTidy.groupby(['fileID'], as_index=False)[idVars].fillna(method='ffill').copy()
@@ -864,7 +846,7 @@ dfTidy.loc[:,idVars]= dfTidy.groupby(['fileID'], as_index=False)[idVars].fillna(
 # test3= dfTidy.set_index(['fileID'],drop=False).copy()
 # test3.loc[:,idVars] = test3[idVars].fillna(method='ffill').copy()
 
-#%% redefine eventID now that we have empty placeholder 'events' 
+#%% -redefine eventID now that we have empty placeholder 'events' 
 
 #make sure sorted by timestamp within fileID
 dfTidy = dfTidy.sort_values(by=['fileID', 'eventTime'])
@@ -873,7 +855,8 @@ dfTidy = dfTidy.sort_values(by=['fileID', 'eventTime'])
 dfTidy.drop(columns=['eventID'])
 dfTidy.eventID= dfTidy.index.copy()
 
-#%% TODO: add column for 'epoch' this timestamp is in
+#%%- TODO: add column for 'epoch' this timestamp is in
+# should be able to use FP code as basis for this, have epochs working there
 # this would include inPort, DS on, NS on, laser on, maybe 'licking' based on bout calculations...
 dfTidy['epoch']= pd.NA
 dfTidy['epochCue']=pd.NA
@@ -900,7 +883,7 @@ if experimentType.__contains__('Opto'):
     
 dfTidy.epoch= dfTidy.epochCue + '-' + dfTidy.epochLaser
     
-#%%  drop any redundant columns remaining
+#%% --- drop any redundant columns remaining
 if experimentType.__contains__('Opto'):
     #cat together dur and freq of laser
     dfTidy.laserDur= dfTidy.loc[dfTidy.laserDur!='nan'].laserDur.astype(str)+' @ '+dfTidy.laserFreq.astype(str)
@@ -908,14 +891,14 @@ if experimentType.__contains__('Opto'):
     dfTidy = dfTidy.drop(columns=['laserType', 'laserState', 'laserFreq']).copy()
 
 
-#%% Change dtypes for categorical vars (good for plotting & analysis later)
+#%% --- Change dtypes for categorical vars (good for plotting & analysis later)
 dfTidy.trialType= dfTidy.trialType.astype('category')
 dfTidy.stage= dfTidy.stage.astype('category')
 
 if experimentType== 'Opto':
    dfTidy.laserDur= dfTidy.laserDur.astype('category')
 
-#%% Save dfTidy so it can be loaded quickly for subesequent analysis
+#%% ------ Save dfTidy so it can be loaded quickly for subesequent analysis ---------
 
 savePath= r'./_output/' #r'C:\Users\Dakota\Documents\GitHub\DS-Training\Python' 
 
@@ -949,42 +932,42 @@ my_shelf.close()
 
 
 
-#%% Custom method of groupby subsetting, manipulations, and reassignment to df
-#TODO: in progress...
-#May be interchangable with groupby.transform() Call function producing a like-indexed DataFrame on each group and return a DataFrame having the same indexes as the original object filled with the transformed values
-def groupbyCustom(df, grouper):
-    #df= dataframe ; grouper= list of columns to groupby (e.g.) grouper= ['subject','date'] 
+# #%% Custom method of groupby subsetting, manipulations, and reassignment to df
+# #TODO: in progress...
+# #May be interchangable with groupby.transform() Call function producing a like-indexed DataFrame on each group and return a DataFrame having the same indexes as the original object filled with the transformed values
+# def groupbyCustom(df, grouper):
+#     #df= dataframe ; grouper= list of columns to groupby (e.g.) grouper= ['subject','date'] 
     
-    grouped= df.groupby(grouper)
+#     grouped= df.groupby(grouper)
     
-    #get the unique groups
-    groups= grouped.groups
+#     #get the unique groups
+#     groups= grouped.groups
     
         
-    #Each group in groups contains index of items belonging to said group
-    #so we can loop through each group, use that as a key for the groups dict to get index
-    #then retrieve or alter values as needed by group with this index using df.iloc  
-    # dfGroup= pd.DataFrame()
-    #initialize dfGroup as all nan copy of original df. Then we'll get values by group
-    dfGroup= df.copy()
-    dfGroup[:]= pd.NA #np.nan
+#     #Each group in groups contains index of items belonging to said group
+#     #so we can loop through each group, use that as a key for the groups dict to get index
+#     #then retrieve or alter values as needed by group with this index using df.iloc  
+#     # dfGroup= pd.DataFrame()
+#     #initialize dfGroup as all nan copy of original df. Then we'll get values by group
+#     dfGroup= df.copy()
+#     dfGroup[:]= pd.NA #np.nan
     
-    #collection using loop takes too long. would be nice to vectorize (need to find a way to use the dict int64 ind as index in df I think)
-    for group in groups:
-        #index corresponding to this group in the df
-        groupInd= groups[group]
+#     #collection using loop takes too long. would be nice to vectorize (need to find a way to use the dict int64 ind as index in df I think)
+#     for group in groups:
+#         #index corresponding to this group in the df
+#         groupInd= groups[group]
         
-        #extract values from df
-        dfGroup.loc[groupInd,:]= df.loc[groupInd,:]
+#         #extract values from df
+#         dfGroup.loc[groupInd,:]= df.loc[groupInd,:]
         
-        #add label for this group
-        # dfGroup.loc[groupInd,'groupID']= [group]
-        dfGroup.loc[groupInd,'groupID']= str(group)
+#         #add label for this group
+#         # dfGroup.loc[groupInd,'groupID']= [group]
+#         dfGroup.loc[groupInd,'groupID']= str(group)
         
-    # for group in groups:
-    #     #use key and get_group
-    #     #this approach isolates values but loses original index
-    #     dfGroup= grouped.get_group(group)
+#     # for group in groups:
+#     #     #use key and get_group
+#     #     #this approach isolates values but loses original index
+#     #     dfGroup= grouped.get_group(group)
 
-        #here you could run a function on dfGroup
-        return dfGroup
+#         #here you could run a function on dfGroup
+#         return dfGroup
