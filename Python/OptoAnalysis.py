@@ -1573,6 +1573,7 @@ if __name__ == '__main__':
     # here want percentage of each behavioral outcome per trialID per above groupers
     colToCalc = 'trialOutcomeBeh10s'
     
+    #-- hitting memory error here
     dfTemp = groupPercentCalc(dfGroup, levelOfAnalysis, groupHierarchy, colToCalc)
     
     #instead of 1 col per probability, melt into single column that matches up to outcome

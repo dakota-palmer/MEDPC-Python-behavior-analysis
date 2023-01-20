@@ -57,20 +57,27 @@ import seaborn as sns
 # metaPathSes= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx"
 
         
-# # dp test MSNs
-datapath= r'C:\Users\Dakota\Desktop\_mpc2excel_test\\'
-colToImport= 'A:Q' #dakota vp-vta-fp
-metaPathSubj= r"K:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
-metaPathSes= r"K:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
+# # # dp test MSNs
+# datapath= r'C:\Users\Dakota\Desktop\_mpc2excel_test\\'
+# colToImport= 'A:Q' #dakota vp-vta-fp
+# metaPathSubj= r"K:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
+# metaPathSes= r"K:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
 
 
-
-# #DP GAD-VP-OPTO DS Task
+# # BN GAD-VP-OPTO cohort 2 - DS Task 
 # experimentType= 'Opto'
-# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
+# datapath= r'C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont'
 # colToImport= 'A:W'  #dp opto 
-# metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
-# metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
+# metaPathSubj= #todo #r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
+# metaPathSes= #todo #r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
+
+
+#DP GAD-VP-OPTO DS Task
+experimentType= 'Opto'
+datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
+colToImport= 'A:W'  #dp opto 
+metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
+metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
 
 
 #DP GAD-VP-OPTO Instrumental Transfer
@@ -125,29 +132,36 @@ for excelfiles in allfiles:
     
     # dfRaw = dfRaw.append(raw_excel, ignore_index=True)
     
-    # Add metadata as well from MSNs sheet
-    #'MSNs' worksheet contains metadata about session (e.g. Box, MSN) 
-    for file in raw_excel['MSNs'].index: 
     
+    #TODO: Fix MSN metadata importing / 2023-01-19 older data not working
+#     # Add metadata as well from MSNs sheet if present (assumes 1 metadata MSN per file/sheet in xlsx, which won't be there in data extracted using older versions of MPC2excel)
+#     #'MSNs' worksheet contains metadata about session (e.g. Box, MSN) 
+#     for file in raw_excel['MSNs'].index: 
+    
+#         try: #nest in try loop bc older extracted data may be lacking this (mpc2excel didn't support this earlier on)   
+            
+#             #each entry in the MSNs sheet corresponds to one medpc file (should be key matching this subject ID containing worksheet of that session's data)
+#             fileMeta= []
+#             fileMeta= raw_excel['MSNs'].iloc[file]
+            
+#             #find data matching metadata...'ID' here = 'subject'
+#             #use the subject ID as key to find the matching data
+#             ind=[]
+#             ind= fileMeta.ID
+#             raw_excel[ind]
+            
+#             #add metadata to the raw_excel observations
+#             raw_excel[ind]['MSN']= fileMeta.MSN
+#         except:            
+#             raw_excel[ind]['MSN']= None 
         
-        
-        #each entry in the MSNs sheet corresponds to one medpc file (should be key matching this subject ID containing worksheet of that session's data)
-        fileMeta= []
-        fileMeta= raw_excel['MSNs'].iloc[file]
-        
-        #find data matching metadata...'ID' here = 'subject'
-        #use the subject ID as key to find the matching data
-        ind=[]
-        ind= fileMeta.ID
-        raw_excel[ind]
-        
-        #add metadata to the raw_excel observations
-        raw_excel[ind]['MSN']= fileMeta.MSN
-        
-          
-        #append this date's excel file's data to the rest
-        dfRaw = dfRaw.append(raw_excel, ignore_index=True)
-        
+# #drop the 'MSNs' sheet prior to merging
+# raw_excel= raw_excel.pop('MSNs')
+
+    # #append this date's excel file's data to the rest
+    dfRaw = dfRaw.append(raw_excel, ignore_index=True)
+
+# pre-adding MSN metadata, simply drop it
 #drop unneeded MSNs sheet post-merging
 dfRaw.drop('MSNs',axis=1,inplace=True)
 
@@ -162,10 +176,10 @@ dfRaw.drop('MSNs',axis=1,inplace=True)
 # for MSN in dfRaw.MSNs: 
     
 #%%
-
+# getting only single date for gad-vp-opto dataset
 #old loop scheme
 
-dfRaw.drop('MSNs',axis=1,inplace=True)
+# dfRaw.drop('MSNs',axis=1,inplace=True)
 
 #loop through nested df and append data. Now we have all data in one df
 df= pd.DataFrame()
