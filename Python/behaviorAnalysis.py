@@ -95,8 +95,6 @@ if experimentType.__contains__('Opto'):
     dfTidy.stage=dfTidy.stage.astype('category')
     
 
-
-
 #%% Add cumulative count of training day within-stage (so we can normalize between subjects appropriately)
 #TODO: Move to initial impot data script
 # very important consideration!! Different subjects can run different programs on same day, which can throw plots/analysis off when aggregating data by date.
@@ -311,7 +309,8 @@ dfTemp= dfTemp.rename(columns= {'PE':'trialTypePEProb10s'})
 dfTidy= dfTidy.merge(dfTemp, how='left', on=groupHierarchy)
 
 # %%----- PLOTS ------------------:
-
+# TODO: move to sepaate script (s)
+    
 # %%- Plot event counts across sessions (check for outlier sessions/event counts)
 #TODO: more work in identifying outlier files/data anomolies to be removed 
 
@@ -337,89 +336,91 @@ g.set_ylabels('session')
 
 saveFigCustom(g, 'fileOverview-individual_eventCounts_line', savePath)
 
+#%% TODO: new script for training plots
+
 # %%--Training: Plot PE probability by trialType (within 10s of trial start)
-# sns.set_palette('Paired')  # default  #tab10
-sns.set_palette('tab20')
+# # sns.set_palette('Paired')  # default  #tab10
+# sns.set_palette('tab20')
 
-# subset data corresponding to apprpriate level of observation for variable - (fileID, trialType)
-dfPlot= subsetLevelObs(dfTidy, groupHierarchyTrialType)
+# # subset data corresponding to apprpriate level of observation for variable - (fileID, trialType)
+# dfPlot= subsetLevelObs(dfTidy, groupHierarchyTrialType)
 
-# define subset further based on stage, trialTypes, eventTypes
-stagesToPlot= dfPlot.stage.unique()
-# dp presentation plot 2022-02-21
-# stagesToPlot= ['1.0','2.0','3.0','4.0','5.0','6.0','7.0']
-# stagesToPlot= ['1','2','3','4','5','6','7']
+# # define subset further based on stage, trialTypes, eventTypes
+# stagesToPlot= dfPlot.stage.unique()
+# # dp presentation plot 2022-02-21
+# # stagesToPlot= ['1.0','2.0','3.0','4.0','5.0','6.0','7.0']
+# # stagesToPlot= ['1','2','3','4','5','6','7']
 
-trialTypesToPlot= ['DStime','NStime']
-eventsToPlot= dfPlot.eventType.unique()
-
-
-##use custom fxn to subset
-dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
-
-sns.set_palette('tab10')
-
-g= sns.FacetGrid(data=dfPlot, row='trialType')
-
-#subj + mean
-g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay',units='subject', estimator=None, alpha=0.5, y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder,
-                style='stage', markers=True, dashes=False)
-g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder,
-               )
-
-g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', color='black',
-                style='stage')
-
-g.map(plt.axhline, y=criteriaDS, color=".2",
-      linewidth=3, dashes=(3, 1), zorder=0)
-
-g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', color='black')
-
-saveFigCustom(g, 'training_peProb', savePath)
+# trialTypesToPlot= ['DStime','NStime']
+# eventsToPlot= dfPlot.eventType.unique()
 
 
-#--Training: DS PE Prob+latency in 1 fig
+# ##use custom fxn to subset
+# dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
-dfPlot= dfTidy.copy()
+# sns.set_palette('tab10')
 
-#subset with customFunction
-stagesToPlot= dfPlot.stage.unique()
-trialTypesToPlot= ['DStime']
-eventsToPlot= ['PEtime']
-dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+# g= sns.FacetGrid(data=dfPlot, row='trialType')
+
+# #subj + mean
+# g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay',units='subject', estimator=None, alpha=0.5, y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder,
+#                 style='stage', markers=True, dashes=False)
+# g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', hue='trialType', hue_order=trialOrder,
+#                )
+
+# g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', color='black',
+#                 style='stage')
+
+# g.map(plt.axhline, y=criteriaDS, color=".2",
+#       linewidth=3, dashes=(3, 1), zorder=0)
+
+# g.map_dataframe(sns.lineplot, data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', color='black')
+
+# saveFigCustom(g, 'training_peProb', savePath)
 
 
-#subset data at correct level of observation for variable    
-groupHierarchy= groupHierarchyTrialType
-dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
+# #%%-- Training: DS PE Prob+latency in 1 fig
+
+# dfPlot= dfTidy.copy()
+
+# #subset with customFunction
+# stagesToPlot= dfPlot.stage.unique()
+# trialTypesToPlot= ['DStime']
+# eventsToPlot= ['PEtime']
+# dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
 
-#subset data further to correct level of observation for variable
-dfPlot2= dfTidy[obsEventType].copy()
+# #subset data at correct level of observation for variable    
+# groupHierarchy= groupHierarchyTrialType
+# dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
 
-#subset with customFunction
-stagesToPlot= dfPlot2.stage.unique()
-trialTypesToPlot= ['DStime']
-eventsToPlot= ['PEtime']
-dfPlot2= subsetData(dfPlot2, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
-#subset data further to correct level of observation
-groupHierarchy= groupHierarchyEventType
-dfPlot2= subsetLevelObs(dfPlot2, groupHierarchy)
+# #subset data further to correct level of observation for variable
+# dfPlot2= dfTidy[obsEventType].copy()
 
-#make figure
-f, ax= plt.subplots(2,1)
+# #subset with customFunction
+# stagesToPlot= dfPlot2.stage.unique()
+# trialTypesToPlot= ['DStime']
+# eventsToPlot= ['PEtime']
+# dfPlot2= subsetData(dfPlot2, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
-g= sns.lineplot(ax=ax[0], data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', hue='subject', style='stage')
-ax[0].axhline(y=criteriaDS, color=".2", linewidth=3, dashes=(3, 1), zorder=0)
-g.set(title=('Training: 10s PE probability, DS trials'))
-g.set( ylabel='PE probability (10s)')
+# #subset data further to correct level of observation
+# groupHierarchy= groupHierarchyEventType
+# dfPlot2= subsetLevelObs(dfPlot2, groupHierarchy)
 
-g= sns.lineplot(ax=ax[1], data=dfPlot2, x='trainDay', y='eventLatency', hue='subject', style='trialType')
-g.set(title=('Training: PE latency, DS trials'))
-g.set( ylabel='latency to first PE (s)')
+# #make figure
+# f, ax= plt.subplots(2,1)
 
-saveFigCustom(f, 'training_PE_Prob+Latency_DS', savePath)
+# g= sns.lineplot(ax=ax[0], data=dfPlot, x='trainDay', y='trialTypeOutcomeBehProb10s', hue='subject', style='stage')
+# ax[0].axhline(y=criteriaDS, color=".2", linewidth=3, dashes=(3, 1), zorder=0)
+# g.set(title=('Training: 10s PE probability, DS trials'))
+# g.set( ylabel='PE probability (10s)')
+
+# g= sns.lineplot(ax=ax[1], data=dfPlot2, x='trainDay', y='eventLatency', hue='subject', style='trialType')
+# g.set(title=('Training: PE latency, DS trials'))
+# g.set( ylabel='latency to first PE (s)')
+
+# saveFigCustom(f, 'training_PE_Prob+Latency_DS', savePath)
 
 
 # #define specific trialTypes to plot!
@@ -474,34 +475,38 @@ saveFigCustom(f, 'training_PE_Prob+Latency_DS', savePath)
 
 # %% Plot PE latency by trialType
 
-sns.set_palette('Paired')
+# sns.set_palette('Paired')
 
-#--Distribution: Stage 5 PE latency by trialType across trainDay
-#ECDF plot of latency shows discrimination between trialTypes
+# #--Distribution: Stage 5 PE latency by trialType across trainDay
+# #ECDF plot of latency shows discrimination between trialTypes
 
-dfPlot= dfTidy.copy()
+# dfPlot= dfTidy.copy()
 
-#subset with customFunction
-stagesToPlot= ['5'] 
-trialTypesToPlot= ['DStime', 'NStime', 'Pre-Cue']
-eventsToPlot= ['PEtime']
-dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+# #subset with customFunction
+# stagesToPlot= ['5'] 
 
-# #subset data at correct level of observation for variable    
-# subset to first event per trial
-groupHierarchy= groupHierarchyEventType
-dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
+# if experimentType== 'Opto':
+#     stagesToPlot= ['Stage 5']
+
+# trialTypesToPlot= ['DStime', 'NStime', 'Pre-Cue']
+# eventsToPlot= ['PEtime']
+# dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+
+# # #subset data at correct level of observation for variable    
+# # subset to first event per trial
+# groupHierarchy= groupHierarchyEventType
+# dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
 
 
-g= sns.displot(data=dfPlot, kind='ecdf', col='trainDayThisStage', x='eventLatency', hue='trialType', hue_order=trialOrder)
-g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First PE latency by trial type')
-saveFigCustom(g, 'Training-individual'+'-stage-'+str(stagesToPlot)+'-PElatency-Evolution-ecdf',savePath)
+# g= sns.displot(data=dfPlot, kind='ecdf', col='trainDayThisStage', x='eventLatency', hue='trialType', hue_order=trialOrder)
+# g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First PE latency by trial type')
+# saveFigCustom(g, 'Training-individual'+'-stage-'+str(stagesToPlot)+'-PElatency-Evolution-ecdf',savePath)
 
 
-#--Training: Stage 5 Individual PE latency by trialType
-g= sns.relplot(data=dfPlot, col='subject', col_wrap=4, kind='line', x='trainDayThisStage', y='eventLatency', hue='trialType', hue_order=trialOrder)
-g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First PE latency by trial type')
-saveFigCustom(g, 'Training-individual'+'-stage-'+str(stagesToPlot)+'-PElatency-Evolution-line',savePath)
+# #--Training: Stage 5 Individual PE latency by trialType
+# g= sns.relplot(data=dfPlot, col='subject', col_wrap=4, kind='line', x='trainDayThisStage', y='eventLatency', hue='trialType', hue_order=trialOrder)
+# g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First PE latency by trial type')
+# saveFigCustom(g, 'Training-individual'+'-stage-'+str(stagesToPlot)+'-PElatency-Evolution-line',savePath)
 
 
 
@@ -584,62 +589,62 @@ saveFigCustom(g, 'Training-individual'+'-stage-'+str(stagesToPlot)+'-PElatency-E
 
 # %% TODO: Custom Ridge Plot to show changes in distribution over time
 
-dfPlot= dfTidy.copy()
+# dfPlot= dfTidy.copy()
 
-#subset with customFunction
-stagesToPlot= ['5']
-trialTypesToPlot= ['DStime', 'NStime', 'Pre-Cue']
-eventsToPlot= ['PEtime']
-dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+# #subset with customFunction
+# stagesToPlot= ['5']
+# trialTypesToPlot= ['DStime', 'NStime', 'Pre-Cue']
+# eventsToPlot= ['PEtime']
+# dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
-# #subset data at correct level of observation for variable    
-# subset to first event per trial
-groupHierarchy= groupHierarchyEventType
-dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
+# # #subset data at correct level of observation for variable    
+# # subset to first event per trial
+# groupHierarchy= groupHierarchyEventType
+# dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
 
-#--Plot evolution of PElatency- Individual subj
-for subject in dfPlot.subject.unique():
+# #--Plot evolution of PElatency- Individual subj
+# for subject in dfPlot.subject.unique():
     
-    dfPlot2= dfPlot.loc[dfPlot.subject==subject,:].copy()
+#     dfPlot2= dfPlot.loc[dfPlot.subject==subject,:].copy()
     
-    # Initialize the FacetGrid object
-    # pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
-    # g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject', aspect=15, height=10, palette=pal)
-    # g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject')#, aspect=15, height=10, palette=pal)
-    g = sns.FacetGrid(dfPlot2, row="trainDayThisStage", hue="trialType", hue_order=trialOrder)#, aspect=15, height=10, palette=pal)
+#     # Initialize the FacetGrid object
+#     # pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
+#     # g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject', aspect=15, height=10, palette=pal)
+#     # g = sns.FacetGrid(dfPlot, row="trainDayThisStage", hue="trainDayThisStage", col='subject')#, aspect=15, height=10, palette=pal)
+#     g = sns.FacetGrid(dfPlot2, row="trainDayThisStage", hue="trialType", hue_order=trialOrder)#, aspect=15, height=10, palette=pal)
 
-    g.fig.suptitle(subject+'-'+str(stagesToPlot)+'-Evolution of first PE latency by trainDayThisStage')
+#     g.fig.suptitle(subject+'-'+str(stagesToPlot)+'-Evolution of first PE latency by trainDayThisStage')
 
     
-    # Draw the densities in a few steps
-    g.map(sns.kdeplot, "eventLatency",
-          bw_adjust=.5, clip_on=False,
-          fill=True, alpha=0.4, linewidth=1.5)
-    # g.map(sns.kdeplot, "eventLatency", clip_on=False, color="w", lw=2, bw_adjust=.5)
+#     # Draw the densities in a few steps
+#     g.map(sns.kdeplot, "eventLatency",
+#           bw_adjust=.5, clip_on=False,
+#           fill=True, alpha=0.4, linewidth=1.5)
+#     # g.map(sns.kdeplot, "eventLatency", clip_on=False, color="w", lw=2, bw_adjust=.5)
     
-    # passing color=None to refline() uses the hue mapping
-    # g.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
-    
-    
-    # # Define and use a simple function to label the plot in axes coordinates
-    # def label(x, color, label):
-    #     ax = plt.gca()
-    #     ax.text(0, .2, label, fontweight="bold", color=color,
-    #             ha="left", va="center", transform=ax.transAxes)
+#     # passing color=None to refline() uses the hue mapping
+#     # g.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
     
     
-    # g.map(label, "eventLatency")
+#     # # Define and use a simple function to label the plot in axes coordinates
+#     # def label(x, color, label):
+#     #     ax = plt.gca()
+#     #     ax.text(0, .2, label, fontweight="bold", color=color,
+#     #             ha="left", va="center", transform=ax.transAxes)
     
-    # Set the subplots to overlap
-    # g.figure.subplots_adjust(hspace=-.25)
     
-    # Remove axes details that don't play well with overlap
-    # g.set_titles("")
-    # g.set(yticks=[], ylabel="")
-    g.despine(bottom=True, left=True)
-    g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First PE latency by trialType')
+#     # g.map(label, "eventLatency")
+    
+#     # Set the subplots to overlap
+#     # g.figure.subplots_adjust(hspace=-.25)
+    
+#     # Remove axes details that don't play well with overlap
+#     # g.set_titles("")
+#     # g.set(yticks=[], ylabel="")
+#     g.despine(bottom=True, left=True)
+#     g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First PE latency by trialType')
 
-    saveFigCustom(g, subject+'-'+str(stagesToPlot)+'-PElatency-Evolution-kde',savePath)
+#     saveFigCustom(g, subject+'-'+str(stagesToPlot)+'-PElatency-Evolution-kde',savePath)
 
 
 # %% Plot First lick latencies (time from cue or trialEnd if ITI events) by trialType (within 10s)
@@ -648,29 +653,29 @@ for subject in dfPlot.subject.unique():
 #--Distribution: Stage 5 Lick latency by trialType across trainDay
 #ECDF plot of latency shows discrimination between trialTypes
 
-dfPlot= dfTidy.copy()
+# dfPlot= dfTidy.copy()
 
-#subset with customFunction
-stagesToPlot= ['5']
-trialTypesToPlot= ['DStime', 'NStime', 'Pre-Cue']
-eventsToPlot= ['lickTime']
-dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
+# #subset with customFunction
+# stagesToPlot= ['5']
+# trialTypesToPlot= ['DStime', 'NStime', 'Pre-Cue']
+# eventsToPlot= ['lickTime']
+# dfPlot= subsetData(dfPlot, stagesToPlot, trialTypesToPlot, eventsToPlot)
 
-# #subset data at correct level of observation for variable    
-# subset to first event per trial
-groupHierarchy= groupHierarchyEventType
-dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
-
-
-g= sns.displot(data=dfPlot, kind='ecdf', col='trainDayThisStage', x='eventLatency', hue='trialType', hue_order=trialOrder)
-g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First Lick latency by trialType')
-saveFigCustom(g, 'Training-individual'+'-'+str(stagesToPlot)+'-lickLatency-Evolution-ecdf',savePath)
+# # #subset data at correct level of observation for variable    
+# # subset to first event per trial
+# groupHierarchy= groupHierarchyEventType
+# dfPlot= subsetLevelObs(dfPlot, groupHierarchy)
 
 
-#--Training: Stage 5 Individual PE latency by trialType
-g= sns.relplot(data=dfPlot, col='subject', col_wrap=4, kind='line', x='trainDayThisStage', y='eventLatency', hue='trialType', hue_order=trialOrder)
-g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First Lick latency by trialType')
-saveFigCustom(g, 'Training-individual'+'-'+str(stagesToPlot)+'-lickLatency-Evolution-line',savePath)
+# g= sns.displot(data=dfPlot, kind='ecdf', col='trainDayThisStage', x='eventLatency', hue='trialType', hue_order=trialOrder)
+# g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First Lick latency by trialType')
+# saveFigCustom(g, 'Training-individual'+'-'+str(stagesToPlot)+'-lickLatency-Evolution-ecdf',savePath)
+
+
+# #--Training: Stage 5 Individual PE latency by trialType
+# g= sns.relplot(data=dfPlot, col='subject', col_wrap=4, kind='line', x='trainDayThisStage', y='eventLatency', hue='trialType', hue_order=trialOrder)
+# g.fig.suptitle('Training-individual-stage-'+str(stagesToPlot)+'-First Lick latency by trialType')
+# saveFigCustom(g, 'Training-individual'+'-'+str(stagesToPlot)+'-lickLatency-Evolution-line',savePath)
 
 
 # # trial-based, ignoring ITI
