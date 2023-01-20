@@ -28,7 +28,7 @@ import seaborn as sns
 
 #%% Things to manually change based on your data:
     
-#datapath= path to your folder containing excel files
+#pathDataExcel= path to your folder containing excel files
 
 #colToImport= columns in your excel sheets to include (manually defined this so that I could exclude a specific variable that was huge)
 #TODO: this might need to change based on stage/MPC code (perhaps variables are introduced in different .MPCs that mess with the order of things)
@@ -50,59 +50,59 @@ import seaborn as sns
 
 # #DP VP-VTA-STGTACR DS Task
 # experimentType= 'Opto'
-# datapath= r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\\' 
+# pathDataExcel= r'C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\\' 
 # colToImport= 'A:W'  #dp opto 
-# metaPathSubj= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" 
-# metaPathSes= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx"
+# pathMetadataSubj= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_subj_metadata.xlsx" 
+# pathMetadataSession= r"C:\Users\Dakota\Desktop\Opto DS Task Test- Laser Manipulation\_metadata\vp-vta-stgtacr_session_metadata.xlsx"
 
         
 # # # dp test MSNs
-# datapath= r'C:\Users\Dakota\Desktop\_mpc2excel_test\\'
+# pathDataExcel= r'C:\Users\Dakota\Desktop\_mpc2excel_test\\'
 # colToImport= 'A:Q' #dakota vp-vta-fp
-# metaPathSubj= r"K:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
-# metaPathSes= r"K:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
+# pathMetadataSubj= r"K:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
+# pathMetadataSession= r"K:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
 
 
-# # BN GAD-VP-OPTO cohort 2 - DS Task 
-# experimentType= 'Opto'
-# datapath= r'C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont'
-# colToImport= 'A:W'  #dp opto 
-# metaPathSubj= #todo #r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
-# metaPathSes= #todo #r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
-
-
-#DP GAD-VP-OPTO DS Task
+# # # BN GAD-VP-OPTO cohort 2 - DS Task 
 experimentType= 'Opto'
-datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
+pathDataExcel= r'C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\\'
 colToImport= 'A:W'  #dp opto 
-metaPathSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
-metaPathSes= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
+pathMetadataSubj= r"C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\_metadata\sesMetadata_bn_only.xlsx"
+pathMetadataSession= r"C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\_metadata\sesMetadata_bn_only.xlsx"
+
+
+# #DP GAD-VP-OPTO DS Task
+# experimentType= 'Opto'
+# pathDataExcel= r'C:\Users\Dakota\Desktop\gad-vp-opto\\' #dp gad-vp-opto DS task
+# colToImport= 'A:W'  #dp opto 
+# pathMetadataSubj= r'C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\subj_metadata.xlsx' #gad-vp-opto
+# pathMetadataSession= r"C:\Users\Dakota\Desktop\gad-vp-opto\_metadata\ses_metadata.xlsx" #gad-vp-opto DS task
 
 
 #DP GAD-VP-OPTO Instrumental Transfer
 # experimentType= 'OptoInstrumentalTransfer'
-# datapath= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\\'
-# metaPathSes= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
+# pathDataExcel= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\\'
+# pathMetadataSession= r'C:\Users\Dakota\Desktop\gad-vp-opto\_instrumental-transfer\_metadata\GAD-VP-Opto-transfer-session-metadata.xlsx'#gad-vp-opto instrumental transfer
 
 
 # #DP VP-VTA-FP DS Task 
 # experimentType= 'photometry'
-# datapath= r'K:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
+# pathDataExcel= r'K:\vp-vta-fp_behavior\MPC\_mpc_to_excel\\' #dp vp-vta-fp
 # colToImport= 'A:Q' #dakota vp-vta-fp
-# metaPathSubj= r"K:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
-# metaPathSes= r"K:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
+# pathMetadataSubj= r"K:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
+# pathMetadataSession= r"K:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
 
 
 #Ally DREADD DS Task
 # experimentType= 'DREADD'
-# datapath= r'C:\Users\Dakota\Desktop\_example_gaddreadd\MED-PC Files July-TBD 2021\All\\' #ally dreadd
+# pathDataExcel= r'C:\Users\Dakota\Desktop\_example_gaddreadd\MED-PC Files July-TBD 2021\All\\' #ally dreadd
 # colToImport= 'A:Q' #ally dreadd
 
 
-#%%----- ID and import raw data .xlsx from datapath ------------------------
+#%%----- ID and import raw data .xlsx from pathDataExcel ------------------------
 
 # set all .xls files in your folder to list
-allfiles = glob.glob(datapath + "*.xls*")
+allfiles = glob.glob(pathDataExcel + "*.xls*")
 
 #initialize list to store data from each file
 dfRaw = pd.DataFrame()
@@ -196,14 +196,14 @@ df.subject= df.subject.astype('str')
 df.date= df.date.astype('str')
 
 # Match and insert subject metadata based on subject
-dfRaw= pd.read_excel(metaPathSubj).astype('str') 
+dfRaw= pd.read_excel(pathMetadataSubj).astype('str') 
 
 df= df.merge(dfRaw.astype('str'), how='left', on=['subject'])
 
 # Match and insert session metadata based on date and subject
 
 #ensure that date is read as string
-dfRaw= pd.read_excel(metaPathSes, converters={'date': str, 'subject': str})#.astype('str') 
+dfRaw= pd.read_excel(pathMetadataSession, converters={'date': str, 'subject': str})#.astype('str') 
 
 df= df.merge(dfRaw, how='left', on=['subject','date'])
 
