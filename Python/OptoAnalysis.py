@@ -41,14 +41,6 @@ if __name__ == '__main__':
         globals()[key]=my_shelf[key]
     my_shelf.close()
     
-    #  #%% define a function to save and close figures
-    # def saveFigCustom(figure, figName):
-    #     plt.gcf().set_size_inches((20,10), forward=False) # ~monitor size
-    #     plt.legend(bbox_to_anchor=(1.01, 1), borderaxespad=0) #creates legend ~right of the last subplot
-        
-    #     plt.gcf().tight_layout()
-    #     plt.savefig(r'./_output/_behaviorAnalysis/'+figName+'.png', bbox_inches='tight')
-    #     plt.close()
         
     #%% set opto specific plotting options
     sns.set_palette('Paired') #great for compairing laser on vs laser off trialTypes
@@ -60,8 +52,6 @@ if __name__ == '__main__':
     
    # #manually defining color order so that paired color scheme looks nice
    #and consistent between all plots
-   #  trialOrder =['laserDStrial_0', 'laserDStrial_1',
-   #     'laserNStrial_0', 'laserNStrial_1','ITI']
     trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue','ITI'])
  
     subjectOrder= dfTidyOpto.subject.unique()
@@ -80,13 +70,6 @@ if __name__ == '__main__':
     # within virus, cue identity, subject, stage, etc.
     
     if experimentType.__contains__('Opto'):
-        # groupHierarchyFileID = ['virus', 'sex', 'stage',
-        #                         'laserDur', 'subject', 'trainDayThisStage', 'fileID']
-        # groupHierarchyTrialType = ['virus', 'sex', 'stage', 'laserDur',
-        #                            'subject', 'trainDayThisStage', 'fileID', 'trialType']
-        # groupHierarchyTrialID = ['virus', 'sex', 'stage', 'laserDur',
-        #                          'subject', 'trainDayThisStage', 'trialType', 'fileID', 'trialID']
-       #taking out laserDur, combining into stage
         groupHierarchySubject = ['virus', 'sex', 'stage',
                                 'subject']
        
@@ -103,7 +86,7 @@ if __name__ == '__main__':
                                  'subject', 'trainDayThisStage', 'trialType', 'fileID', 'trialID', 'eventType']
 
 
-   #%%~Add random 'laser' trial labels for pre-laser sessions (e.g. stage 5 technically didn't have laser trials)
+   #%%- Add random 'laser' trial labels for pre-laser sessions (e.g. stage 5 technically didn't have laser trials)
    #TODO: diff() of PE probability won’t apply to subj. who are running below CM stage. There will be no Laser trials so no diff() can be represented in these plots. Either 1) add random laser trials (sync with other subjs) or 2) only include laser sessions in the diff() plots
       
     dfTidyOpto.trialType= dfTidyOpto.trialType.astype(str)
@@ -233,7 +216,8 @@ if __name__ == '__main__':
     sns.catplot(data= dfPlot, kind='bar', row='stage', col='trialType', x='trainDayThisStage', y='trialCount', hue='subject', palette=subjPalette, hue_order=subjectOrder)
 
     
-    #%% Don't have laser off cue manip sessions for some subjects...  should make new baseline 'stage' for simply day before laser began?
+    #%% - Add "Baseline" stage for comparison to test sessions
+    #Don't have laser off cue manip sessions for some subjects...  should make new baseline 'stage' for simply day before laser began?
     #this will be baseline to compare against (instead of laser off day?)
     
     #briefly, will add column for laserState either ON or OFF, get first() trainDay ON for each subject, save this as new column, subtract nBaselineSessions from this trainDay, and update stages accordingly matching these trainDays
@@ -284,7 +268,7 @@ if __name__ == '__main__':
     dfTidyOpto.stage= dfTidyOpto.stage.astype('category')
 
     
-    #%% exclude sessions without laser manipulations
+    #%%- exclude sessions without laser manipulations
     # dfTidyOpto= dfTidyOpto.loc[dfTidyOpto.laserDur!='nan @ nan']
     # dfTidyOpto= dfTidyOpto.loc[dfTidyOpto.laserDur.notnull()]
     
@@ -308,7 +292,7 @@ if __name__ == '__main__':
     dfTidyOpto.stage= dfTidyOpto.stage.cat.remove_unused_categories()
     
     
-    #%% recalculate trainDayThisStage now that we've altered stages
+    #%%--- Recalculate trainDayThisStage now that we've altered stages ----
     
     dfGroup = dfTidyOpto.loc[dfTidyOpto.groupby('fileID').transform('cumcount') == 0, :].copy()  # one per session
     dfTidyOpto['trainDayThisStage'] = dfGroup.groupby(
@@ -316,11 +300,12 @@ if __name__ == '__main__':
     dfTidyOpto.trainDayThisStage = dfTidyOpto.groupby(
         ['fileID'])['trainDayThisStage'].fillna(method='ffill').copy()
     
-    #%% recalculate trialOutcomes and probPE now that have new trialTypes!!
+    #%%------ Recalculate trialOutcomes and probPE now that have new trialTypes! ------------------
+    # TODO: consider adding trialTypes ealier in behaviorAnalysis instead of recalculating here
     dfTidyOpto= dfTidyOpto.drop(['trialTypePEProb10s', 'trialTypeOutcomeBehProb10s'], axis=1)
     
     
-    # %% Calculate Probability of behavioral outcome for each trial type.
+    # %%- Calculate Probability of behavioral outcome for each trial type.
     # This is normalized so is more informative than simple count of trials.
     
     # declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
@@ -347,7 +332,7 @@ if __name__ == '__main__':
     #merge to save as new column in dfTidyOpto
     dfTidyOpto = dfTidyOpto.merge(dfTemp, how='left', on=groupHierarchy+[colToCalc])
     
-    #%% Calculate PE probability for each trialType
+    #%%- Calculate PE probability for each trialType
     #(combines all outcomes with PE vs all outcomes with no PE)
     
     dfTemp= dfTidyOpto.copy()
@@ -374,30 +359,30 @@ if __name__ == '__main__':
     
         #%% viz remaining sessions
     
-    #-stages
-    dfPlot= dfTidyOpto.copy()
+    # #-stages
+    # dfPlot= dfTidyOpto.copy()
     
-    dfPlot= subsetLevelObs(dfPlot, groupHierarchyFileID)
+    # dfPlot= subsetLevelObs(dfPlot, groupHierarchyFileID)
     
     
-    dfPlot['sesCount']= dfPlot.groupby(groupHierarchySubject).fileID.transform('count')
+    # dfPlot['sesCount']= dfPlot.groupby(groupHierarchySubject).fileID.transform('count')
 
     
-    sns.catplot(data= dfPlot, kind='bar', x='stage', y='sesCount', hue='subject', hue_order=subjectOrder)
+    # sns.catplot(data= dfPlot, kind='bar', x='stage', y='sesCount', hue='subject', hue_order=subjectOrder)
     
-    #-laserDur
-    dfPlot= dfTidyOpto.copy()
+    # #-laserDur
+    # dfPlot= dfTidyOpto.copy()
     
-    dfPlot= subsetLevelObs(dfPlot, groupHierarchyFileID)
+    # dfPlot= subsetLevelObs(dfPlot, groupHierarchyFileID)
     
     
-    dfPlot['sesCount']= dfPlot.groupby(['virus','sex','subject','laserDur']).fileID.transform('count')
+    # dfPlot['sesCount']= dfPlot.groupby(['virus','sex','subject','laserDur']).fileID.transform('count')
 
     
-    sns.catplot(data= dfPlot, kind='bar', x='laserDur', y='sesCount', hue='subject', hue_order=subjectOrder)
+    # sns.catplot(data= dfPlot, kind='bar', x='laserDur', y='sesCount', hue='subject', hue_order=subjectOrder)
   
     
-      #%% Remove Lick+Laser trials without PE+Lick
+      #%%- Remove Lick+Laser trials without PE+Lick
       
     #   #TODO: what is the best way to deal with this? 
     #   #could make a new column or trialType labels for just lick+laser sessions? 
@@ -422,14 +407,14 @@ if __name__ == '__main__':
     
 
 
-    #%% remove ITI trialtype
+    #%%- redefine order of trialType for plotting; ITI trialtype from plotting
     trialOrder= (['DStime', 'DStime_laser', 'NStime', 'NStime_laser', 'Pre-Cue'])
 
 
 
 
 
-   #%% Calculate difference score between laser off and laser on trialTypes
+   #%%---- Calculate difference score between laser off and laser on trialTypes ------
    
    #~~TODO: diff() of PE probability won’t apply to subj. who are running below CM stage. There will be no Laser trials so no diff() can be represented in these plots. Either 1) add random laser trials (sync with other subjs) or 2) only include laser sessions in the diff() plots
    
@@ -471,7 +456,9 @@ if __name__ == '__main__':
     dfTidyOpto.loc[ind,'trialTypePEProb10sdiff']= dfTemp.loc[ind].groupby('fileID').trialTypePEProb10s.transform('diff')
     
     
-    #%% --Plots: PE Prob Diff progression across days (all days separate per stage)
+    #%% ------- Plots: -------------------
+        #TODO: move to separate script?
+    #%% -PE Prob Diff progression across days (all days separate per stage)
     
        #make plots
     dfPlot= dfTidyOpto.copy()
