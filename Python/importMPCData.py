@@ -67,7 +67,7 @@ import seaborn as sns
 experimentType= 'Opto'
 pathDataExcel= r'C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\\'
 colToImport= 'A:W'  #dp opto 
-pathMetadataSubj= r"C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\_metadata\sesMetadata_bn_only.xlsx"
+pathMetadataSubj= r"C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\_metadata\subj_Metadata_bn_only.xlsx"
 pathMetadataSession= r"C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\_metadata\sesMetadata_bn_only.xlsx"
 
 
