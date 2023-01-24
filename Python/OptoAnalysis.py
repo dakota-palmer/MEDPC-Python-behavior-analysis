@@ -302,9 +302,13 @@ if __name__ == '__main__':
     
     #%%------ Recalculate trialOutcomes and probPE now that have new trialTypes! ------------------
     # TODO: consider adding trialTypes ealier in behaviorAnalysis instead of recalculating here
-    dfTidyOpto= dfTidyOpto.drop(['trialTypePEProb10s', 'trialTypeOutcomeBehProb10s'], axis=1)
     
-    
+    # had trialTypeOutcomeBehProb10s but commented out bc memory error, so use 'try:' for now
+    try:
+        dfTidyOpto= dfTidyOpto.drop(['trialTypePEProb10s', 'trialTypeOutcomeBehProb10s'], axis=1)
+    except:
+        dfTidyOpto= dfTidyOpto.drop(['trialTypePEProb10s'], axis=1)
+
     # %%- Calculate Probability of behavioral outcome for each trial type.
     # This is normalized so is more informative than simple count of trials.
     
@@ -1544,132 +1548,135 @@ if __name__ == '__main__':
 
 
     #%% TODO: evolution within session (typical trial progression)
-        
     
-    #New- rewriting
+    # #commenting out bc hitting memory error 2023-01-24
+  
+    # #New- rewriting
     
-    # declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
-    levelOfAnalysis = ['fileID', 'trialID']
+    # # declare hierarchical level of analysis for the analysis we are doing (here there is one outcome per trial per file)
+    # levelOfAnalysis = ['fileID', 'trialID']
     
-    # First we need to subset only one outcome per level of analysis (trial)
-    dfGroup = dfTidyOpto.loc[dfTidyOpto.groupby(levelOfAnalysis).cumcount() == 0].copy()
+    # # First we need to subset only one outcome per level of analysis (trial)
+    # dfGroup = dfTidyOpto.loc[dfTidyOpto.groupby(levelOfAnalysis).cumcount() == 0].copy()
     
-    # declare hierarchical grouping variables (how should the observations be separated)
-    groupHierarchy = groupHierarchyTrialID
+    # # declare hierarchical grouping variables (how should the observations be separated)
+    # groupHierarchy = groupHierarchyTrialID
     
-    # here want percentage of each behavioral outcome per trialID per above groupers
-    colToCalc = 'trialOutcomeBeh10s'
+    # # here want percentage of each behavioral outcome per trialID per above groupers
+    # colToCalc = 'trialOutcomeBeh10s'
     
-    #-- hitting memory error here
-    dfTemp = groupPercentCalc(dfGroup, levelOfAnalysis, groupHierarchy, colToCalc)
+    # # 2023-01-24 hitting memory error 
+
+    # #-- hitting memory error here
+    # dfTemp = groupPercentCalc(dfGroup, levelOfAnalysis, groupHierarchy, colToCalc)
     
-    #instead of 1 col per probability, melt into single column that matches up to outcome
-    dfTemp= dfTemp.reset_index().melt(
-        id_vars=groupHierarchy, value_name='trialIDoutcomeBehProb10s')
+    # #instead of 1 col per probability, melt into single column that matches up to outcome
+    # dfTemp= dfTemp.reset_index().melt(
+    #     id_vars=groupHierarchy, value_name='trialIDoutcomeBehProb10s')
     
-    #merge to save as new column in dfTidyOpto
-    dfTidyOpto = dfTidyOpto.merge(dfTemp, how='left', on=groupHierarchy+[colToCalc])
+    # #merge to save as new column in dfTidyOpto
+    # dfTidyOpto = dfTidyOpto.merge(dfTemp, how='left', on=groupHierarchy+[colToCalc])
     
-    #calculate PE probability by trialID
-    dfGroup= percentPortEntryCalc(dfGroup, groupHierarchy, colToCalc)
+    # #calculate PE probability by trialID
+    # dfGroup= percentPortEntryCalc(dfGroup, groupHierarchy, colToCalc)
     
     
-    #OLD
+    # #OLD
     
-    #get data, only trials (not ITI)
-    dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
-    #only trials
-    dfGroup= dfTidyOpto.copy().loc[dfTidyOpto.trialID>=0].copy()
+    # #get data, only trials (not ITI)
+    # dfGroup= dfTidyOpto.loc[dfTidyOpto.trialType!='ITI'].copy()
+    # #only trials
+    # dfGroup= dfTidyOpto.copy().loc[dfTidyOpto.trialID>=0].copy()
 
     
-    sns.set_palette('Paired')
+    # sns.set_palette('Paired')
     
-    #aggregated measure, but trialIDs repeat, so just restrict to first one
-    trialAgg= dfGroup.groupby(['fileID','trialID'])['trialID'].cumcount()==0
+    # #aggregated measure, but trialIDs repeat, so just restrict to first one
+    # trialAgg= dfGroup.groupby(['fileID','trialID'])['trialID'].cumcount()==0
 
-    dfGroup= dfGroup.loc[trialAgg].copy()   
+    # dfGroup= dfGroup.loc[trialAgg].copy()   
     
-    #simple plot of binary PE or noPE outcome count by trialID across stages
-    #not great since # of trials will vary by stage & subject, proportion is better...
-    dfPlot= dfGroup.copy()
-    #combine outcomeBeh into PE or noPE
-    dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE')|(dfGroup.trialOutcomeBeh10s=='PE+lick'),'trialOutcomeBeh10s']= 'PE'
-    dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='noPE')|(dfGroup.trialOutcomeBeh10s=='noPE+lick'),'trialOutcomeBeh10s']= 'noPE'
+    # #simple plot of binary PE or noPE outcome count by trialID across stages
+    # #not great since # of trials will vary by stage & subject, proportion is better...
+    # dfPlot= dfGroup.copy()
+    # #combine outcomeBeh into PE or noPE
+    # dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE')|(dfGroup.trialOutcomeBeh10s=='PE+lick'),'trialOutcomeBeh10s']= 'PE'
+    # dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='noPE')|(dfGroup.trialOutcomeBeh10s=='noPE+lick'),'trialOutcomeBeh10s']= 'noPE'
 
-    g= sns.catplot(data=dfPlot, col='stage', col_wrap=3, x='trialID', hue='trialOutcomeBeh10s', palette='tab10', kind='count')
-    g.set_xlabels('trialID')
+    # g= sns.catplot(data=dfPlot, col='stage', col_wrap=3, x='trialID', hue='trialOutcomeBeh10s', palette='tab10', kind='count')
+    # g.set_xlabels('trialID')
     
-    #for each unique behavioral outcome, loop through and get count for each trialID within each level of session vars (e.g. stage, stage)
-    dfTemp=dfGroup.groupby(
-            ['subject','trialID','stage','trialType','trialOutcomeBeh10s'],dropna=False)['trialOutcomeBeh10s'].nunique(dropna=False).unstack(fill_value=0)
+    # #for each unique behavioral outcome, loop through and get count for each trialID within each level of session vars (e.g. stage, stage)
+    # dfTemp=dfGroup.groupby(
+    #         ['subject','trialID','stage','trialType','trialOutcomeBeh10s'],dropna=False)['trialOutcomeBeh10s'].nunique(dropna=False).unstack(fill_value=0)
     
     
-    ##calculate proportion for each trial type: num trials with outcome/total num trials of this type
+    # ##calculate proportion for each trial type: num trials with outcome/total num trials of this type
 
-    trialCount= dfTemp.sum(axis=1)
+    # trialCount= dfTemp.sum(axis=1)
     
     
-    outcomeProb= dfTemp.divide(dfTemp.sum(axis=1),axis=0)
+    # outcomeProb= dfTemp.divide(dfTemp.sum(axis=1),axis=0)
     
-    #melt() outcomeProb into single column w label
-    dfTemp= outcomeProb.reset_index().melt(id_vars=['subject','trialID','stage','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbSubjTrialID')
+    # #melt() outcomeProb into single column w label
+    # dfTemp= outcomeProb.reset_index().melt(id_vars=['subject','trialID','stage','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbSubjTrialID')
     
     
-    dfPlot = dfTemp.copy()
-    #viz
-    g= sns.catplot(data=dfPlot, col='stage', row='trialType', x='trialID', y='outcomeProbSubjTrialID', hue= 'subject', palette=subjPalette)
-    g= sns.relplot(data=dfPlot, col='stage', col_wrap=3, x='trialID', hue= 'subject', palette=subjPalette, kind='line')
+    # dfPlot = dfTemp.copy()
+    # #viz
+    # g= sns.catplot(data=dfPlot, col='stage', row='trialType', x='trialID', y='outcomeProbSubjTrialID', hue= 'subject', palette=subjPalette)
+    # g= sns.relplot(data=dfPlot, col='stage', col_wrap=3, x='trialID', hue= 'subject', palette=subjPalette, kind='line')
 
-    g.set_xlabels('trialID')
+    # g.set_xlabels('trialID')
     
-    #assign back to df by merging
-    #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidyOpto
-    # dfTidyOpto.reset_index(inplace=True) #reset index so eventID index is kept
+    # #assign back to df by merging
+    # #TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidyOpto
+    # # dfTidyOpto.reset_index(inplace=True) #reset index so eventID index is kept
     
-    dfTidyOpto= dfTidyOpto.merge(dfTemp,'left', on=['subject','trialID','stage','trialType','trialOutcomeBeh10s']).copy()
-    #%% Plot probability of PE outcome by trialID (evolution within sessions from above)
+    # dfTidyOpto= dfTidyOpto.merge(dfTemp,'left', on=['subject','trialID','stage','trialType','trialOutcomeBeh10s']).copy()
+    # #%% Plot probability of PE outcome by trialID (evolution within sessions from above)
      
-    #subset data and save as intermediate variable dfGroup
-    dfGroup= dfTidyOpto.copy()
+    # #subset data and save as intermediate variable dfGroup
+    # dfGroup= dfTidyOpto.copy()
      
-    #select data
-    #all trialTypes excluding ITI     
-    dfPlot = dfGroup[(dfGroup.trialType != 'ITI')].copy()
-    dfPlot = dfGroup[(dfGroup.trialID >= 0)].copy()
+    # #select data
+    # #all trialTypes excluding ITI     
+    # dfPlot = dfGroup[(dfGroup.trialType != 'ITI')].copy()
+    # dfPlot = dfGroup[(dfGroup.trialID >= 0)].copy()
     
-    #combine all PE outcomes 
-    dfPlot.loc[dfPlot.trialOutcomeBeh10s=='PE+lick','trialOutcomeBeh10s']= 'PE'
+    # #combine all PE outcomes 
+    # dfPlot.loc[dfPlot.trialOutcomeBeh10s=='PE+lick','trialOutcomeBeh10s']= 'PE'
     
     
-    #get only PE outcomes
+    # #get only PE outcomes
+    # # dfPlot.reset_index(inplace=True)
+    # dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE')].copy()# | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
+     
+    # #since we calculated aggregated proportion by session vars within subj
+    # #take only first index using the same groupers. Otherwise repeated observations are redundant
+    # dfPlot= dfPlot.groupby(['subject','trialID','stage','trialType']).first().copy()
+    # #['outcomeProbSubjTrialID'].first().copy()
+     
+     
+    # #sum together both PE and PE+lick for total overall PE prob
+    # # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
+    
+    # # dfPlot['trialTypePEProb10s']= dfPlot.groupby(['subject','trialID','stage','laserDur','trialType'])['outcomeProbFile10s'].sum().copy()
+    # # dfPlot['trialTypePEProb10s']= dfPlot.reset_index().groupby(['subject','trialID','stage','laserDur','trialType'])['outcomeProbFile10s'].sum().copy()
+    
+    # dfPlot['trialTypePEProb10s']= dfPlot.groupby(['subject','trialID','stage','trialType'])['outcomeProbSubjTrialID'].sum().copy()
+    
+    # #get an aggregated x axis for files per subject
+    # # fileAgg= dfPlot.groupby(['subject','fileID','trialType']).cumcount().copy()==0
+     
+    # #since grouping PE and PE+lick, we still have redundant observations
+    # #retain only 1 per trial type per file
+    # # dfPlot= dfPlot.reset_index().loc[fileAgg]
+    
+    
     # dfPlot.reset_index(inplace=True)
-    dfPlot= dfPlot.loc[(dfPlot.trialOutcomeBeh10s=='PE')].copy()# | (dfPlot.trialOutcomeBeh10s=='PE+lick')].copy()
-     
-    #since we calculated aggregated proportion by session vars within subj
-    #take only first index using the same groupers. Otherwise repeated observations are redundant
-    dfPlot= dfPlot.groupby(['subject','trialID','stage','trialType']).first().copy()
-    #['outcomeProbSubjTrialID'].first().copy()
-     
-     
-    #sum together both PE and PE+lick for total overall PE prob
-    # dfPlot['outcomeProbFile']= dfPlot.groupby(['fileID'])['outcomeProbFile'].sum().copy()
     
-    # dfPlot['trialTypePEProb10s']= dfPlot.groupby(['subject','trialID','stage','laserDur','trialType'])['outcomeProbFile10s'].sum().copy()
-    # dfPlot['trialTypePEProb10s']= dfPlot.reset_index().groupby(['subject','trialID','stage','laserDur','trialType'])['outcomeProbFile10s'].sum().copy()
-    
-    dfPlot['trialTypePEProb10s']= dfPlot.groupby(['subject','trialID','stage','trialType'])['outcomeProbSubjTrialID'].sum().copy()
-    
-    #get an aggregated x axis for files per subject
-    # fileAgg= dfPlot.groupby(['subject','fileID','trialType']).cumcount().copy()==0
-     
-    #since grouping PE and PE+lick, we still have redundant observations
-    #retain only 1 per trial type per file
-    # dfPlot= dfPlot.reset_index().loc[fileAgg]
-    
-    
-    dfPlot.reset_index(inplace=True)
-    
-    g= sns.relplot(data= dfPlot, x='trialID', y='trialTypePEProb10s', hue='trialType', row='stage', kind='line')
+    # g= sns.relplot(data= dfPlot, x='trialID', y='trialTypePEProb10s', hue='trialType', row='stage', kind='line')
     
   #   #%%
   #%% old code:

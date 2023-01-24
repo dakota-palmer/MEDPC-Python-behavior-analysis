@@ -62,13 +62,21 @@ import seaborn as sns
 # pathMetadataSubj= r"K:\vp-vta-fp_behavior\excel\_metadata\subj_metadata.xlsx" #dakota vp-vta-fp
 # pathMetadataSession= r"K:\vp-vta-fp_behavior\excel\_metadata\ses_metadata.xlsx" #dakota vp-vta-fp
 
+# # # GAD-VP-OPTO all cohorts combined- DS task
+experimentType= 'Opto'
+pathDataExcel= r'C:\Users\Dakota\Desktop\GAD-VP-Opto_cohorts_combined\_excel_data\_DStask+opto\\'
+colToImport= 'A:W'  #dp opto 
+pathMetadataSubj= r"C:\Users\Dakota\Desktop\GAD-VP-Opto_cohorts_combined\_metadata\subj_metadata.xlsx"
+pathMetadataSession= r"C:\Users\Dakota\Desktop\GAD-VP-Opto_cohorts_combined\_metadata\ses_metadata.xlsx"
+
+
 
 # # # BN GAD-VP-OPTO cohort 2 - DS Task 
-experimentType= 'Opto'
-pathDataExcel= r'C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\\'
-colToImport= 'A:W'  #dp opto 
-pathMetadataSubj= r"C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\_metadata\subj_Metadata_bn_only.xlsx"
-pathMetadataSession= r"C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\_metadata\sesMetadata_bn_only.xlsx"
+# experimentType= 'Opto'
+# pathDataExcel= r'C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\\'
+# colToImport= 'A:W'  #dp opto 
+# pathMetadataSubj= r"C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\_metadata\subj_Metadata_bn_only.xlsx"
+# pathMetadataSession= r"C:\Users\Dakota\Desktop\2023-01-04 bailey dp\GAD-VP-OPTO Cont\_metadata\sesMetadata_bn_only.xlsx"
 
 
 # #DP GAD-VP-OPTO DS Task
@@ -216,6 +224,8 @@ excludeDate= ['20210604']
 
 # Exclude specific date(s)
 df= df[~df.date.isin(excludeDate)]
+
+
 
 # %% ---- Clean variable names ---------
 #Remove spaces and parentheses from variable names (may be present from medpc2excel python package)
@@ -856,32 +866,32 @@ dfTidy.drop(columns=['eventID'])
 dfTidy.eventID= dfTidy.index.copy()
 
 #%%- TODO: add column for 'epoch' this timestamp is in
-# should be able to use FP code as basis for this, have epochs working there
-# this would include inPort, DS on, NS on, laser on, maybe 'licking' based on bout calculations...
-dfTidy['epoch']= pd.NA
-dfTidy['epochCue']=pd.NA
-dfTidy['epochLaser']= pd.NA
+# # should be able to use FP code as basis for this, have epochs working there
+# # this would include inPort, DS on, NS on, laser on, maybe 'licking' based on bout calculations...
+# dfTidy['epoch']= pd.NA
+# dfTidy['epochCue']=pd.NA
+# dfTidy['epochLaser']= pd.NA
 
-#add cue epoch
-#TODO: consider whether cue terminates early (e.g. due to PE)
-# dfTidy.loc[((dfTidy.eventType=='DStime') | (dfTidy.eventType=='NStime')), 'epochCue']= 'cue on'
-dfTidy.loc[(dfTidy.eventType=='DStime'), 'epochCue']= 'DS on'
-dfTidy.loc[(dfTidy.eventType=='NStime'), 'epochCue']= 'NS on'
-
-
-dfTidy.loc[(dfTidy.trialType=='ITI'), 'epochCue']= 'ITI'
-dfTidy.loc[(dfTidy.trialType=='Pre-Cue'), 'epochCue']= 'Pre-Cue'
+# #add cue epoch
+# #TODO: consider whether cue terminates early (e.g. due to PE)
+# # dfTidy.loc[((dfTidy.eventType=='DStime') | (dfTidy.eventType=='NStime')), 'epochCue']= 'cue on'
+# dfTidy.loc[(dfTidy.eventType=='DStime'), 'epochCue']= 'DS on'
+# dfTidy.loc[(dfTidy.eventType=='NStime'), 'epochCue']= 'NS on'
 
 
-dfTidy.epochCue= dfTidy.groupby('fileID')['epochCue'].fillna(method='ffill')
+# dfTidy.loc[(dfTidy.trialType=='ITI'), 'epochCue']= 'ITI'
+# dfTidy.loc[(dfTidy.trialType=='Pre-Cue'), 'epochCue']= 'Pre-Cue'
 
-#for now limiting to laser on vs off
-if experimentType.__contains__('Opto'):
-    dfTidy.loc[dfTidy.eventType=='laserTime', 'epochLaser']= 'laser on'
-    dfTidy.loc[dfTidy.eventType=='laserOffTime', 'epochLaser']= 'laser off'
-    dfTidy.epochLaser= dfTidy.groupby('fileID')['epochLaser'].fillna(method='ffill')
+
+# dfTidy.epochCue= dfTidy.groupby('fileID')['epochCue'].fillna(method='ffill')
+
+# #for now limiting to laser on vs off
+# if experimentType.__contains__('Opto'):
+#     dfTidy.loc[dfTidy.eventType=='laserTime', 'epochLaser']= 'laser on'
+#     dfTidy.loc[dfTidy.eventType=='laserOffTime', 'epochLaser']= 'laser off'
+#     dfTidy.epochLaser= dfTidy.groupby('fileID')['epochLaser'].fillna(method='ffill')
     
-dfTidy.epoch= dfTidy.epochCue + '-' + dfTidy.epochLaser
+# dfTidy.epoch= dfTidy.epochCue + '-' + dfTidy.epochLaser
     
 #%% --- drop any redundant columns remaining
 if experimentType.__contains__('Opto'):
@@ -891,12 +901,28 @@ if experimentType.__contains__('Opto'):
     dfTidy = dfTidy.drop(columns=['laserType', 'laserState', 'laserFreq']).copy()
 
 
-#%% --- Change dtypes for categorical vars (good for plotting & analysis later)
+#%% --- Manually change dtypes for vars (good for plotting & analysis later; and for saving memory)
 dfTidy.trialType= dfTidy.trialType.astype('category')
 dfTidy.stage= dfTidy.stage.astype('category')
 
 if experimentType== 'Opto':
    dfTidy.laserDur= dfTidy.laserDur.astype('category')
+
+#-categorical variables
+catVars= ['subject', 'virus', 'sex', 'stage', 'trialType','eventType']
+dfTidy[catVars]= dfTidy[catVars].astype('category')
+
+#-string variables
+strVars= ['note']
+dfTidy[strVars]= dfTidy[strVars].astype('string')
+
+#-float numerical variables
+floatVars= ['cueDur','eventTime', 'trialStart', 'trialEnd','nextTrialStart', 'trialID']
+dfTidy[floatVars]= dfTidy[floatVars].astype('Float64')
+
+#int numerical variables
+intVars= ['fileID','eventID']
+dfTidy[intVars]= dfTidy[intVars].astype('Int64')
 
 #%% ------ Save dfTidy so it can be loaded quickly for subesequent analysis ---------
 

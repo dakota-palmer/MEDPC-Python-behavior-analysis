@@ -66,6 +66,18 @@ if experimentType.__contains__('Opto'):
     
 
 
+#%% Exclude data
+
+#-Exclude specific stage(s) 
+# eg if hitting memory errors may want to just include later stages
+# stagesToInclude= dfTidy.stage.unique()
+
+stagesToExclude= ['Stage 1','Stage 2','Stage 3']
+
+dfTidy= dfTidy.loc[~dfTidy.stage.isin(stagesToExclude),:]
+
+# update categories
+dfTidy.stage= dfTidy.stage.cat.remove_unused_categories()
 
 # %%For Opto, make each laserDur its own unique stage
 if experimentType.__contains__('Opto'):
@@ -269,23 +281,51 @@ levelOfAnalysis = ['fileID', 'trialID']
 # First we need to subset only one outcome per level of analysis (trial)
 dfGroup = dfTidy.loc[dfTidy.groupby(levelOfAnalysis).cumcount() == 0].copy()
 
-#alternatively, this is the same as:
-# dfGroup= dfTidy[obsTrial]
-
 # declare hierarchical grouping variables (how should the observations be separated)
 groupHierarchy = groupHierarchyTrialType
 
-# here want percentage of each behavioral outcome per trialType per above groupers
-colToCalc = 'trialOutcomeBeh10s'
 
-dfTemp = groupPercentCalc(dfGroup, levelOfAnalysis, groupHierarchy, colToCalc)
+#for each unique behavioral outcome, loop through and get count of trials in file
+#fill null counts with 0
+dfTemp=dfGroup.groupby(
+        ['fileID','trialType','trialOutcomeBeh10s'],dropna=False)['trialID'].nunique(dropna=False).unstack(fill_value=0)
 
-#instead of 1 col per probability, melt into single column that matches up to outcome
-dfTemp= dfTemp.reset_index().melt(
-    id_vars=groupHierarchy, value_name='trialTypeOutcomeBehProb10s')
 
-#merge to save as new column in dfTidy
-dfTidy = dfTidy.merge(dfTemp, how='left', on=groupHierarchy+[colToCalc])
+##calculate proportion for each trial type: num trials with outcome/total num trials of this type
+
+trialCount= dfTemp.sum(axis=1)
+
+
+outcomeProb= dfTemp.divide(dfTemp.sum(axis=1),axis=0)
+
+#melt() into single column w label
+dfTemp= outcomeProb.reset_index().melt(id_vars=['fileID','trialType'],var_name='trialOutcomeBeh10s',value_name='outcomeProbFile10s')
+
+#assign back to df by merging
+#TODO: can probably be optimized. if this section is run more than once will get errors due to assignment back to dfTidy
+
+# dfTidy= dfTidy.reset_index().merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh10s']).copy()
+
+dfTidy.reset_index(inplace=True) #reset index so eventID index is kept
+
+dfTidy= dfTidy.merge(dfTemp,'left', on=['fileID','trialType','trialOutcomeBeh10s'])#.copy()
+
+
+# # # older code- hitting memory error
+# # here want percentage of each behavioral outcome per trialType per above groupers
+# colToCalc = 'trialOutcomeBeh10s'
+
+# dfTemp = groupPercentCalc(dfGroup, levelOfAnalysis, groupHierarchy, colToCalc)
+
+# #instead of 1 col per probability, melt into single column that matches up to outcome
+# dfTemp= dfTemp.reset_index().melt(
+#     id_vars=groupHierarchy, value_name='trialTypeOutcomeBehProb10s')
+
+# #merge to save as new column in dfTidy
+# dfTidy = dfTidy.merge(dfTemp, how='left', on=groupHierarchy+[colToCalc])
+
+
+
 
 #%%- Calculate PE probability for each trialType
 #(combines all outcomes with PE vs all outcomes with no PE)
