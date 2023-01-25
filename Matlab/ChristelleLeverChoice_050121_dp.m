@@ -23,7 +23,11 @@ CurrentDir = 'C:\Users\Dakota\Desktop\_dp_christelle_opto_workingDir';
 cd(CurrentDir)
 
 
-[~,~,raw] = xlsread('OptoLeverChoiceData');
+% [~,~,raw] = xlsread('OptoLeverChoiceData');
+
+%dp reextracted data
+[~,~,raw] = xlsread("F:\_Github\Richard Lab\data-vp-opto\_Excel_Sheets\_dp_reextracted\dp_reextracted_LeverChoiceTask.xlsx"); %dp reextracted data
+
 % [~,~,ratinfo] = xlsread('Christelle Opto Summary Record.xlsx');
 [~,~,ratinfo] = xlsread('Christelle Opto Summary Record_dp.xlsx');
 
@@ -37,6 +41,51 @@ for i=1:18
     LeverChoice.(VarNames{i}) = Data(1:end,(i));
 end
 
+%% DP- add "Sessions" column if absent from spreadsheet
+% christelle seems to have manually added a "Sessions" column
+% post-extraction to excel, a cumcount() of sessions for each subject
+
+% convert to table to use table functions
+data= struct2table(LeverChoice);
+
+%initialize new col
+data(:,'Sessions')= table(nan);
+
+%use findgroups to groupby subject,trainPhaseLabel and manually cumcount() for
+%sessions within-trainPhaseLabel
+
+groupIDs= [];
+% % did some reaarranging of StartDate here to make the fxn work (wants array, not cell input)
+% groupIDs= findgroups(data.Subject,[data.StartDate{:}]');
+
+%actually just need to group by Subject, assuming 1 row = 1 session 
+groupIDs= findgroups(data.Subject);
+
+groupIDsUnique= [];
+groupIDsUnique= unique(groupIDs);
+
+for thisGroupID= 1:numel(groupIDsUnique)
+    %for each groupID, find index matching groupID
+    ind= [];
+    ind= find(groupIDs==groupIDsUnique(thisGroupID));
+    
+    %for each groupID, get the table data matching this group
+    thisGroup=[];
+    thisGroup= data(ind,:);
+
+    %now cumulative count of observations in this group
+    %make default value=1 for each, and then cumsum() to get cumulative count
+    thisGroup(:,'cumcount')= table(1);
+    thisGroup(:,'cumcount')= table(cumsum(thisGroup.cumcount));
+    
+    %assign back into table
+    data(ind, 'Session')= table(thisGroup.cumcount);
+    
+end 
+
+%assign back into struct
+LeverChoice.Session= data.Session;
+
 %% assign variables to rats                         
 for i = 1 : length(LeverChoice.Subject)
     ind = strcmp(LeverChoice.Subject{i},ratinfo(:,1));
@@ -47,7 +96,7 @@ for i = 1 : length(LeverChoice.Subject)
     LeverChoice.RatNum(i,1)=ratinfo{ind,10};    
 end
 
-LeverChoice.Session=cell2mat(LeverChoice.Sessions)
+% LeverChoice.Session=cell2mat(LeverChoice.Sessions) %defined above
 LeverChoice.ActiveLeverPress=cell2mat(LeverChoice.ActiveLeverPress)
 LeverChoice.InactiveLeverPress=cell2mat(LeverChoice.InactiveLeverPress)
 LeverChoice.TrialsCompleted=cell2mat(LeverChoice.TrialsCompleted)

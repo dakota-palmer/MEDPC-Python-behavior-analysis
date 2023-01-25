@@ -36,8 +36,10 @@ cd(CurrentDir)
 
 %slow to read entire allses xlsx
 % [~,~,raw] = xlsread("christelle_opto_data_allSessions_withMSN_stripped_dp.xlsx"); %dp new all ses xlsx
-[~,~,raw] = xlsread("christelle_opto_data_allSessions_withMSN_stripped_dp_manualUpdates.xlsx"); %dp new all ses xlsx
+% [~,~,raw] = xlsread("christelle_opto_data_allSessions_withMSN_stripped_dp_manualUpdates.xlsx"); %dp new all ses xlsx
 
+%dp reextracted
+[~,~,raw]= xlsread("F:\_Github\Richard Lab\data-vp-opto\_Excel_Sheets\_dp_reextracted\dp_reextracted_DS_sessions_and_Opto_sessions.xlsx");
 
 % [~,~,ratinfo] =  xlsread('Christelle Opto Summary Record.xlsx');
 [~,~,ratinfo] = xlsread('Christelle Opto Summary Record_dp.xlsx');
@@ -718,8 +720,8 @@ for thisGroupID= 1:numel(indexToDupes)
     thisGroup=[];
     thisGroup= stimTable(ind,:);
     
-    %save to table
-    dupes(thisGroupID,:)= thisGroup;
+    %save to table?
+    dupes(ind,:)= thisGroup;
    
 end
 
