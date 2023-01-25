@@ -41,6 +41,71 @@ for i=1:18
     LeverChoice.(VarNames{i}) = Data(1:end,(i));
 end
 
+%% DP- Find duplicate sessions in spreadsheet
+% find duplicate sessions?
+
+
+% convert to table to use table functions
+data= struct2table(LeverChoice);
+
+% use groupsummary() to get count grouped by subj,date
+data.StartDate= cell2mat(data.StartDate);
+
+dupes=[];
+dupes= groupsummary(data, ["Subject", "StartDate"]);
+
+dupes= dupes(dupes.GroupCount>1,:)
+
+
+% convert to table to use table functions
+data= struct2table(LeverChoice);
+
+groupIDs= [];
+
+data.StartDate= cell2mat(data.StartDate);
+groupIDs= findgroups(data.Subject, data.StartDate);
+
+groupIDsUnique= [];
+groupIDsUnique= unique(groupIDs);
+
+%table to collect duplicate flagged sessions
+dupes =table();
+
+for thisGroupID= 1:numel(groupIDsUnique)
+    %for each groupID, find index matching groupID
+    ind= [];
+    ind= find(groupIDs==groupIDsUnique(thisGroupID));
+    
+    %for each groupID, get the table data matching this group
+    thisGroup=[];
+    thisGroup= data(ind,:);
+
+    % Check if >1 observation here in group
+    % if so, flag for review
+    if height(thisGroup)>1
+       disp('duplicate ses found!')
+%        open thisGroup
+        dupes(ind, :)= thisGroup;
+
+    end
+    
+%     %now cumulative count of observations in this group
+%     %make default value=1 for each, and then cumsum() to get cumulative count
+%     thisGroup(:,'cumcount')= table(1);
+%     thisGroup(:,'cumcount')= table(cumsum(thisGroup.cumcount));
+%     
+%     %assign back into table
+%     data(ind, 'Session')= table(thisGroup.cumcount);
+    
+end 
+
+%assign back into struct
+% LeverChoice.Session= data.Session;
+
+%subset only nonzero startdates for concise view , lazy
+if ~isempty(dupes)
+    dupes= dupes(dupes.StartDate~=0,:);
+end
 %% DP- add "Sessions" column if absent from spreadsheet
 % christelle seems to have manually added a "Sessions" column
 % post-extraction to excel, a cumcount() of sessions for each subject
@@ -393,6 +458,8 @@ test= groupsummary(data2, ["Subject","trainPhaseLabel"]);
 %-dp 2022-12-07 now looking for MISSING test sessions (subjects should have 2 files)
 test2= groupsummary(data2, ["Subject"]);
 
+%ov9 has 1
+
 %subject OV19 missing a file, found to be 20190907
 
 %TODO: check for missing observations among all subjects
@@ -400,11 +467,19 @@ test2= groupsummary(data2, ["Subject"]);
 %subjects should have 14 sessions according to breakdown of phases
 test3= groupsummary(data, ["Subject"]);
 
+
+%pre- reexporting
 %OM30 = 1 ; OV16= 11 ; OV5-12 ; OV9= 13
 %several have >15 sessions......... including OV17 with 19. Why
-test4= data(strcmp(data.Subject,'OV17'),:);
+% test4= data(strcmp(data.Subject,'OV17'),:);
 
+%2023-01-25 post-reexport:
+% still have some >15
+test4= test3((test3.GroupCount~=14),:);
 
+% % find duplicate sessions?
+% test5= groupsummary(data, ["Subject", "StartDate"]);
+% 
 
 % 
 % g(2,1)= gramm('x', data.ActiveLeverPress);
