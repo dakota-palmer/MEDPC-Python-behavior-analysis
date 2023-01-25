@@ -144,7 +144,11 @@ CurrentDir = 'C:\Users\Dakota\Desktop\_dp_christelle_opto_workingDir';
 cd(CurrentDir)
 
 
-[~,~,raw] = xlsread('Opto ICSS Data');
+% [~,~,raw] = xlsread('Opto ICSS Data');
+
+%dp reextracted data
+[~,~,raw]= xlsread("F:\_Github\Richard Lab\data-vp-opto\_Excel_Sheets\_dp_reextracted\dp_reextracted_ICSS.xlsx");
+
 % [~,~,ratinfo] = xlsread('Christelle Opto Summary Record.xlsx');
 [~,~,ratinfo] = xlsread('Christelle Opto Summary Record_dp.xlsx');
 
@@ -157,6 +161,102 @@ ICSS = struct();
 for i=1:9 
     ICSS.(VarNames{i}) = Data(1:end,(i));
 end
+
+%% DP- Find duplicate sessions in spreadsheet
+% find duplicate sessions?
+
+
+% convert to table to use table functions
+data= struct2table(ICSS);
+
+% use groupsummary() to get count grouped by subj,date
+data.StartDate= cell2mat(data.StartDate);
+
+dupes=[];
+dupes= groupsummary(data, ["Subject", "StartDate"]);
+
+dupes= dupes(dupes.GroupCount>1,:)
+
+
+% convert to table to use table functions
+data= struct2table(ICSS);
+
+groupIDs= [];
+
+data.StartDate= cell2mat(data.StartDate);
+groupIDs= findgroups(data.Subject, data.StartDate);
+
+groupIDsUnique= [];
+groupIDsUnique= unique(groupIDs);
+
+%table to collect duplicate flagged sessions
+dupes =table();
+
+for thisGroupID= 1:numel(groupIDsUnique)
+    %for each groupID, find index matching groupID
+    ind= [];
+    ind= find(groupIDs==groupIDsUnique(thisGroupID));
+    
+    %for each groupID, get the table data matching this group
+    thisGroup=[];
+    thisGroup= data(ind,:);
+
+    % Check if >1 observation here in group
+    % if so, flag for review
+    if height(thisGroup)>1
+       disp('duplicate ses found!')
+        dupes(ind, :)= thisGroup;
+
+    end
+    
+end 
+
+%subset only nonzero startdates for concise view , lazy
+if ~isempty(dupes)
+    dupes= dupes(dupes.StartDate~=0,:);
+end
+%% DP- add "Sessions" column if absent from spreadsheet
+% christelle seems to have manually added a "Sessions" column
+% post-extraction to excel, a cumcount() of sessions for each subject
+
+% convert to table to use table functions
+data= struct2table(ICSS);
+
+%initialize new col
+data(:,'Session')= table(nan);
+
+%use findgroups to groupby subject,trainPhaseLabel and manually cumcount() for
+%sessions within-trainPhaseLabel
+
+groupIDs= [];
+%actually just need to group by Subject, assuming 1 row = 1 session 
+groupIDs= findgroups(data.Subject);
+
+groupIDsUnique= [];
+groupIDsUnique= unique(groupIDs);
+
+for thisGroupID= 1:numel(groupIDsUnique)
+    %for each groupID, find index matching groupID
+    ind= [];
+    ind= find(groupIDs==groupIDsUnique(thisGroupID));
+    
+    %for each groupID, get the table data matching this group
+    thisGroup=[];
+    thisGroup= data(ind,:);
+
+    %now cumulative count of observations in this group
+    %make default value=1 for each, and then cumsum() to get cumulative count
+    thisGroup(:,'cumcount')= table(1);
+    thisGroup(:,'cumcount')= table(cumsum(thisGroup.cumcount));
+    
+    %assign back into table
+    data(ind, 'Session')= table(thisGroup.cumcount);
+    
+end 
+
+%assign back into struct
+ICSS.Session= data.Session;
+
 
 %% assign variables to rats                         
 for i = 1 : length(ICSS.Subject)
@@ -175,7 +275,7 @@ for i = 1 : length(ICSS.Subject)
     end
 end
 
-ICSS.Session=cell2mat(ICSS.Session)
+% ICSS.Session=cell2mat(ICSS.Session)
 ICSS.ActiveNP=cell2mat(ICSS.ActiveNP)
 ICSS.InactiveNP=cell2mat(ICSS.InactiveNP)
 ICSS.TotalLengthActiveNP=cell2mat(ICSS.TotalLengthActiveNP)

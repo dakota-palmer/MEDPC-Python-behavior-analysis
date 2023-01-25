@@ -84,23 +84,11 @@ for thisGroupID= 1:numel(groupIDsUnique)
     % if so, flag for review
     if height(thisGroup)>1
        disp('duplicate ses found!')
-%        open thisGroup
         dupes(ind, :)= thisGroup;
 
     end
     
-%     %now cumulative count of observations in this group
-%     %make default value=1 for each, and then cumsum() to get cumulative count
-%     thisGroup(:,'cumcount')= table(1);
-%     thisGroup(:,'cumcount')= table(cumsum(thisGroup.cumcount));
-%     
-%     %assign back into table
-%     data(ind, 'Session')= table(thisGroup.cumcount);
-    
 end 
-
-%assign back into struct
-% LeverChoice.Session= data.Session;
 
 %subset only nonzero startdates for concise view , lazy
 if ~isempty(dupes)
@@ -120,9 +108,6 @@ data(:,'Sessions')= table(nan);
 %sessions within-trainPhaseLabel
 
 groupIDs= [];
-% % did some reaarranging of StartDate here to make the fxn work (wants array, not cell input)
-% groupIDs= findgroups(data.Subject,[data.StartDate{:}]');
-
 %actually just need to group by Subject, assuming 1 row = 1 session 
 groupIDs= findgroups(data.Subject);
 
@@ -474,7 +459,10 @@ test3= groupsummary(data, ["Subject"]);
 % test4= data(strcmp(data.Subject,'OV17'),:);
 
 %2023-01-25 post-reexport:
-% still have some >15
+% after manual fixing some duplicates, 
+% OM30 = 1 ; OV5= 12
+% Makes sense ! OV5 never acquired lever pressing
+% and OM30 should be excluded because tissue missing anyway
 test4= test3((test3.GroupCount~=14),:);
 
 % % find duplicate sessions?
