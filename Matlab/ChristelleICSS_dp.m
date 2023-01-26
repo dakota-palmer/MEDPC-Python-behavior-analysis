@@ -319,6 +319,10 @@ lmeVTAInactive=fitlme(VTATable,'Inactive~Session+(1|Rat)')
 
 %% plot ICSS Active vs Inactive NP Group
 
+%dp adding xlim accounting for difference in group2
+limXog= [1, 6];
+limXreversal= [6, 10];
+
 figure %projection
 selection= ICSS.Expression==1 & ICSS.ExpType==1 & (strcmp(ICSS.Projection,'mdThal') | strcmp(ICSS.Projection,'VTA'));
 g(1,1)=gramm('x',ICSS.Session(selection),'y',ICSS.ActiveNP(selection),'color',ICSS.Projection(selection))
@@ -327,7 +331,7 @@ g(1,1).no_legend();
 %g(1,1).set_names('x','Session','y','Number of Nose Pokes','color','Stim(-)')
 g(1,1).set_title('ICSS Nosepoke')
 g(1,1).axe_property( 'YLim',[0 500])
-g(1,1).axe_property( 'XLim',[1 5])
+g(1,1).axe_property( 'XLim', limXog)
 
 g(1,1).update('x',ICSS.Session(selection),'y',ICSS.InactiveNP(selection),'color',ICSS.Projection(selection))
 g(1,1).stat_summary('type','sem','geom','area');
@@ -343,7 +347,7 @@ g(1,2).stat_summary('type','sem','geom','area');
 g(1,2).set_names('x','Session','y','Number of Nose Pokes','color','Stim(-)')
 g(1,2).set_title('Reversal')
 g(1,2).axe_property( 'YLim',[0 500])
-g(1,2).axe_property( 'XLim',[6 8])
+g(1,2).axe_property( 'XLim',[limXreversal])
 
 g(1,2).update('x',ICSS.Session(selection),'y',ICSS.InactiveNP(selection),'color',ICSS.Projection(selection))
 g(1,2).stat_summary('type','sem','geom','area');
@@ -393,7 +397,7 @@ g(2,1).stat_summary('type','sem','geom','area');
 g(2,1).no_legend();
 g(2,1).set_names('x','Session','y','Time in Nosepoke (s)','color','Stim(-)')
 %g(3,1).set_title('VERIFIED ICSS Time in Nosepoke')
-g(2,1).axe_property( 'XLim',[1 5])
+g(2,1).axe_property( 'XLim',limXog)
 g(2,1).axe_property( 'YLim',[0 250])
 
 g(2,1).update('x',ICSS.Session(selection),'y',ICSS.TotalLengthInactiveNP(selection),'color',ICSS.Projection(selection))
@@ -410,7 +414,7 @@ g(2,2)=gramm('x',ICSS.Session(selection),'y',ICSS.TotalLengthActiveNP(selection)
 g(2,2).stat_summary('type','sem','geom','area');
 g(2,2).set_names('x','Session','y','Time in Nosepoke(s)','color','Stim(-)')
 %g(2,2).set_title('VERIFIED Reversal ICSS Time in Nosepoke')
-g(2,2).axe_property( 'XLim',[6 8])
+g(2,2).axe_property( 'XLim',limXreversal)
 g(2,2).axe_property( 'YLim',[0 250])
 
 
@@ -443,6 +447,10 @@ ICSS.npDelta= (ICSS.ActiveNP - ICSS.InactiveNP);
 %calculate active fold NP relative to inactive (Active NP / Inactive NP)
 ICSS.npActiveFold= (ICSS.ActiveNP ./ ICSS.InactiveNP);
 %% DP plot of individual active nosepoke preference proportion (active/total)
+%dp adding xlim accounting for difference in group2
+limXall= [1,10];
+limXog= [1, 6];
+limXreversal= [6, 10];
 
 %- plot individual rats active proportion NP
 figure; clear d;
@@ -453,7 +461,7 @@ d(1,1)=gramm('x',ICSS.Session(selection),'y',ICSS.npActiveProportion(selection),
 d(1,1).stat_summary('type','sem','geom','line');
 d(1,1).set_names('x','Session','y','Proportion active nosepokes (active/total NP)','color','Stim(-)')
 d(1,1).set_title('ICSS Active Proportion Nospoke Individual')
-d(1,1).axe_property( 'YLim',[0 1],'XLim',[1 8])
+d(1,1).axe_property( 'YLim',[0 1],'XLim',limXall)
 
 d(1,1).geom_hline('yintercept', 0.5, 'style', 'k--'); %horizontal line @ 0.5 (equal preference)
 % d(1,1).draw();
@@ -463,7 +471,7 @@ d(1,2)=gramm('x',ICSS.Session(selection),'y',ICSS.npDelta(selection),'color',ICS
 d(1,2).stat_summary('type','sem','geom','line');
 d(1,2).set_names('x','Session','y','Delta nosepokes (Active - Inactive NP)','color','Stim(-)')
 d(1,2).set_title('ICSS Delta Nospoke Individual')
-d(1,2).axe_property( 'YLim',[0 150],'XLim',[1 8])
+d(1,2).axe_property( 'YLim',[0 150],'XLim',limXall)
 d(1,2).geom_hline('yintercept', 0, 'style', 'k--'); %horizontal line @ 0 (equal preference)
 
 
@@ -474,7 +482,7 @@ d(1,3)=gramm('x',ICSS.Session(selection),'y',ICSS.npActiveFold(selection),'color
 d(1,3).stat_summary('type','sem','geom','line');
 d(1,3).set_names('x','Session','y','Active Fold nosepokes (Active / Inactive NP)','color','Stim(-)')
 d(1,3).set_title('ICSS Delta Nospoke Individual')
-d(1,3).axe_property( 'YLim',[0 10],'XLim',[1 8])
+d(1,3).axe_property( 'YLim',[0 10],'XLim',limXall)
 d(1,3).geom_hline('yintercept', 1, 'style', 'k--'); %horizontal line @ 1 (equal preference)
 
 d.draw();
@@ -491,7 +499,7 @@ for field= 1:numel(allFields)
 end
 
 
-%--dp add trainPhase variable for distinct session types (e.g. active side reversal)
+%--dp add trainPhase variable for distinct session types (e.g. active side `al)
 
 %initialize
 ICSStable(:,"trainPhase")= {''};
@@ -507,13 +515,88 @@ ind= ICSStable.Session >= 6;
 
 ICSStable(ind, "trainPhase")= {'ICSS-Reversed-active-side'};
 
-%-dp add trainDayThisPhase for best plotting of trainPhase facet, for late
-%days this will be session-5 (assume all ran 5 days of first phase)
-ICSStable(:, "trainDayThisPhase")= table(nan); %initialize
+%note some subjects have >8 sessions, looks like some extinction?
+ % ^^ No?, there's no metadata at all suggesting this. they ran on the same
+ % MSN and the sessions christelle left out in her excel sheet for matlab plotting
+ % were 20190812 and 20190820. no reason as to why, presume it was just to
+ % make neat 3 day plots or simply missed file from MPC2XL somehow.
+ 
+ % could be just drop in response due to time shifted reversal,and those
+ % rats were already responding at low levels?
+ 
+% 2023-01-25 side reversal isn't as clean as previously suggested. paper
+% notes show reversal for Group 2 was done on 2019-08-13, so they had
+% sessions 1-6 on left side and sessions 7-10 on right side. need to make
+% exception for these:
+ICSStable.StartDate= cell2mat(ICSStable.StartDate);
 
-ICSStable(:, "trainDayThisPhase")= table(ICSStable.Session); %start by prefilling w session
+%overwrite 'OG side' days for group 2
+datesManual= [];
 
-ICSStable(ind, "trainDayThisPhase")= table(ICSStable.Session(ind)-5); %carrying over ind of later phase, subtract n first phase sessions from this
+datesManual= [190806, 190807, 190808, 190809, 190811, 190812]; 
+
+ind= [];
+
+ind= ismember(ICSStable.StartDate,datesManual);
+
+ICSStable(ind, "trainPhase")= {'ICSS-OG-active-side'};
+
+%overwrite 'reversal' days for group 2
+datesManual= [];
+
+datesManual= [190813, 190814, 190819, 190820];
+
+ind= [];
+
+ind= ismember(ICSStable.StartDate,datesManual);
+
+ICSStable(ind, "trainPhase")= {'ICSS-Reversed-active-side'};
+
+
+% %-dp add trainDayThisPhase for best plotting of trainPhase facet, for late
+% %days this will be session-5 (assume all ran 5 days of first phase)
+% ICSStable(:, "trainDayThisPhase")= table(nan); %initialize
+% 
+% ICSStable(:, "trainDayThisPhase")= table(ICSStable.Session); %start by prefilling w session
+% 
+% ICSStable(ind, "trainDayThisPhase")= table(ICSStable.Session(ind)-5); %carrying over ind of later phase, subtract n first phase sessions from this
+
+% use findgruops for more robust counting (not assuming n sessions per
+% phase since we know group 2 didn't follow assumption)
+%initialize new col
+data= ICSStable;
+data(:,'trainDayThisPhase')= table(nan);
+
+%use findgroups to groupby subject,trainPhase and manually cumcount() for
+%sessions within-trainPhaseLabel
+
+groupIDs= [];
+groupIDs= findgroups(data.Subject, data.trainPhase);
+
+groupIDsUnique= [];
+groupIDsUnique= unique(groupIDs);
+
+for thisGroupID= 1:numel(groupIDsUnique)
+    %for each groupID, find index matching groupID
+    ind= [];
+    ind= find(groupIDs==groupIDsUnique(thisGroupID));
+    
+    %for each groupID, get the table data matching this group
+    thisGroup=[];
+    thisGroup= data(ind,:);
+
+    %now cumulative count of observations in this group
+    %make default value=1 for each, and then cumsum() to get cumulative count
+    thisGroup(:,'cumcount')= table(1);
+    thisGroup(:,'cumcount')= table(cumsum(thisGroup.cumcount));
+    
+    %assign back into table
+    ICSStable(ind, 'trainDayThisPhase')= table(thisGroup.cumcount);
+    
+end 
+
+%assign back into struct
+% ICSStable.trainDayThisPhase= data.trainDayThisPhase;
 
 
 %-dp add virus variable for labelling stim vs inhibition
@@ -684,7 +767,11 @@ d.set_title(figTitle);
 d().axe_property( 'YLim',[0, 1200]) %high responders
 
 % SET X TICK = 1 SESSION
-d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
+% d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
+
+% d(:,1).axe_property('XLim',limXog); %,'YLim',[0 75],'YTick',[0:25:75]);
+% d(:,2).axe_property('XLim',limXreversal); %,'YLim',[0 75],'YTick',[0:25:75]);
+% 
 
 
 d.draw()
@@ -1017,6 +1104,7 @@ diary off
 
 %% Individual Data
 
+limXall= [1,10]; %accounting for the group2 difference
 
 %plot individual rats Active vs Inactive NP
 figure; clear d;
@@ -1025,7 +1113,8 @@ d(1,1)=gramm('x',ICSS.Session(selection),'y',ICSS.ActiveNP(selection),'color',IC
 d(1,1).stat_summary('type','sem','geom','line');
 d(1,1).set_names('x','Session','y','Number of Nose Pokes','color','Stim(-)')
 d(1,1).set_title('ICSS Nospoke Individual')
-d(1,1).axe_property( 'YLim',[0 1500],'XLim',[1 8])
+d(1,1).axe_property( 'YLim',[0 1500],'XLim',[limXall])
+
 %d.export( 'file_name','Verified ICSS Individual Data','export_path','/Volumes/nsci_richard/Christelle/Data/Opto Project/Figures','file_type','pdf')
 d(1,1).draw();
 
