@@ -162,6 +162,24 @@ for i=1:9
     ICSS.(VarNames{i}) = Data(1:end,(i));
 end
 
+%% dp manually exclude extra sessions from analysis (from Opto Group 2)
+
+datesExclude=[];
+datesToExclude= [190813, 190820];
+
+ICSS.StartDate= cell2mat(ICSS.StartDate);
+
+ind=[];
+ind= ismember(ICSS.StartDate,datesToExclude);
+
+
+%loop through struct fields and remove data
+allFields= fieldnames(ICSS);
+for field= 1:numel(allFields)
+    ICSS.(allFields{field})(ind)= [];
+end
+
+
 %% DP- Find duplicate sessions in spreadsheet
 % find duplicate sessions?
 
@@ -170,7 +188,7 @@ end
 data= struct2table(ICSS);
 
 % use groupsummary() to get count grouped by subj,date
-data.StartDate= cell2mat(data.StartDate);
+% data.StartDate= cell2mat(data.StartDate);
 
 dupes=[];
 dupes= groupsummary(data, ["Subject", "StartDate"]);
@@ -183,7 +201,7 @@ data= struct2table(ICSS);
 
 groupIDs= [];
 
-data.StartDate= cell2mat(data.StartDate);
+% data.StartDate= cell2mat(data.StartDate);
 groupIDs= findgroups(data.Subject, data.StartDate);
 
 groupIDsUnique= [];
@@ -521,6 +539,8 @@ ICSStable(ind, "trainPhase")= {'ICSS-Reversed-active-side'};
  % were 20190812 and 20190820. no reason as to why, presume it was just to
  % make neat 3 day plots or simply missed file from MPC2XL somehow.
  
+ %will manually exclude below
+ 
  % could be just drop in response due to time shifted reversal,and those
  % rats were already responding at low levels?
  
@@ -528,7 +548,7 @@ ICSStable(ind, "trainPhase")= {'ICSS-Reversed-active-side'};
 % notes show reversal for Group 2 was done on 2019-08-13, so they had
 % sessions 1-6 on left side and sessions 7-10 on right side. need to make
 % exception for these:
-ICSStable.StartDate= cell2mat(ICSStable.StartDate);
+% ICSStable.StartDate= cell2mat(ICSStable.StartDate);
 
 %overwrite 'OG side' days for group 2
 datesManual= [];
@@ -617,6 +637,7 @@ for thisExpType= 1:numel(expTypesAll)
     ICSStable(:,"virusType")= expTypeLabels(thisExpType);
     
 end
+
 
 
 %% dp compute N- Count of subjects by sex for each group
@@ -729,7 +750,7 @@ group= data.Subject;
 d=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
 
 %facet by trainPhase - ideally could set sharex of facets false but idk w gramm
-d.facet_grid(data.Projection,data.trainPhase);
+d.facet_grid(data.Projection,data.trainPhase, 'scale', 'free_x');
 
 d.stat_summary('type','sem','geom','line');
 d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
@@ -767,7 +788,7 @@ d.set_title(figTitle);
 d().axe_property( 'YLim',[0, 1200]) %high responders
 
 % SET X TICK = 1 SESSION
-% d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
+d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
 
 % d(:,1).axe_property('XLim',limXog); %,'YLim',[0 75],'YTick',[0:25:75]);
 % d(:,2).axe_property('XLim',limXreversal); %,'YLim',[0 75],'YTick',[0:25:75]);
@@ -805,7 +826,7 @@ group= data.Subject;
 d=gramm('x',data.trainDayThisPhase,'y',data.logNP,'color',data.typeNP, 'group', group)
 
 %facet by trainPhase - ideally could set sharex of facets false but idk w gramm
-d.facet_grid(data.Projection,data.trainPhase);
+d.facet_grid(data.Projection,data.trainPhase, 'scale','free_x');
 
 d.stat_summary('type','sem','geom','line');
 d.set_names('x','Session','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
