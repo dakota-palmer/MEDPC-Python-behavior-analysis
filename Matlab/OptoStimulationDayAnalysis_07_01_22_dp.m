@@ -183,7 +183,7 @@ ind= ~isnan([Data.StimLength{:}]);
 
 %subset data
 Data= Data(ind, :);
- 
+
 %% searching for missing files
 
 %185 sessions in original sheet
@@ -348,6 +348,23 @@ for j = 1:size(DSStimulation.DSCueOnset,1)
     end
 end
 %end
+
+ 
+%% todo: dp check stimLength observations by subj 
+
+
+% convert to table to use table functions
+data= struct2table(DSStimulation);
+
+% if not assigning back into table, groupsummary() is sufficient
+%groupby subject, laserDur, trialType
+
+grouped=[];
+grouped= groupsummary(data, ["Subject", "MSN", "StimLength"]);
+
+% groupedFlagged= grouped(grouped.GroupCount>1,:)
+
+
 
 %% Calculate trial-by-trial PE latencies for DS and NS
 
@@ -678,52 +695,100 @@ end
 % 
 % group= data.fileID;
 
-%% DP check for duplicate sessions
+% %% DP check for duplicate sessions
+% 
+% %if there are duplicate sessions, then the # of unique groupIDsUnique would be >
+% %than the size of of each variable in DSStimulation
+% 
+% numSessions= numel(DSStimulation.Subject);
+% 
+% groupIDs= [];
+% % ------dp stimTable has the 4x repeats for trialtypes so try running on
+% % DSStimulation?
+% groupIDs= findgroups(DSStimulation.Subject,DSStimulation.StartDate);
+% 
+% groupIDsUnique= [];
+% groupIDsUnique= unique(groupIDs);
+% 
+% %compare for equality
+% numSessions==numel(groupIDsUnique)
+% 
+% %todo: duplicates are present, so find them:
+% 
+% %method a
+% [uniqueA i j] = unique(groupIDs,'first');
+% indexToDupes = find(not(ismember(1:numel(groupIDs),i)))
+% 
+% 
+% %method b
+% [U, I] = unique(groupIDs, 'first');
+% x = 1:length(groupIDs); 
+% %go through each value and retain only the first (I)
+% x(I) = []; %groupIDs remaining, which are duplicates
+% 
+% dupes= table()
+% for thisGroupID= 1:numel(indexToDupes)
+%  
+%     %for each groupID, find index matching groupID
+%     ind= [];
+%     ind= find(groupIDs==groupIDsUnique(thisGroupID));
+%     
+%     %for each groupID, get the table data matching this group
+%     thisGroup=[];
+%     thisGroup= stimTable(ind,:);
+%     
+%     %save to table?
+%     dupes(ind,:)= thisGroup;
+%    
+% end
 
-%if there are duplicate sessions, then the # of unique groupIDsUnique would be >
-%than the size of of each variable in DSStimulation
 
-numSessions= numel(DSStimulation.Subject);
+%% DP- Find duplicate sessions in spreadsheet
+% find duplicate sessions?
+
+
+% convert to table to use table functions
+data= struct2table(DSStimulation);
+
+
+% convert to table to use table functions
+data= struct2table(DSStimulation);
 
 groupIDs= [];
-% ------dp stimTable has the 4x repeats for trialtypes so try running on
-% DSStimulation?
-groupIDs= findgroups(DSStimulation.Subject,DSStimulation.StartDate);
+
+% data.StartDate= cell2mat(data.StartDate);
+groupIDs= findgroups(data.Subject, data.StartDate);
 
 groupIDsUnique= [];
 groupIDsUnique= unique(groupIDs);
 
-%compare for equality
-numSessions==numel(groupIDsUnique)
+%table to collect duplicate flagged sessions
+dupes =table();
 
-%todo: duplicates are present, so find them:
-
-%method a
-[uniqueA i j] = unique(groupIDs,'first');
-indexToDupes = find(not(ismember(1:numel(groupIDs),i)))
-
-
-%method b
-[U, I] = unique(groupIDs, 'first');
-x = 1:length(groupIDs); 
-%go through each value and retain only the first (I)
-x(I) = []; %groupIDs remaining, which are duplicates
-
-dupes= table()
-for thisGroupID= 1:numel(indexToDupes)
- 
+for thisGroupID= 1:numel(groupIDsUnique)
     %for each groupID, find index matching groupID
     ind= [];
     ind= find(groupIDs==groupIDsUnique(thisGroupID));
     
     %for each groupID, get the table data matching this group
     thisGroup=[];
-    thisGroup= stimTable(ind,:);
+    thisGroup= data(ind,:);
+
+    % Check if >1 observation here in group
+    % if so, flag for review
+    if height(thisGroup)>1
+       disp('duplicate ses found!')
+        dupes(ind, :)= thisGroup;
+
+    end
     
-    %save to table?
-    dupes(ind,:)= thisGroup;
-   
+end 
+
+%subset only nonzero startdates for concise view , lazy
+if ~isempty(dupes)
+    dupes= dupes(dupes.StartDate~=0,:);
 end
+
 
 %% Behavioral Criteria plots
 

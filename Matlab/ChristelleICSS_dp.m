@@ -165,7 +165,7 @@ end
 %% dp manually exclude extra sessions from analysis (from Opto Group 2)
 
 datesExclude=[];
-datesToExclude= [190813, 190820];
+datesToExclude= [190812, 190820];
 
 ICSS.StartDate= cell2mat(ICSS.StartDate);
 
