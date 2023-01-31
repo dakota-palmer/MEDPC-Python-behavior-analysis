@@ -663,6 +663,10 @@ for thisExpType= 1:numel(expTypesAll)
     %generate figure
     figure; clear d;
 
+    %- test viz of specific projection target, looks like row labels are
+    %wrong?
+%     data= data(strcmp(data.Projection,'VTA'),:);
+    
     %-- individual subj
     group= data.Subject;
 
@@ -683,7 +687,7 @@ for thisExpType= 1:numel(expTypesAll)
     d.set_names('row','Target','column','Phase','x','Session','y','Number of Lever Presses','color','Lever Side')
 
     
-    d().set_line_options('base_size',linewidthSubj);
+    d.set_line_options('base_size',linewidthSubj);
     d.set_color_options('map', cmapSubj);
 
     d.no_legend(); %prevent legend duplicates if you like
@@ -708,7 +712,7 @@ for thisExpType= 1:numel(expTypesAll)
 %     d.set_names('row','Target','column','Phase','x','Session','y','Number of Lever Presses','color','Lever Side')
 
     
-    d().set_line_options('base_size',linewidthGrand);
+    d.set_line_options('base_size',linewidthGrand);
     d.set_color_options('map', cmapGrand);
 
 
@@ -725,7 +729,7 @@ for thisExpType= 1:numel(expTypesAll)
 
     d.draw();
     
-    saveFig(gcf, figPath,figTitle,figFormats);
+%     saveFig(gcf, figPath,figTitle,figFormats);
 
 
 end %end expType/virus loop
