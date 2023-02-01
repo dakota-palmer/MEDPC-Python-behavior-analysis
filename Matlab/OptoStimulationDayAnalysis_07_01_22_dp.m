@@ -1129,9 +1129,9 @@ saveFig(gcf, figPath,figTitle,figFormats);
 % learned= DSStimulation.Subject (selection2) 
 
 %% dp EXCLUDE SUBJECTS based on behavioral criteria
-modeExcludeBehavioral= 'DS'; %exclude based on DS ratio alone
+% modeExcludeBehavioral= 'DS'; %exclude based on DS ratio alone
 
-% modeExcludeBehavioral= 'DS & DS/NS'; %exclude based on DS/NS discrimination 
+modeExcludeBehavioral= 'DS & DS/NS'; %exclude based on DS/NS discrimination 
 
 % %1- subset data from pre-laser days
 % %2- check if meeting criteria
@@ -1174,6 +1174,8 @@ ind= contains(stimTable.Subject, subjectsToExclude{:,:});
 
 stimTable(ind,:)= [];
 
+%% DP SAVE DATA TO RELOAD AND MAKE MANUSCRIPT FIGS
+save(fullfile(figPath,strcat('VP-OPTO-DStaskTest','-',date, '-stimTable')), 'stimTable', '-v7.3');
 
 
 %% dp compute N- Count of subjects by sex for each group
