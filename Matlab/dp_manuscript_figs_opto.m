@@ -13,8 +13,11 @@ figFormats= {'.svg','.fig'} %list of formats to save figures as (for saveFig.m)
 %% set gramm defaults
 set_gramm_plot_defaults();
 
-%% fig 4
+%% fig 4 - DS task + opto
 
 dp_manuscript_figs_opto_Fig4();
 
-%% fig 5
+%% fig 5 - Lever choice task
+
+
+%% Fig 6 - ICSS 

@@ -227,12 +227,17 @@ expTypesAll= [0,1];
 % %1= excitation, 0= inhibition
 expTypeLabels= {'inhibition','stimulation'};
 
+
 %loop thru and assign labels
 for thisExpType= 1:numel(expTypesAll)
-    %TODO: need to actually match this up w find
-    choiceTaskTable(:,"virusType")= expTypeLabels(thisExpType);
+     
+    ind= [];
+    ind= choiceTaskTable.ExpType==expTypesAll(thisExpType);
+    
+    choiceTaskTable(ind, "virusType")= expTypeLabels(thisExpType);
     
 end
+
 
 % %1= excitation, 0= inhibition
 % ind= [];
@@ -329,9 +334,18 @@ end
 
 %% dp viz criteria for data exclusion based on behavioral criteria
 
+clear g;
+
 %exclude data from sessions with low responding
 
 %todo: overlay criteria line
+%require at least 10 trials 
+criteriaTrialsComplete= 10;
+
+%for licks per reward, require at least 3 of each trialType
+criteriaPressActive= 3;
+criteriaPressInactive= 3;
+
 
 %subset data for plotting
 data= choiceTaskTable;
@@ -357,6 +371,8 @@ g(1,1).set_names('x','Trials Completed')
 
 g(1,1).stat_bin()
 
+g(1,1).geom_vline('xintercept', criteriaTrialsComplete, 'style', 'k--'); 
+
 g.draw()
 
 g(2,1)= gramm('x', data.ActiveLeverPress);
@@ -366,6 +382,8 @@ g(2,1).facet_grid([], data.trainPhaseLabel);
 g(2,1).stat_bin()
 
 g(2,1).set_names('x','Active LP')
+
+g(2,1).geom_vline('xintercept', criteriaPressActive, 'style', 'k--'); 
 
 g.draw();
 
@@ -377,6 +395,8 @@ g(3,1).facet_grid([], data.trainPhaseLabel);
 g(3,1).stat_bin()
 
 g(3,1).set_names('x','Inactive LP')
+
+g(3,1).geom_vline('xintercept', criteriaPressInactive, 'style', 'k--'); 
 
 g.draw();
 
@@ -395,6 +415,8 @@ g(1,1).set_names('x', 'Session', 'y','Trials Completed')
 g(1,1).geom_line()
 g(1,1).geom_point()
 
+g(1,1).geom_hline('yintercept', criteriaTrialsComplete, 'style', 'k--'); 
+
 g.draw()
 
 
@@ -412,6 +434,8 @@ g(1,1).set_names('x', 'Session', 'y','Active Presses')
 g(1,1).geom_line()
 g(1,1).geom_point()
 
+g(1,1).geom_hline('yintercept', criteriaPressActive, 'style', 'k--'); 
+
 g.draw()
 
 group= data.Subject;
@@ -424,6 +448,9 @@ g(3,1).set_names('x', 'Session', 'y','Active Presses')
 
 g(3,1).geom_line()
 g(3,1).geom_point()
+
+g(3,1).geom_hline('yintercept', criteriaPressInactive, 'style', 'k--'); 
+
 
 g.draw()
 
@@ -526,18 +553,22 @@ indCriteriaB= indCriteriaB & indCriteriaPhase;
 
 %3- overwrite with nan
 %require only trials completed/responding for proportion
-data(indCriteriaA, 'Proportion') = table(nan);
-data(indCriteriaA, 'probActiveLP') = table(nan);
-data(indCriteriaA, 'probInactiveLP') = table(nan);
+data(~indCriteriaA, 'Proportion') = table(nan);
+data(~indCriteriaA, 'probActiveLP') = table(nan);
+data(~indCriteriaA, 'probInactiveLP') = table(nan);
 
 
 %require only # press count for licks per reward?
-data(indCriteriaB, 'LicksPerReward') = table(nan);
-data(indCriteriaB, 'LicksPerRewardInactive') = table(nan);
+data(~indCriteriaB, 'LicksPerReward') = table(nan);
+data(~indCriteriaB, 'LicksPerRewardInactive') = table(nan);
 
 
 %4- assign back to table
 choiceTaskTable= data;
+
+
+%% DP SAVE DATA TO RELOAD AND MAKE MANUSCRIPT FIGS
+save(fullfile(figPath,strcat('VP-OPTO-choiceTask','-',date, '-choiceTaskTable')), 'choiceTaskTable', '-v7.3');
 
 
 %% dp compute N- Count of subjects by sex for each group
