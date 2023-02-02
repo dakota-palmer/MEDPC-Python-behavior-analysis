@@ -26,10 +26,23 @@ dodge=0.6; %dodge is useful when drawing bars & points. Especially with categori
     
 % do this before first draw() call so applied on subsequent updates()
 
+% good for larger, full screen figures
 
+% text_options_DefaultStyle= {'font'; 'Arial'; 
+%     'interpreter'; 'none'; 
+%     'base_size'; 18; 
+%     'label_scaling'; 1;
+%    'legend_scaling'; 1; 
+%    'legend_title_scaling'; 1.02;
+%    'facet_scaling'; 1.02; 
+%    'title_scaling'; 1.05;
+%    'big_title_scaling'; 1.1};
+
+
+%good for smaller, manuscript figures
 text_options_DefaultStyle= {'font'; 'Arial'; 
     'interpreter'; 'none'; 
-    'base_size'; 18; 
+    'base_size'; 10; 
     'label_scaling'; 1;
    'legend_scaling'; 1; 
    'legend_title_scaling'; 1.02;
@@ -37,9 +50,13 @@ text_options_DefaultStyle= {'font'; 'Arial';
    'title_scaling'; 1.05;
    'big_title_scaling'; 1.1};
 
+
 %% -- Default plot linestyles 
 %To be used to set the 'base_size' of lines e.g. like:
 %     d().set_line_options('base_size',linewidthSubj);
+
+%-- Master plot linestyles and colors
+
 
 %may consider using the group argument in gramm as a logic gate for these (e.g. if group= subject, use subject settings, if group=[] use grand settings)
 
@@ -57,6 +74,8 @@ lightnessRangeGrand= [10,10]; %lightness facet with lightness range doesn't work
 % (e.g. bar plot with points overlaid)
 chromaLineSubj= 0; %black lines connecting points
 
+
+%thicker lines for reference lines
 linewidthReference= 2;
 
 %% ------ Notes about faceting Color & Lightness ----------
@@ -146,7 +165,7 @@ cmapCustomCue= [90,180,172; %dark teal
 cmapCustomCue= cmapCustomCue/255;
 
 cmapCueGrand= cmapCustomCue([1,7],:); %dark
-cmapCueSubj= cmapCustomCue([2,5],:); %light
+cmapCueSubj= cmapCustomCue([2,6],:); %light
 
     figure();
     rgbplot(cmapCueGrand);
@@ -183,15 +202,83 @@ cmapCueLaser= cmapCueLaser/255;
   
 cmapCueLaserGrand= cmapCueLaser([8,10,4,2],:); %dark
 cmapCueLaserSubj= cmapCueLaser([7,9,5,3],:); %light
-  
 
+
+figure();
+rgbplot(cmapCueLaserGrand);
+hold on
+colormap(cmapCueLaserGrand)
+colorbar('Ticks',[])
+title('cmapCueLaserGrand');
+
+
+
+
+% % -- PE vs noPE cmap (variations of of DS blue-- teal / purple picked from Illustrators 'color guide' 'analogous')
+
+% %tested a few variants here
+
+% purple vs teal - good
+cmapCustomPE= [65, 146, 119; %dark teal
+            120, 206,178; 
+            187,231,217; %light teal 
+            230,230,230 %neutral
+            187,188,231; %light purple
+            120,121,206;
+            65,65,146;  %dark purple 
+            ];
+%             
+% 
+
+% cmapCustomPE= [26, 71, 105; %dark blue
+%             71, 108,135; 
+%             117,145,165; %light blue 
+%             230,230,230 %neutral
+%             187,188,231; %light purple
+%             120,121,206;
+%             65,65,146;  %dark purple 
+%             ];
+%             
+
+% 
+
+%     %more intense blue vs teal  %- good
+% cmapCustomPE= [65, 146, 119; %dark 
+%             120, 206,178; 
+%             187,231,217; %light  
+%             230,230,230 %neutral
+%             126, 148,225; %light 
+%             82,112,215;
+%             39 ,76,205;  %dark  
+%             ];
+%             
+%             %more intense blue vs less 
+% cmapCustomPE=  [26, 71, 105; %dark blue
+%             71, 108,135; 
+%             117,145,165; %light blue 
+%             230,230,230 %neutral
+%             126, 148,225; %light 
+%             82,112,215;
+%             39 ,76,205;  %dark  
+%             ];
+%             
+        
+
+cmapCustomPE= cmapCustomPE/255;
+
+cmapPEGrand= cmapCustomPE([7,1],:); %dark
+cmapPESubj= cmapCustomPE([6,2],:); %light
+
+   %viz this colormap in colorbar to side of rgbplot
     figure();
-    rgbplot(cmapCueLaserGrand);
+    rgbplot(cmapCustomPE);
     hold on
-    colormap(cmapCueLaserGrand)
+    colormap(cmapCustomPE)
     colorbar('Ticks',[])
-    title('cmapCueLaserGrand');
+    title('cmapCustomPE');
 
+
+%% 
 %--Active vs Inactive cmaps (e.g. laser-paired vs unpaired operand)
 
 %- Blue vs. Grey
@@ -216,6 +303,7 @@ cmapCustomBlueGray= cmapCustomBlueGray/255;
 
 cmapBlueGrayGrand= cmapCustomBlueGray([1,5],:);
 cmapBlueGraySubj= cmapCustomBlueGray([2,4],:);
+
 
 %% if you want to specific colors from this map, remember each color is= RGB values so each row is 1 color and you can just index single row.
 %alternatively for auto faceting you may need to reorganize the
@@ -323,92 +411,188 @@ colormap(map)
 
 
 
-%% ------- GRAMM EXAMPLES -----------
+%% ---- GRAMM examples from custom ICSS example data ----- 
+
+%load some example ICSS data
+load('example_data_icss.mat');
+
+dataFull= data;
+
+%define the cmaps you want for grand & subj observations (custom maps defined above)
+cmapGrand= cmapBlueGrayGrand;
+cmapSubj= cmapBlueGraySubj;
+
+%% Example line plot with individual lines
+
+%subset data
+data= dataFull;
+
+%generate figure
+figure; clear d;
+
+%-- individual subj
+group= data.Subject;
+
+d=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
+
+%facet by trainPhase - ideally could set sharex of facets false but idk w gramm
+d.facet_grid([],data.trainPhase);
+
+d.stat_summary('type','sem','geom','line');
+d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
+
+d().set_line_options('base_size',linewidthSubj);
+d.set_color_options('map', cmapSubj);
+
+d.no_legend(); %prevent legend duplicates if you like
+
+
+%set text options
+d.set_text_options(text_options_DefaultStyle{:}); 
+
+
+d.draw()
+
+%-- btwn subj mean as well
+group= [];
+
+d.update('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
+
+d.stat_summary('type','sem','geom','area');
+
+d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
+
+d().set_line_options('base_size',linewidthGrand);
+d.set_color_options('map', cmapGrand);
+
+
+figTitle= strcat('ICSS-dp-npType');   
+d.set_title(figTitle);   
+
+%Zoom in on lower NP subjects if desired
+% d().axe_property( 'YLim',[0 300]) %low responders
+d().axe_property( 'YLim',[0, 1200]) %high responders
+
+% SET X TICK = 1 SESSION
+d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
+
+
+d.draw()
+
 
 %% Example bar w individual points and connecting lines: 
 
-% %subset data
-% sesToPlot= 5; %plot last day before reversal
-% 
-% ind= [];
-% ind= data.Session== sesToPlot;
-% 
-% data= data(ind, :);
-% 
-% %make fig
-% clear d; figure();
-% 
-% %- Bar of btwn subj means (group = [])
-% group= []; %var by which to group
-% 
-% d=gramm('x',data.typeNP,'y',data.countNP,'color',data.typeNP, 'group', group)
-% 
-% d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
-% d(1,1).set_color_options('map',cmapGrand); 
-% 
-% d.set_names('x','Nosepoke Side','y','Number of Nose Pokes','color','Nosepoke Side')
-% d(1,1).set_title('ICSS Final day before reversal nosepoke inset')
-% 
-% %set text options- do before first draw() call so applied on subsequent updates()
-% d.set_text_options(text_options_DefaultStyle{:}); 
-% 
-% d.draw()
-% 
-% %- Draw lines between individual subject points (group= subject, color=[]);
-% group= data.Subject;
-% d.update('x', data.typeNP,'y',data.countNP,'color',[], 'group', group)
-% 
-% % d(1,1).stat_summary('geom',{'line'});
-% d(1,1).geom_line('alpha',0.3);
-% d().set_line_options('base_size',linewidthSubj);
-% 
-% d(1,1).set_color_options('chroma', 0); %black lines connecting points
-% 
-% d.draw()
-% 
-% %- Update with point of individual subj points (group= subject)
-% group= data.Subject;
-% d.update('x', data.typeNP,'y',data.countNP,'color',data.typeNP, 'group', group)
-% d(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
-% 
-% d(1,1).set_color_options('map',cmapSubj); 
-% 
-% d.draw();
-% 
-% 
-% figTitle= 'ICSS_inset_final_session_preReversal';
+%subset data
+sesToPlot= 5; %plot last day before reversal
+
+ind= [];
+ind= data.Session== sesToPlot;
+
+data= data(ind, :);
+
+%make fig
+clear d; figure();
+
+%- Bar of btwn subj means (group = [])
+group= []; %var by which to group
+
+d=gramm('x',data.typeNP,'y',data.countNP,'color',data.typeNP, 'group', group)
+
+d(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+d(1,1).set_color_options('map',cmapGrand); 
+
+d.set_names('x','Nosepoke Side','y','Number of Nose Pokes','color','Nosepoke Side')
+d(1,1).set_title('ICSS Final day before reversal nosepoke inset')
+
+%set text options- do before first draw() call so applied on subsequent updates()
+d.set_text_options(text_options_DefaultStyle{:}); 
+
+d.draw()
+
+%- Draw lines between individual subject points (group= subject, color=[]);
+group= data.Subject;
+d.update('x', data.typeNP,'y',data.countNP,'color',[], 'group', group)
+
+% d(1,1).stat_summary('geom',{'line'});
+d(1,1).geom_line('alpha',0.3);
+d().set_line_options('base_size',linewidthSubj);
+
+d(1,1).set_color_options('chroma', 0); %black lines connecting points
+
+d.draw()
+
+%- Update with point of individual subj points (group= subject)
+group= data.Subject;
+d.update('x', data.typeNP,'y',data.countNP,'color',data.typeNP, 'group', group)
+d(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+
+d(1,1).set_color_options('map',cmapSubj); 
+
+d.draw();
 
 
-%% -EXAMPLE Histogram
+figTitle= 'ICSS_inset_final_session_preReversal';
 
-%- Prior to stats, viz the distribution 
-% %wondering if should run stats on log or raw nosepoke counts
-% 
-% figure(); clear g;
-% 
-% g(1,1)= gramm('x', data.countNP, 'color', data.typeNP);
-% 
-% g(1,1).set_names('x','Number of Nose Pokes','color','Nosepoke Side')
-% 
-% g(1,1).stat_bin()
-% 
-% g(2,1)= gramm('x', data.logNP, 'color', data.typeNP);
-% 
-% g(2,1).stat_bin()
-% 
-% g(1,1).set_names('x','Log(Number of Nose Pokes)','color','Nosepoke Side')
-% 
-% figTitle= 'ICSS inset final session preReversal-Stats Distribution';
-% 
-% g().set_title(figTitle)
-% 
-% g.set_text_options(text_options_DefaultStyle{:}); %set text options- do before first draw() call so applied on subsequent updates()
-% 
-% g.set_color_options('map',cmapGrand); 
-% 
-% g.draw();
-% 
+
+%% -Example Histogram
+
+% - Prior to stats, viz the distribution 
+%wondering if should run stats on log or raw nosepoke counts
+
+figure(); clear g;
+
+g(1,1)= gramm('x', data.countNP, 'color', data.typeNP);
+
+g(1,1).set_names('x','Number of Nose Pokes','color','Nosepoke Side')
+
+g(1,1).stat_bin()
+
+g(2,1)= gramm('x', data.logNP, 'color', data.typeNP);
+
+g(2,1).stat_bin()
+
+g(1,1).set_names('x','Log(Number of Nose Pokes)','color','Nosepoke Side')
+
+figTitle= 'ICSS inset final session preReversal-Stats Distribution';
+
+g().set_title(figTitle)
+
+g.set_text_options(text_options_DefaultStyle{:}); %set text options- do before first draw() call so applied on subsequent updates()
+
+g.set_color_options('map',cmapGrand); 
+
+g.draw();
+
 % saveFig(gcf, figPath,figTitle,figFormats);
+
+
+%% -------TODO: matlab plotting examples ------
+
+% %generate random data
+% dataTest= table();
+% 
+% testN= 1000; %n observations (rows in table)
+% 
+% %-yValue data
+% %use randn to make random arrays: 1000 values (1000 rows x 1 column) with desired mean and std
+% testMean= 50;
+% testStd= 4;
+% 
+% dataTest.yValue= testMean+ testStd*randn(testN,1);
+% 
+% %-xValue data
+% testMean= 20;
+% testStd= 2;
+% 
+% dataTest.xValue= testMean+ testStd*randn(testN,1);
+% 
+% %-colorValue data
+% % make some arbitrary possible labels and then use randsample to sample
+% % randomly with replacement
+% testLabels= {'catA'; 'catB'; 'catC'; 'catD'};
+% 
+% dataTest.colorValues= randsample(testLabels, testN, true);
+
 
 
 %% CLOSE ALL example figures 
