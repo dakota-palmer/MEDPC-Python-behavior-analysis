@@ -18,6 +18,7 @@ set_gramm_plot_defaults();
 dp_manuscript_figs_opto_Fig4();
 
 %% fig 5 - Lever choice task
+dp_manuscript_figs_opto_Fig5();
 
 
 %% Fig 6 - ICSS 

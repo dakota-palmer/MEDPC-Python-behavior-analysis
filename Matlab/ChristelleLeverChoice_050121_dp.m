@@ -567,10 +567,6 @@ data(~indCriteriaB, 'LicksPerRewardInactive') = table(nan);
 choiceTaskTable= data;
 
 
-%% DP SAVE DATA TO RELOAD AND MAKE MANUSCRIPT FIGS
-save(fullfile(figPath,strcat('VP-OPTO-choiceTask','-',date, '-choiceTaskTable')), 'choiceTaskTable', '-v7.3');
-
-
 %% dp compute N- Count of subjects by sex for each group
 
 expTypesAll= unique(choiceTaskTable.ExpType);
@@ -764,6 +760,12 @@ for thisExpType= 1:numel(expTypesAll)
 
 
 end %end expType/virus loop
+
+
+%% DP SAVE DATA TO RELOAD AND MAKE MANUSCRIPT FIGS
+save(fullfile(figPath,strcat('VP-OPTO-choiceTask','-',date, '-choiceTaskTable')), 'choiceTaskTable', '-v7.3');
+
+
 
 
 %% dp plot of lever press Proportion by phase over time- mean and individual

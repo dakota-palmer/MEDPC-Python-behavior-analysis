@@ -21,3 +21,8 @@ Python/.pylint.d/optoStats1.stats
 *.fig
 *.svg
 *.lnk
+Matlab/_output/_choiceTask/VP-OPTO-choiceTask-02-Feb-2023-choiceTaskTable.mat
+*.mat
+*.mat
+*.mat
+*.mat
