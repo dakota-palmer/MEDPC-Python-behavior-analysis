@@ -722,6 +722,13 @@ end
 
 
 
+%% DP SAVE DATA TO RELOAD AND MAKE MANUSCRIPT FIGS
+save(fullfile(figPath,strcat('VP-OPTO-ICSS','-',date, '-ICSStable')), 'ICSStable', '-v7.3');
+
+
+
+
+
 %% dp plot mean and individuals 
 
 % cmapSubj= 'brewer2';

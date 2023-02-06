@@ -41,19 +41,34 @@ choiceTaskTable= data;
 
 %% set defaults
 
-% for JNeuro, 1.5 Col max width = 11.6cm (~438 pixels); 2 col max width = 17.6cm (~665 pixels)
-figSize1= [100, 100, 430, 600];
+% % for JNeuro, 1.5 Col max width = 11.6cm (~438 pixels); 2 col max width = 17.6cm (~665 pixels)
+% figSize1= [100, 100, 430, 600];
+% 
+% figSize2= [100, 100, 650, 600];
+% 
+% %make appropriate size
+% figSize= figSize2
 
-figSize2= [100, 100, 650, 600];
-
-%make appropriate size
-figSize= figSize2
+% retain values from last fig
 
 %% Initialize a figure with Drawable Area padding appropriately
 % f = figure('Position',[100 100 1200 800])
 
 % make figure of desired final size
 f = figure('Position',figSize)
+
+%- set size appropriately in cm
+set(f, 'Units', 'centimeters', 'Position', figSize);
+% outerpos makes it tighter, just in case UIpanels go over
+set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
+
+% % % works well for pdf, not SVG (SVG is larger for some reason)
+% % % but pdf still has big white space borders
+% % % https://stackoverflow.com/questions/5150802/how-to-save-a-plot-into-a-pdf-file-without-a-large-margin-around
+set(f, 'PaperPosition', [0, 0, figWidth, figHeight], 'PaperUnits', 'centimeters', 'Units', 'centimeters'); %Set the paper to have width 5 and height 5.
+
+set(f, 'PaperUnits', 'centimeters', 'PaperSize', [figWidth, figHeight]); %Set the paper to have width 5 and height 5.
+
 
 
 

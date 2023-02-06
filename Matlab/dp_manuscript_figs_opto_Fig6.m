@@ -1,9 +1,9 @@
-%% Load Opto DS task data
+%% Load Opto ICSS data
 
-load("C:\Users\Dakota\Documents\GitHub\DS-Training\Matlab\_output\_DS_task_stimDay\VP-OPTO-DStaskTest-31-Jan-2023-stimTable.mat");
+load("C:\Users\Dakota\Documents\GitHub\DS-Training\Matlab\_output\_ICSS\VP-OPTO-ICSS-06-Feb-2023-ICSStable.mat");
 
 data=[];
-data= stimTable;
+data= ICSStable;
 
 %% Note that prior script excluded subjects based on behavioral criteria
 
@@ -19,14 +19,7 @@ ind= strcmp(data.virusType, include);
 data= data(ind, :);
 
 %- Based on laserDur (StimLength)
-% exclude the 20s duration (post laser manipulation session)
-exclude=[];
-exclude= [20];
 
-ind= [];
-ind= ismember(data.StimLength,exclude);
-
-data= data(~ind, :);
 
 %- Based on projection target
 exclude= [];
@@ -44,7 +37,7 @@ ind= data.Expression==1;
 data= data(ind,:);
 
 %-overwrite stimTable
-stimTable= data;
+ICSStable= data;
 
 
 %% Make fig w UIpanels
@@ -229,7 +222,7 @@ padPanel= 0.0025; %padding between other uiPanels
     p4= uipanel('Position',[lPos, bPos, w, h],'Units','Normalized','Parent',f,'BackgroundColor',[1 1 1],'BorderType','etchedout')
 
   
-%% Figure 4
+%% Figure 6- ICSS
 
 %% aesthetics
 
@@ -251,158 +244,228 @@ ylimProb= [0,1];
 yTickProb= [0:0.2:1] % ticks every 0.2
 
 
-%% Fig 4c - PE probability
+%% draft 2- hue projection
 
-cmapGrand= cmapCueLaserGrand;
-cmapSubj= cmapCueLaserSubj;
-
-%subsset data
-data= stimTable;
-
-%dp make stimLength categorical
-data.StimLength= categorical(data.StimLength);
-
-clear g2;
-
-% -- 1 = subplot of stimulation PE latency
-%- Bar of btwn subj means (group = [] or Group)
-group= []; %var by which to group
-
-% dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
-
-g2(1,1)=gramm('x',data.StimLength,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
-g2(1,1).facet_grid([],data.Projection)
-
-% g2(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge, 'width', width)
-% save errorbar for end
-g2(1,1).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width) 
-
-g2(1,1).set_color_options('map',cmapGrand); 
-g2(1,1).set_line_options('base_size',linewidthGrand);
+% cmapSubj= cmapBlueGraySubj;
+% cmapGrand= cmapBlueGrayGrand;
+cmapSubj= 'brewer2';
+cmapGrand= 'brewer_dark';
 
 
-g2(1,1).set_names('row','','x','Laser Duration (s)','y','PE Probability')
+% subset data
+data= ICSStable;
 
-figTitle= strcat('C');   
-g2(1,1).set_title(figTitle);
-
-g2.set_text_options(text_options_DefaultStyle{:}); 
-
-g2.no_legend();
-
-g2.axe_property('YLim',ylimProb);
-g2.axe_property('YTick',yTickProb);
+%-stack() to make inactive/active NPtype a variable
+data= stack(data, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'NewDataVariableName', 'countNP');
 
 
-g2.set_parent(p3);
+%generate figure
+figure; clear d;
 
-%- First Draw call
-g2.draw();
-
-%- Update with point of individual subj points (group= subject)
+%-- individual subj
 group= data.Subject;
-g2(1,1).update('x',data.StimLength,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
-g2(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
 
-g2(1,1).set_color_options('map',cmapSubj);
-g2(1,1).set_line_options('base_size',linewidthSubj);
+d(1,1)=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.Projection, 'linestyle', data.typeNP, 'group', group)
 
-
-g2.no_legend(); %avoid duplicate legend for subj
+%facet by trainPhase - ideally could set sharex of facets false but idk w gramm
+% d.facet_grid(data.Projection,data.trainPhase, 'scale', 'free_x');
+d(1,1).facet_grid([], data.trainPhase, 'scale', 'free_x');
 
 
-g2.draw();
+% d.stat_summary('type','sem','geom','line');
+d(1,1).set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
+
+d(1,1).set_line_options('base_size',linewidthSubj);
+d(1,1).set_color_options('map', cmapSubj);
+
+d(1,1).no_legend(); %prevent legend duplicates if you like
 
 
-%- update with error bar on top
-group=[];
-g2(1,1).update('x',data.StimLength,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
-
-g2(1,1).stat_summary('type','sem', 'geom',{'black_errorbar'}, 'dodge', dodge);
-
-g2(1,1).set_line_options('base_size',linewidthSubj);
+%set text options
+d(1,1).set_text_options(text_options_DefaultStyle{:}); 
 
 
-g2.no_legend(); 
+d(1,1).draw()
 
-%final draw call
-g2.draw();
-
-%% 4d- PE Latency
-cmapGrand= cmapCueLaserGrand;
-cmapSubj= cmapCueLaserSubj;
-
-%subsset data
-data= stimTable;
-
-
-%%Stimulation Latency
-clear g;
-
-%dp make stimLength categorical
-data.StimLength= categorical(data.StimLength);
-
-% -- 1 = subplot of stimulation PE latency
-%- Bar of btwn subj means (group = [] or Group)
-group= []; %var by which to group
-
-% dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
-g=gramm('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
-g.facet_grid([],data.Projection);%data.StimLength)
-
-% g.stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge,'width',width) 
-% errorbar saved for end to draw on top
-g.stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge,'width',width) 
-
-g(1,1).set_line_options('base_size',linewidthGrand);
-
-
-g(1,1).set_color_options('map',cmapGrand); 
-
-g(1,1).set_names('row','','x','Laser Duration (s)','y','PE Latency (s)')
-
-
-figTitle= strcat('D');   
-g(1,1).set_title(figTitle);
-
-g.set_text_options(text_options_DefaultStyle{:}); 
-
-g.no_legend();
-
-g.axe_property('YLim',ylimLatency);
-g.axe_property('YTick',yTickLatency);
-
-
-% set parent uipanel
-g.set_parent(p4);
-
-
-%- first draw call
-g.draw();
-
-%- Update with point of individual subj points (group= subject)
-group= data.Subject;
-g(1,1).update('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
-g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
-
-
-g(1,1).set_color_options('map',cmapSubj);
-g(1,1).set_line_options('base_size',linewidthSubj);
-
-
-g.no_legend(); %avoid duplicate legend for subj
-
-g.draw();
-
-%- update with SEM bar on top
+%-- btwn subj mean as well
 group= [];
-g(1,1).update('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
 
-g(1,1).stat_summary('type','sem', 'geom',{'black_errorbar'}, 'dodge', dodge);
-g(1,1).set_line_options('base_size',linewidthSubj); %errorbar geometry weird if set to grand in ilustrator
+d(1,1).update('x',data.trainDayThisPhase,'y',data.countNP,'color',data.Projection, 'linestyle', data.typeNP, 'group', group)
 
-g.no_legend(); 
-g.draw();
+d(1,1).stat_summary('type','sem','geom','area');
+
+d(1,1).set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
+
+d(1,1).set_line_options('base_size',linewidthGrand);
+d(1,1).set_color_options('map', cmapGrand);
+
+
+figTitle= strcat('ICSS-dp-npType');   
+d(1,1).set_title(figTitle);   
+
+%Zoom in on lower NP subjects if desired
+% d().axe_property( 'YLim',[0 300]) %low responders
+% d().axe_property( 'YLim',[0, 1200]) %high responders
+d(1,1).axe_property( 'YLim',[0, 500]) %high responders
+
+
+% SET X TICK = 1 SESSION
+d(1,1).axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
+
+% d(:,1).axe_property('XLim',limXog); %,'YLim',[0 75],'YTick',[0:25:75]);
+% d(:,2).axe_property('XLim',limXreversal); %,'YLim',[0 75],'YTick',[0:25:75]);
+% 
+
+
+d(1,1).draw()
+
+
+% Fig6 B log scale - last day prior to reversal
+
+
+cmapSubj= cmapBlueGraySubj;
+cmapGrand= cmapBlueGrayGrand;
+
+%subset data
+data= ICSStable;
+
+sesToPlot= 5; %plot last day before reversal
+
+ind= [];
+ind= ICSStable.Session== sesToPlot;
+
+data2= data(ind, :);
+
+%-stack() to make inactive/active NPtype a variable
+data2= stack(data2, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'NewDataVariableName', 'countNP');
+
+
+%--Calculate Log scale NPs
+
+data2.logNP = log(data2.countNP);
+
+% if countNP is == 0, log returns -inf. Make these nan
+data2(data2.logNP==-inf, "logNP")= table(nan);
+
+
+%make fig
+clear d2; figure();
+
+%- Bar of btwn subj means (group = [])
+group= []; %var by which to group
+
+d2(1,1)=gramm('x',data2.typeNP,'y',data2.logNP,'color',data2.typeNP, 'group', group)
+
+d2(1,1).facet_grid([], data2.Projection);
+
+d2(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+d2(1,1).set_color_options('map',cmapGrand); 
+
+d2(1,1).set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
+
+figTitle= 'ICSS inset final session preReversal logScale';
+
+d2(1,1).set_title(figTitle)
+
+%set text options- do before first draw() call so applied on subsequent updates()
+d2(1,1).set_text_options(text_options_DefaultStyle{:}); 
+
+d2(1,1).draw()
+
+%- Draw lines between individual subject points (group= subject, color=[]);
+group= data2.Subject;
+d2(1,1).update('x', data2.typeNP,'y',data2.logNP,'color',[], 'group', group)
+
+% d(1,1).stat_summary('geom',{'line'});
+d2(1,1).geom_line('alpha',0.3);
+d2(1,1).set_line_options('base_size',linewidthSubj);
+
+d2(1,1).set_color_options('chroma', 0); %black lines connecting points
+
+d2(1,1).draw()
+
+%- Update with point of individual subj points (group= subject)
+group= data2.Subject;
+d2(1,1).update('x', data2.typeNP,'y',data2.logNP,'color',data2.typeNP, 'group', group)
+d2(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+
+d2(1,1).set_color_options('map',cmapSubj); 
+
+d2(1,1).draw();
+
+
+
+
+%% Fig 6 draft 1
+cmapSubj= cmapBlueGraySubj;
+cmapGrand= cmapBlueGrayGrand;
+
+
+% subset data
+data= ICSStable;
+
+
+%stack() to make inactive/active NPtype a variable
+data= stack(data, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'NewDataVariableName', 'countNP');
+
+%generate figure
+figure; clear d;
+
+%-- individual subj
+group= data.Subject;
+
+d=gramm('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
+
+%facet by trainPhase - ideally could set sharex of facets false but idk w gramm
+% d.facet_grid(data.Projection,data.trainPhase, 'scale', 'free_x');
+d.facet_grid(data.Projection,data.trainPhase, 'scale', 'free_x');
+
+
+d.stat_summary('type','sem','geom','line');
+d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
+
+d().set_line_options('base_size',linewidthSubj);
+d.set_color_options('map', cmapSubj);
+
+d.no_legend(); %prevent legend duplicates if you like
+
+
+%set text options
+d.set_text_options(text_options_DefaultStyle{:}); 
+
+
+d.draw()
+
+%-- btwn subj mean as well
+group= [];
+
+d.update('x',data.trainDayThisPhase,'y',data.countNP,'color',data.typeNP, 'group', group)
+
+d.stat_summary('type','sem','geom','area');
+
+d.set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side')
+
+d().set_line_options('base_size',linewidthGrand);
+d.set_color_options('map', cmapGrand);
+
+
+figTitle= strcat('ICSS-dp-npType');   
+d.set_title(figTitle);   
+
+%Zoom in on lower NP subjects if desired
+% d().axe_property( 'YLim',[0 300]) %low responders
+d().axe_property( 'YLim',[0, 1200]) %high responders
+
+% SET X TICK = 1 SESSION
+d.axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThisPhase)]); %,'YLim',[0 75],'YTick',[0:25:75]);
+
+% d(:,1).axe_property('XLim',limXog); %,'YLim',[0 75],'YTick',[0:25:75]);
+% d(:,2).axe_property('XLim',limXreversal); %,'YLim',[0 75],'YTick',[0:25:75]);
+% 
+
+
+d.draw()
+
 
 %% EXPORT DATA FOR STATS ANALYSIS IN PYTHON/R
 
