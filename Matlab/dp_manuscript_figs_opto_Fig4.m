@@ -52,12 +52,24 @@ stimTable= data;
 %% set defaults
 
 % for JNeuro, 1.5 Col max width = 11.6cm (~438 pixels); 2 col max width = 17.6cm (~665 pixels)
+% pixels unreliable. use cm units in figure() call
 figSize1= [100, 100, 430, 600];
 
 figSize2= [100, 100, 650, 600];
 
+% works with PDF, doens't seem to work with svg... could consider trying
+% pixel values with svg
+% make units in cm
+figWidth= 17.25;
+figHeight= 17;
+    %position must allow fit on screen
+figPosV= 25; 
+figPosH= 2;
+
 %make appropriate size
 figSize= figSize2
+
+figSize= [figPosV, figPosH, figWidth, figHeight];
 
 % text_options_DefaultStyle
 
@@ -93,7 +105,31 @@ close all
 % f = figure('Position',[100 100 1200 800])
 
 % make figure of desired final size
-f = figure('Position',figSize)
+% f = figure('Position',figSize)
+
+% figSize= [25, 2, 17, 17.5];
+
+% f = figure('Position',figSize, 'Units', 'centimeters');
+
+f= figure();
+% %cm not working on instantiation, try setting after
+% % set(f, 'Units', 'centimeters', 'Position', figSize);
+% 
+% %set outerposition as well
+% % set(f, 'Units', 'centimeters', 'Position', figSize);
+% % set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
+
+%- set size appropriately in cm
+set(f, 'Units', 'centimeters', 'Position', figSize);
+set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
+
+% % % works well for pdf, not SVG (SVG is larger for some reason)
+% % % but pdf still has big white space borders
+% % % https://stackoverflow.com/questions/5150802/how-to-save-a-plot-into-a-pdf-file-without-a-large-margin-around
+set(f, 'PaperPosition', [0, 0, figWidth, figHeight], 'PaperUnits', 'centimeters', 'Units', 'centimeters'); %Set the paper to have width 5 and height 5.
+
+% this throws off the vertical pos between c and d... need 'PaperUnits'?
+set(f, 'PaperUnits', 'centimeters', 'PaperSize', [figWidth, figHeight]); %Set the paper to have width 5 and height 5.
 
 
 
@@ -232,9 +268,12 @@ group= []; %var by which to group
 % dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
 
 g2(1,1)=gramm('x',data.StimLength,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
-g2(1,1).facet_grid(data.Projection, [])
+g2(1,1).facet_grid([],data.Projection)
 
-g2(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge, 'width', width) 
+% g2(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge, 'width', width)
+% save errorbar for end
+g2(1,1).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width) 
+
 g2(1,1).set_color_options('map',cmapGrand); 
 
 g2(1,1).set_names('row','','x','Laser Duration (s)','y','PE Probability')
@@ -268,6 +307,17 @@ g2.no_legend(); %avoid duplicate legend for subj
 g2.draw();
 
 
+%- update with error bar on top
+group=[];
+g2(1,1).update('x',data.StimLength,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
+
+g2(1,1).stat_summary('type','sem', 'geom',{'black_errorbar'}, 'dodge', dodge);
+
+g2.no_legend(); 
+
+%final draw call
+g2.draw();
+
 %% 4d- PE Latency
 cmapGrand= cmapCueLaserGrand;
 cmapSubj= cmapCueLaserSubj;
@@ -288,9 +338,11 @@ group= []; %var by which to group
 
 % dp changing faceting- x cueType so can connect dots and facet by virus Group as rows
 g=gramm('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
-g.facet_grid(data.Projection,[]);%data.StimLength)
+g.facet_grid([],data.Projection);%data.StimLength)
 
-g.stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge,'width',width) 
+% g.stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge,'width',width) 
+% errorbar saved for end to draw on top
+g.stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge,'width',width) 
 
 
 g(1,1).set_color_options('map',cmapGrand); 
@@ -328,6 +380,13 @@ g.no_legend(); %avoid duplicate legend for subj
 
 g.draw();
 
+%- update with SEM bar on top
+group= [];
+g.update('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
+
+g.stat_summary('type','sem', 'geom',{'black_errorbar'}, 'dodge', dodge);
+g.no_legend(); 
+g.draw();
 
 %% EXPORT DATA FOR STATS ANALYSIS IN PYTHON/R
 
@@ -342,9 +401,43 @@ p1.BorderType= 'none'
 p2.BorderType= 'none'
 p3.BorderType= 'none'
 p4.BorderType= 'none'
+% 
+% % this works and looks pretty good, tho errorbars and layout weird
+% % layout good before this, dont do it again
+% %- set size appropriately in cm
+% set(f, 'Units', 'centimeters', 'Position', figSize);
+% set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
+% 
+% % % % works well for pdf, not SVG (SVG is larger for some reason)
+% % % % but pdf still has big white space borders
+% % % % https://stackoverflow.com/questions/5150802/how-to-save-a-plot-into-a-pdf-file-without-a-large-margin-around
+% % set(f, 'PaperPosition', [0, 0, figWidth, figHeight], 'Units', 'centimeters'); %Set the paper to have width 5 and height 5.
+% 
+% % this throws off the vertical pos between c and d... need 'PaperUnits'?
+% set(f, 'PaperUnits', 'centimeters', 'PaperSize', [figWidth, figHeight]); %Set the paper to have width 5 and height 5.
+% 
+
+% % % alt method - tight layout
+% % ti = get(gca,'TightInset')
+% % set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
+% % 
+% % set(gca,'units','centimeters')
+% % pos = get(gca,'Position');
+% % ti = get(gca,'TightInset');
+% % 
+% % set(gcf, 'PaperUnits','centimeters');
+% % set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+% % set(gcf, 'PaperPositionMode', 'manual');
+% % set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
 
 
 %-Save the figure
 titleFig='vp-vta_Figure4_uiPanels';
-saveFig(gcf, figPath, titleFig, figFormats, figSize);
+
+%try export_fig fxn 
+% looks terrible, not vectorized
+% export_fig(f,strcat(titleFig,'.pdf'));
+
+% saveFig(gcf, figPath, titleFig, figFormats, figSize);
+saveFig(f, figPath, titleFig, figFormats);%, figSize);
 

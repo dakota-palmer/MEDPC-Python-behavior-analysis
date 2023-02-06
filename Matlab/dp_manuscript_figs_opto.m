@@ -7,7 +7,12 @@ figPath= "C:\Users\Dakota\Documents\GitHub\DS-Training\Matlab\_output\_Manuscrip
 
 %PNG good for quickly viewing many
 % figFormats= {'.png'} %list of formats to save figures as (for saveFig.m)
-figFormats= {'.svg','.fig'} %list of formats to save figures as (for saveFig.m)
+% figFormats= {'.svg','.fig'} %list of formats to save figures as (for saveFig.m)
+
+% % pdf seems to save at appropriate size but svg wont?
+% https://www.mathworks.com/matlabcentral/answers/519666-size-of-exported-svg-incorrect
+figFormats= {'.svg', '.pdf', '.png'} %list of formats to save figures as (for saveFig.m)
+% figFormats= {'.pdf'} %list of formats to save figures as (for saveFig.m)
 
 
 %% set gramm defaults

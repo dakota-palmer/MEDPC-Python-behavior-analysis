@@ -173,12 +173,26 @@ cmapCueSubj= cmapCustomCue([2,6],:); %light
     colormap(cmapCueGrand)
     colorbar('Ticks',[])
     title('cmapCueGrand');
+% 
+% %-- Cue+Laser cmap colormap for DS vs NS Laser NoLaser
+%  %this is like a Paired colormap supporting 2 categories with 2 conditions
+% %- want 4 categories (DS,DS+Laser,NS,NS+Laser) and 2 lightness levels each (grand vs subj)
+% % so at least 8 colors
+% %based on https://colorbrewer2.org/#type=diverging&scheme=BrBG&n=11
+% cmapCueLaser= [84,48,5; %1- dark brown
+%     140,81,10;
+%     191,129,45;
+%     223,194,125;
+%     246,232,195; %5- light brown
+%     245,245,245; %6- whitish
+%     199,234,229; %7- light teal
+%     128,205,193;
+%     53,151,143;
+%     1,102,94;
+%     0,60,48] %11- dark teal
 
-%-- Cue+Laser cmap colormap for DS vs NS Laser NoLaser
- %this is like a Paired colormap supporting 2 categories with 2 conditions
-%- want 4 categories (DS,DS+Laser,NS,NS+Laser) and 2 lightness levels each (grand vs subj)
-% so at least 8 colors
-%based on https://colorbrewer2.org/#type=diverging&scheme=BrBG&n=11
+% - change to variation of blue for DS gray for NS for consistency (probs
+% will eventually in illustrator make filled vs unfilled for laser)
 cmapCueLaser= [84,48,5; %1- dark brown
     140,81,10;
     191,129,45;
@@ -191,17 +205,49 @@ cmapCueLaser= [84,48,5; %1- dark brown
     1,102,94;
     0,60,48] %11- dark teal
 
+
+% based on 11 class RdGy, replaced reds with blues
+cmapCueLaser= [5,48,97;
+            33,102,172;
+            67,147,195;
+            146,197,222;
+            209,229,240;
+            255,255,255;
+            224,224,224;
+            186,186,186;
+            135,135,135;
+            77,77,77;
+            26,26,26]
+
 cmapCueLaser= cmapCueLaser/255;
 
-%assume order of DS, DS+Laser, NS, NS+Laser
-% will pair 2nd to last darkest (n) with n+/-2 shades lighter for noLaser
-% so Grand: DS= 10, DS+Laser= 8, NS=2, NS+Laser=4
-%and Subj: DS= 9, DS+Laser= 7, NS=3, NS+Laser=5
+% %assume order of DS, DS+Laser, NS, NS+Laser
+% % will pair 2nd to last darkest (n) with n+/-2 shades lighter for noLaser
+% % so Grand: DS= 10, DS+Laser= 8, NS=2, NS+Laser=4
+% % and Subj: DS= 9, DS+Laser= 7, NS=3, NS+Laser=5
 % cmapCueLaserGrand= cmapCueLaser([10,8,2,4],:); %dark
 % cmapCueLaserSubj= cmapCueLaser([9,7,3,5],:); %light
-  
-cmapCueLaserGrand= cmapCueLaser([8,10,4,2],:); %dark
-cmapCueLaserSubj= cmapCueLaser([7,9,5,3],:); %light
+%   
+% cmapCueLaserGrand= cmapCueLaser([8,10,4,2],:); %dark
+% cmapCueLaserSubj= cmapCueLaser([7,9,5,3],:); %light
+
+% %slightly lighter
+% cmapCueLaserGrand= cmapCueLaser([7,9,5,3],:); %dark
+% cmapCueLaserSubj= cmapCueLaser([6,8,6,4],:); %light
+
+% % ds first
+% cmapCueLaserGrand= cmapCueLaser([2,4,10,8],:); %dark
+% cmapCueLaserSubj= cmapCueLaser([3, 5, 9, 7],:); %light
+
+%good
+% ds no laser, ds laser, ns no laser, ns laser
+cmapCueLaserGrand= cmapCueLaser([4,2, 8,10],:); %dark
+cmapCueLaserSubj= cmapCueLaser([5,3, 7,9],:); %light
+
+% % too dark
+% % ds no laser, ds laser, ns no laser, ns laser
+% cmapCueLaserGrand= cmapCueLaser([3,1, 9,11],:); %dark
+% cmapCueLaserSubj= cmapCueLaser([4,2, 8,10],:); %light
 
 
 figure();
@@ -210,8 +256,6 @@ hold on
 colormap(cmapCueLaserGrand)
 colorbar('Ticks',[])
 title('cmapCueLaserGrand');
-
-
 
 
 % % -- PE vs noPE cmap (variations of of DS blue-- teal / purple picked from Illustrators 'color guide' 'analogous')
