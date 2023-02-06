@@ -121,6 +121,7 @@ f= figure();
 
 %- set size appropriately in cm
 set(f, 'Units', 'centimeters', 'Position', figSize);
+% outerpos makes it tighter, just in case UIpanels go over
 set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
 
 % % % works well for pdf, not SVG (SVG is larger for some reason)
@@ -234,8 +235,11 @@ padPanel= 0.0025; %padding between other uiPanels
 %% aesthetics
 
 % bar widths
-dodge= 	.6; %if dodge constant between point and bar, will align correctly
-width= .58;
+% dodge= 	.6; %if dodge constant between point and bar, will align correctly
+% width= .58;
+
+dodge= 	.9; %if dodge constant between point and bar, will align correctly
+width= .9;
 
 % y lims
 
@@ -275,6 +279,8 @@ g2(1,1).facet_grid([],data.Projection)
 g2(1,1).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width) 
 
 g2(1,1).set_color_options('map',cmapGrand); 
+g2(1,1).set_line_options('base_size',linewidthGrand);
+
 
 g2(1,1).set_names('row','','x','Laser Duration (s)','y','PE Probability')
 
@@ -300,6 +306,8 @@ g2(1,1).update('x',data.StimLength,'y',data.ResponseProb,'color',data.CueTypeLab
 g2(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
 
 g2(1,1).set_color_options('map',cmapSubj);
+g2(1,1).set_line_options('base_size',linewidthSubj);
+
 
 g2.no_legend(); %avoid duplicate legend for subj
 
@@ -312,6 +320,9 @@ group=[];
 g2(1,1).update('x',data.StimLength,'y',data.ResponseProb,'color',data.CueTypeLabel, 'group', group);
 
 g2(1,1).stat_summary('type','sem', 'geom',{'black_errorbar'}, 'dodge', dodge);
+
+g2(1,1).set_line_options('base_size',linewidthSubj);
+
 
 g2.no_legend(); 
 
@@ -344,6 +355,8 @@ g.facet_grid([],data.Projection);%data.StimLength)
 % errorbar saved for end to draw on top
 g.stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge,'width',width) 
 
+g(1,1).set_line_options('base_size',linewidthGrand);
+
 
 g(1,1).set_color_options('map',cmapGrand); 
 
@@ -375,6 +388,8 @@ g(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black
 
 
 g(1,1).set_color_options('map',cmapSubj);
+g(1,1).set_line_options('base_size',linewidthSubj);
+
 
 g.no_legend(); %avoid duplicate legend for subj
 
@@ -382,9 +397,11 @@ g.draw();
 
 %- update with SEM bar on top
 group= [];
-g.update('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
+g(1,1).update('x',data.StimLength,'y',data.RelLatency,'color',data.CueTypeLabel, 'group', group);
 
-g.stat_summary('type','sem', 'geom',{'black_errorbar'}, 'dodge', dodge);
+g(1,1).stat_summary('type','sem', 'geom',{'black_errorbar'}, 'dodge', dodge);
+g(1,1).set_line_options('base_size',linewidthSubj); %errorbar geometry weird if set to grand in ilustrator
+
 g.no_legend(); 
 g.draw();
 
