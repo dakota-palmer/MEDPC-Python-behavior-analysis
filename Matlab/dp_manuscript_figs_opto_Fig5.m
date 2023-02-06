@@ -158,8 +158,8 @@ padPanel= 0.0025; %padding between other uiPanels
 %% aesthetics
 
 % bar widths
-dodge= 	.6; %if dodge constant between point and bar, will align correctly
-width= .58;
+width= .9;
+dodge= 	width; %if dodge constant between point and bar, will align correctly
 
 % y lims
 % 
@@ -263,7 +263,7 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(1,1).update('x',data3.Session,'y',data3.countLP,'color',data3.typeLP, 'group', group)
 
-        d(1,1).stat_summary('type','sem','geom','area');
+        d(1,1).stat_summary('type','sem','geom','area'), 'dodge', dodge, 'width', width;
 
         d(1,1).set_names('x','Session','y','Number of Lever Presses','color','Lever Side')
     %     d.set_names('row','Target','column','Phase','x','Session','y','Number of Lever Presses','color','Lever Side')
@@ -549,19 +549,43 @@ cmapGrand= cmapBlueGrayGrand;
         %subset- by projection not necessary
         data3= data2;
         
+        
+%         %- count
+        y= 'countLP'
+
+% %         stack() to make inactive/active LP a variable
+        data3= stack(data3, {'ActiveLeverPress', 'InactiveLeverPress'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'countLP');
+
+%         % - proportion 
+% %        stack() to make inactive/active LP a variable
+%         data3= stack(data3, {'probActiveLP', 'probInactiveLP'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'probLP');
+% 
+%         y= 'probLP'
+
+        
         %cmap for Projection comparisons
-        cmapGrand= 'brewer_dark';
-        cmapSubj= 'brewer2';   
+        cmapGrand= cmapBlueGrayGrand;
+        cmapSubj= cmapBlueGraySubj;   
         
         %-- individual subj
         group= data3.Subject;
 
-        d(2,3)=gramm('x',data3.trainPhaseLabel,'y',data3.(y),'color',data3.Projection, 'group', group)
+% %         d(2,3)=gramm('x',data3.trainPhaseLabel,'y',data3.(y),'color',data3.typeLP, 'group', group)
+% % 
+% %         Facet by Projection target
+% %         d(2,3).facet_grid([], data3.Projection);
+% % 
+        d(2,3)=gramm('x',data3.Projection,'y',data3.(y),'color',data3.typeLP, 'group', group)
 
+        %Facet by trainPhase target
+        d(2,3).facet_grid([], data3.trainPhaseLabel, 'scale', 'independent');
+        
+        
 %        
 %         d(2,3).stat_summary('type','sem','geom','area');
-%         d(2,3).set_line_options('base_size',linewidthSubj);
-%         d(2,3).set_color_options('map', cmapSubj);
+        d(2,3).geom_point('dodge',dodge);
+        d(2,3).set_line_options('base_size',linewidthSubj);
+        d(2,3).set_color_options('map', cmapSubj);
 % 
 % %         d(1,3).set_names('x','Session','y','Proportion Active Lever Presses','color','Lever Side')
 
@@ -575,8 +599,10 @@ cmapGrand= cmapBlueGrayGrand;
         %------ btwn subj mean as well
         group= [];
 
-        d(2,3).update('x',data3.trainPhaseLabel,'y',data3.(y),'color',data3.Projection, 'group', group)
+%         d(2,3).update('x',data3.trainPhaseLabel,'y',data3.(y),'color',data3.typeLP, 'group', group)
+        d(2,3).update('x',data3.Projection,'y',data3.(y),'color',data3.typeLP, 'group', group)
 
+        
 %         d(2,3).stat_summary('type','sem','geom','area');
         d(2,3).stat_summary('type','sem','geom',{'bar', 'black_errorbar'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
 
@@ -679,7 +705,7 @@ cmapGrand= cmapBlueGrayGrand;
             %add style facet for active/inactive
         d(3,2)=gramm('x',data3.Session,'y',data3.rewardLicks,'color',data3.Projection, 'linestyle', data3.typeLP, 'group', group)
 
-       
+        
 %         d(3,2).stat_summary('type','sem','geom','area');
 %         d(3,2).set_line_options('base_size',linewidthSubj);
 %         d(3,2).set_color_options('map', cmapSubj);
@@ -710,7 +736,7 @@ cmapGrand= cmapBlueGrayGrand;
 
           
         %~~~ 3,3 Test
-        %subset data- by trainPhase
+        %subset data- by trainPhase       
         phasesToInclude= [4]; %list of phases to include 
 
         ind=[];
@@ -725,9 +751,9 @@ cmapGrand= cmapBlueGrayGrand;
         %subset- by projection not necessary
         data3= data2;
         
-        %cmap for Projection comparisons
-        cmapGrand= 'brewer_dark';
-        cmapSubj= 'brewer2';   
+        %cmap for Laser comparisons
+        cmapGrand= cmapBlueGrayGrand;
+        cmapSubj= cmapBlueGraySubj;   
         
    
         %------ btwn subj bar
@@ -736,11 +762,14 @@ cmapGrand= cmapBlueGrayGrand;
 
             %  2 sems for some reason here?
 %         d(3,3).update('x',data3.trainPhaseLabel,'y',data3.rewardLicks,'color',data3.Projection, 'linestyle', data3.typeLP, 'group', group)
-        d(3,3)= gramm('x',data3.typeLP,'y',data3.rewardLicks,'color',data3.Projection, 'linestyle', data3.typeLP, 'group', group)
+%         d(3,3)= gramm('x',data3.typeLP,'y',data3.rewardLicks,'color',data3.Projection, 'linestyle', data3.typeLP, 'group', group)
+        d(3,3)= gramm('x',data3.Projection,'y',data3.rewardLicks,'color',data3.typeLP, 'group', group)
 
+%         %add facet by projection
+%         d(3,3).facet_grid([], data3.Projection);
         
 %         d(3,3).stat_summary('type','sem','geom','bar');
-        d(3,3).stat_summary('type','sem','geom',{'bar', 'black_errorbar'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+        d(3,3).stat_summary('type','sem','geom',{'bar', 'black_errorbar'}, 'dodge', dodge, 'width', width)%,'bar' 'black_errorbar'});
 
         
         d(3,3).set_names('x','Lever Type','y','Licks per Reward','color','Projection')
@@ -759,10 +788,11 @@ cmapGrand= cmapBlueGrayGrand;
             %add style facet for active/inactive
 %         d(3,3)=gramm('x',data3.trainPhaseLabel,'y',data3.rewardLicks,'color',data3.Projection, 'linestyle', data3.typeLP, 'group', group)
 
-          d(3,3).update('x',data3.typeLP,'y',data3.rewardLicks,'color',data3.Projection, 'group', group)
+%           d(3,3).update('x',data3.typeLP,'y',data3.rewardLicks,'color',data3.Projection, 'group', group)
+          d(3,3).update('x',data3.Projection,'y',data3.rewardLicks,'color',data3.typeLP, 'group', group)
 
 %         d(3,3).stat_summary('type','sem','geom','area');
-        d(3,3).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+        d(3,3).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge, 'width',width)%,'bar' 'black_errorbar'});
 
         d(3,3).set_line_options('base_size',linewidthSubj);
         d(3,3).set_color_options('map', cmapSubj);
@@ -1169,15 +1199,21 @@ cmapGrand= cmapBlueGrayGrand;
         %subset- by projection not necessary
         data3= data2;
         
-        %cmap for Projection comparisons
-        cmapGrand= 'brewer_dark';
-        cmapSubj= 'brewer2';   
+        %cmap for Laser comparisons
+        cmapGrand= cmapBlueGrayGrand;
+        cmapSubj= cmapBlueGraySubj;   
         
         %-- individual subj
         group= data3.Subject;
 
-        d(2,3)=gramm('x',data3.trainPhaseLabel,'y',data3.(y),'color',data3.Projection, 'group', group)
+%         d(2,3)=gramm('x',data3.trainPhaseLabel,'y',data3.(y),'color',data3.Projection, 'group', group)
 
+        d(2,3)=gramm('x',data3.Projection,'y',data3.(y),'color',data3.typeLP, 'group', group)
+
+        %Facet by trainPhaseLabel
+        d(2,3).facet_grid([], data3.trainPhaseLabel);
+        
+        
 %        
 %         d(2,3).stat_summary('type','sem','geom','area');
 %         d(2,3).set_line_options('base_size',linewidthSubj);
@@ -1195,13 +1231,14 @@ cmapGrand= cmapBlueGrayGrand;
         %------ btwn subj mean as well
         group= [];
 
-        d(2,3).update('x',data3.trainPhaseLabel,'y',data3.(y),'color',data3.Projection, 'group', group)
+%         d(2,3).update('x',data3.trainPhaseLabel,'y',data3.(y),'color',data3.Projection, 'group', group)
+        d(2,3).update('x',data3.Projection,'y',data3.(y),'color',data3.typeLP, 'group', group)
 
 %         d(2,3).stat_summary('type','sem','geom','area');
-        d(2,3).stat_summary('type','sem','geom',{'bar', 'black_errorbar'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+        d(2,3).stat_summary('type','sem','geom',{'bar', 'black_errorbar'}, 'dodge', dodge, 'width', width)%,'bar' 'black_errorbar'});
 
 
-        d(2,3).set_names('x','Session','y','Proportion Active Lever Presses','color','Projection')
+        d(2,3).set_names('x','Projection','y','Proportion Active Lever Presses','color','LP type')
 
 
         d(2,3).set_line_options('base_size',linewidthGrand);
