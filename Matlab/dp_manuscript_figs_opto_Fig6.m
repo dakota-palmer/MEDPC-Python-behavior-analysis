@@ -179,8 +179,8 @@ padPanel= 0.0025; %padding between other uiPanels
     % Panel A- Top row, full width
     w= 1-padWidth;
     
-        %make half-width
-    w= w / 2; %- padWidth;
+        %make full-width
+    w= w ;%/ 2; %- padWidth;
     
         %dynamically adjust bPos based on padHeight and height desired
     h= 0.49; %CHANGE HEIGHT
@@ -196,30 +196,33 @@ padPanel= 0.0025; %padding between other uiPanels
     
     %Position subsequent panels based on prior panels' Position
     
-    % Panel B-  2nd row, 2nd half 
-    lPos= (w + p1.Position(1) - padPanel + padWidth);
+    % Panel B-  2nd row, full
+%     lPos= (w + p1.Position(1) - padPanel + padWidth);
+%     lPos= p1.Position(1);
+
+    bPos= (p1.Position(2)) - h - padPanel;  
     
-    p2 = uipanel('Position',[lPos+padWidth, bPos, w, h],'Units','Normalized','Parent',f,'BackgroundColor',[1 1 1],'BorderType','etchedout')
+    p2 = uipanel('Position',[padWidth, bPos, w, h],'Units','Normalized','Parent',f,'BackgroundColor',[1 1 1],'BorderType','etchedout')
 
     
-    % Panel C- 2nd row, 1st half width
-        %... height of row 1 + 2 + padding
-    % redeclare height now for this panel
-    h= .49;
-    bPos= (p2.Position(2)) - (h) - padPanel;
+%     % Panel C- 2nd row, 1st half width
+%         %... height of row 1 + 2 + padding
+%     % redeclare height now for this panel
+%     h= .49;
+%     bPos= (p2.Position(2)) - (h) - padPanel;
 
 
-        %... width of A/B
-    w= p2.Position(3)
-        
-%     p3= uipanel('Position',[padWidth, bPos, w, .32],'Units','Normalized','Parent',f,'BackgroundColor',[1 1 1],'BorderType','etchedout')
-    p3= uipanel('Position',[padWidth, bPos, w, h],'Units','Normalized','Parent',f,'BackgroundColor',[1 1 1],'BorderType','etchedout')
-        
-
-    % Panel D- 3rd row, 2nd half width
-    lPos= (w + p3.Position(1) - padPanel + padWidth);
-
-    p4= uipanel('Position',[lPos, bPos, w, h],'Units','Normalized','Parent',f,'BackgroundColor',[1 1 1],'BorderType','etchedout')
+%         %... width of A/B
+%     w= p2.Position(3)
+%         
+% %     p3= uipanel('Position',[padWidth, bPos, w, .32],'Units','Normalized','Parent',f,'BackgroundColor',[1 1 1],'BorderType','etchedout')
+%     p3= uipanel('Position',[padWidth, bPos, w, h],'Units','Normalized','Parent',f,'BackgroundColor',[1 1 1],'BorderType','etchedout')
+%         
+% 
+%     % Panel D- 3rd row, 2nd half width
+%     lPos= (w + p3.Position(1) - padPanel + padWidth);
+% 
+%     p4= uipanel('Position',[lPos, bPos, w, h],'Units','Normalized','Parent',f,'BackgroundColor',[1 1 1],'BorderType','etchedout')
 
   
 %% Figure 6- ICSS
@@ -255,6 +258,7 @@ cmapGrand= 'brewer_dark';
 % subset data
 data= ICSStable;
 
+
 %-stack() to make inactive/active NPtype a variable
 data= stack(data, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'NewDataVariableName', 'countNP');
 
@@ -284,6 +288,12 @@ d(1,1).no_legend(); %prevent legend duplicates if you like
 %set text options
 d(1,1).set_text_options(text_options_DefaultStyle{:}); 
 
+figTitle= strcat('A ICSS');   
+d(1,1).set_title(figTitle);   
+
+
+d(1,1).set_parent(p1);
+
 
 d(1,1).draw()
 
@@ -299,10 +309,6 @@ d(1,1).set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side
 d(1,1).set_line_options('base_size',linewidthGrand);
 d(1,1).set_color_options('map', cmapGrand);
 
-
-figTitle= strcat('ICSS-dp-npType');   
-d(1,1).set_title(figTitle);   
-
 %Zoom in on lower NP subjects if desired
 % d().axe_property( 'YLim',[0 300]) %low responders
 % d().axe_property( 'YLim',[0, 1200]) %high responders
@@ -316,6 +322,7 @@ d(1,1).axe_property('XTick',[min(data.trainDayThisPhase):1:max(data.trainDayThis
 % d(:,2).axe_property('XLim',limXreversal); %,'YLim',[0 75],'YTick',[0:25:75]);
 % 
 
+d(1,1).no_legend(); %prevent legend duplicates if you like
 
 d(1,1).draw()
 
@@ -328,11 +335,18 @@ cmapGrand= cmapBlueGrayGrand;
 
 %subset data
 data= ICSStable;
+% 
+% sesToPlot= 5; %plot last day before reversal
+% 
+% ind= [];
+% ind= ICSStable.Session== sesToPlot;
 
-sesToPlot= 5; %plot last day before reversal
+% subset last day prior to reversal; and last day of reversal (for AUCs)
+sesToPlot= [];
 
-ind= [];
-ind= ICSStable.Session== sesToPlot;
+sesToPlot= [5,8];
+
+ind= ismember(data.Session, sesToInclude);
 
 data2= data(ind, :);
 
@@ -354,46 +368,60 @@ clear d2; figure();
 %- Bar of btwn subj means (group = [])
 group= []; %var by which to group
 
-d2(1,1)=gramm('x',data2.typeNP,'y',data2.logNP,'color',data2.typeNP, 'group', group)
+d2(1,1)=gramm('x',data2.Projection,'y',data2.logNP,'color',data2.typeNP, 'group', group)
 
-d2(1,1).facet_grid([], data2.Projection);
+d2(1,1).facet_grid([], data2.trainPhase);
 
-d2(1,1).stat_summary('type','sem', 'geom',{'bar' 'black_errorbar'}, 'dodge', dodge) 
+d2(1,1).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width) 
 d2(1,1).set_color_options('map',cmapGrand); 
 
-d2(1,1).set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
+% d2(1,1).set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
+d2(1,1).set_names('x','Projection','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
 
-figTitle= 'ICSS inset final session preReversal logScale';
+figTitle= 'B Final session logScale';
 
 d2(1,1).set_title(figTitle)
 
 %set text options- do before first draw() call so applied on subsequent updates()
 d2(1,1).set_text_options(text_options_DefaultStyle{:}); 
+d2(1,1).no_legend(); %prevent legend duplicates if you like
+
+d2(1,1).set_parent(p2);
+
 
 d2(1,1).draw()
 
 %- Draw lines between individual subject points (group= subject, color=[]);
 group= data2.Subject;
-d2(1,1).update('x', data2.typeNP,'y',data2.logNP,'color',[], 'group', group)
+d2(1,1).update('x', data2.Projection,'y',data2.logNP,'color',[], 'group', group)
 
 % d(1,1).stat_summary('geom',{'line'});
-d2(1,1).geom_line('alpha',0.3);
+% d2(1,1).geom_line('alpha',0.3, 'dodge', dodge);
 d2(1,1).set_line_options('base_size',linewidthSubj);
 
 d2(1,1).set_color_options('chroma', 0); %black lines connecting points
+d2(1,1).no_legend(); %prevent legend duplicates if you like
 
 d2(1,1).draw()
 
 %- Update with point of individual subj points (group= subject)
 group= data2.Subject;
-d2(1,1).update('x', data2.typeNP,'y',data2.logNP,'color',data2.typeNP, 'group', group)
+d2(1,1).update('x', data2.Projection,'y',data2.logNP,'color',data2.typeNP, 'group', group)
 d2(1,1).stat_summary('type','sem','geom',{'point'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
 
 d2(1,1).set_color_options('map',cmapSubj); 
+d2(1,1).no_legend(); %prevent legend duplicates if you like
 
 d2(1,1).draw();
 
+%- update error bar on top
+group=[];
+d2(1,1).update('x',data2.Projection,'y',data2.logNP,'color',data2.typeNP, 'group', group);
 
+d2(1,1).stat_summary('type','sem', 'geom',{'black_errorbar'}, 'dodge', dodge, 'width', width);
+d2(1,1).no_legend(); %prevent legend duplicates if you like
+
+d2(1,1).draw();
 
 
 %% Fig 6 draft 1
@@ -403,7 +431,6 @@ cmapGrand= cmapBlueGrayGrand;
 
 % subset data
 data= ICSStable;
-
 
 %stack() to make inactive/active NPtype a variable
 data= stack(data, {'ActiveNP', 'InactiveNP'}, 'IndexVariableName', 'typeNP', 'NewDataVariableName', 'countNP');
@@ -478,40 +505,40 @@ d.draw()
 %- Remove borders of UIpanels prior to save
 p1.BorderType= 'none'
 p2.BorderType= 'none'
-p3.BorderType= 'none'
-p4.BorderType= 'none'
-% 
-% % this works and looks pretty good, tho errorbars and layout weird
-% % layout good before this, dont do it again
-% %- set size appropriately in cm
-% set(f, 'Units', 'centimeters', 'Position', figSize);
-% set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
-% 
-% % % % works well for pdf, not SVG (SVG is larger for some reason)
-% % % % but pdf still has big white space borders
-% % % % https://stackoverflow.com/questions/5150802/how-to-save-a-plot-into-a-pdf-file-without-a-large-margin-around
-% % set(f, 'PaperPosition', [0, 0, figWidth, figHeight], 'Units', 'centimeters'); %Set the paper to have width 5 and height 5.
-% 
-% % this throws off the vertical pos between c and d... need 'PaperUnits'?
-% set(f, 'PaperUnits', 'centimeters', 'PaperSize', [figWidth, figHeight]); %Set the paper to have width 5 and height 5.
-% 
-
-% % % alt method - tight layout
-% % ti = get(gca,'TightInset')
-% % set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
+% % p3.BorderType= 'none'
+% % p4.BorderType= 'none'
 % % 
-% % set(gca,'units','centimeters')
-% % pos = get(gca,'Position');
-% % ti = get(gca,'TightInset');
+% % % this works and looks pretty good, tho errorbars and layout weird
+% % % layout good before this, dont do it again
+% % %- set size appropriately in cm
+% % set(f, 'Units', 'centimeters', 'Position', figSize);
+% % set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
 % % 
-% % set(gcf, 'PaperUnits','centimeters');
-% % set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
-% % set(gcf, 'PaperPositionMode', 'manual');
-% % set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+% % % % % works well for pdf, not SVG (SVG is larger for some reason)
+% % % % % but pdf still has big white space borders
+% % % % % https://stackoverflow.com/questions/5150802/how-to-save-a-plot-into-a-pdf-file-without-a-large-margin-around
+% % % set(f, 'PaperPosition', [0, 0, figWidth, figHeight], 'Units', 'centimeters'); %Set the paper to have width 5 and height 5.
+% % 
+% % % this throws off the vertical pos between c and d... need 'PaperUnits'?
+% % set(f, 'PaperUnits', 'centimeters', 'PaperSize', [figWidth, figHeight]); %Set the paper to have width 5 and height 5.
+% % 
+% 
+% % % % alt method - tight layout
+% % % ti = get(gca,'TightInset')
+% % % set(gca,'Position',[ti(1) ti(2) 1-ti(3)-ti(1) 1-ti(4)-ti(2)]);
+% % % 
+% % % set(gca,'units','centimeters')
+% % % pos = get(gca,'Position');
+% % % ti = get(gca,'TightInset');
+% % % 
+% % % set(gcf, 'PaperUnits','centimeters');
+% % % set(gcf, 'PaperSize', [pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
+% % % set(gcf, 'PaperPositionMode', 'manual');
+% % % set(gcf, 'PaperPosition',[0 0 pos(3)+ti(1)+ti(3) pos(4)+ti(2)+ti(4)]);
 
 
 %-Save the figure
-titleFig='vp-vta_Figure4_uiPanels';
+titleFig='vp-vta_Figure6_uiPanels';
 
 %try export_fig fxn 
 % looks terrible, not vectorized

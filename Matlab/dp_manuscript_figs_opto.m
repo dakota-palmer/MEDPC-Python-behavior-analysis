@@ -18,6 +18,8 @@ figFormats= {'.svg', '.pdf'} %list of formats to save figures as (for saveFig.m)
 %% set gramm defaults
 set_gramm_plot_defaults();
 
+close all;
+
 %% fig 4 - DS task + opto
 
 dp_manuscript_figs_opto_Fig4();
@@ -27,3 +29,4 @@ dp_manuscript_figs_opto_Fig5();
 
 
 %% Fig 6 - ICSS 
+dp_manuscript_figs_opto_Fig6();
