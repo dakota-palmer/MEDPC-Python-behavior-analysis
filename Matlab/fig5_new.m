@@ -1,5 +1,46 @@
 %% Manuscript fig 5 new iterations
 
+
+%% Load Opto choice task data
+
+load("C:\Users\Dakota\Documents\GitHub\DS-Training\Matlab\_output\_choiceTask\VP-OPTO-choiceTask-02-Feb-2023-choiceTaskTable.mat");
+
+data=[];
+data= choiceTaskTable;
+
+%% Note that prior script excluded observations based on behavioral criteria
+
+
+%% EXCLUDE data 
+%- Based on virusType
+include= [];
+include= 'stimulation';
+
+ind=[];
+ind= strcmp(data.virusType, include);
+
+data= data(ind, :);
+
+%- Based on projection target
+exclude= [];
+exclude= 'PFC';
+
+ind=[];
+ind= strcmp(data.Projection, exclude);
+
+data= data(~ind,:);
+
+%- Based on Histology
+ind= [];
+ind= data.Expression==1;
+
+data= data(ind,:);
+
+%-overwrite stimTable
+choiceTaskTable= data;
+
+
+
 %% Axes limits
 
 % ylimLPcount= [0,155];
