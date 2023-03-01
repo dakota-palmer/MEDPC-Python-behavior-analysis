@@ -41,7 +41,14 @@ choiceTaskTable= data;
 
 
 
-%% Axes limits
+%% Aesthetics
+
+% dodge/width for 2 categories
+dodge=  0.05;
+width= 1.9;
+
+
+% Axes limits
 
 % ylimLPcount= [0,155];
 % 
@@ -176,9 +183,9 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(1,2).update('x',data3.Session,'y',data3.countLP,'color',data3.typeLP, 'group', group)
 
-        d(1,2).stat_summary('type','sem','geom','area'), 'dodge', dodge, 'width', width;
+        d(1,2).stat_summary('type','sem','geom','area', 'dodge', dodge, 'width', width);
 
-        d(1,2).set_names('x','Session','y','Number of Lever Presses','color','Lever Side')
+        d(1,2).set_names('x','Session','y','Number of Lever Presses','color','Lever Side', 'column', '')
     %     d.set_names('row','Target','column','Phase','x','Session','y','Number of Lever Presses','color','Lever Side')
 
 
@@ -246,6 +253,9 @@ cmapGrand= cmapBlueGrayGrand;
                        
         d(1,3).set_text_options(text_options_DefaultStyle{:}); %apply default text sizes/styles
 
+        d(1,3).set_names('x','Session','y','Licks per Reward','color','Projection', 'column', '')
+
+        
         d(1,3).draw()
            
 
@@ -258,7 +268,6 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(1,3).stat_summary('type','sem','geom','area');
 
-        d(1,3).set_names('x','Session','y','Licks per Reward','color','Projection')
 
 
         d(1,3).set_line_options('base_size',linewidthGrand);
@@ -339,7 +348,9 @@ cmapGrand= cmapBlueGrayGrand;
         d(2,1).axe_property('YTick',yTickLPcount1);
 
         d(2,1).set_text_options(text_options_DefaultStyle{:}); %apply default text sizes/styles
-
+   
+        d(2,1).set_names('x','Session','y','Number of Lever Presses','color','Projection', 'column', '')
+        
         d(2,1).draw()
            
 
@@ -351,7 +362,7 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(2,1).stat_summary('type','sem','geom','area');
 
-        d(2,1).set_names('x','Session','y',y,'color','Projection')
+%         d(2,1).set_names('x','Session','y',y,'color','Projection')
 
        
         d(2,1).set_line_options('base_size',linewidthGrand);
@@ -426,6 +437,8 @@ cmapGrand= cmapBlueGrayGrand;
         d(2,2).axe_property('YTick',yTickLPcount1);
 
         d(2,2).set_text_options(text_options_DefaultStyle{:}); %apply default text sizes/styles
+        
+        d(2,2).set_names('x','Session','y','Number of Lever Presses','color','Projection', 'column', '')
 
         d(2,2).draw()
            
@@ -438,7 +451,7 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(2,2).stat_summary('type','sem','geom','area');
 
-        d(2,2).set_names('x','Session','y',y,'color','Projection')
+%         d(2,2).set_names('x','Session','y',y,'color','Projection')
 
 
         d(2,2).set_line_options('base_size',linewidthGrand);
@@ -501,11 +514,13 @@ cmapGrand= cmapBlueGrayGrand;
 
         
 %         d(2,3).stat_summary('type','sem','geom','area');
-        d(2,3).stat_summary('type','sem','geom',{'bar'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+        d(2,3).stat_summary('type','sem','geom',{'bar'}, 'dodge', dodge, 'width', width)%,'bar' 'black_errorbar'});
 
 
 %         d(2,3).set_names('x','Session','y','Proportion Active Lever Presses','color','Projection')
-        d(2,3).set_names('x','Session','y',y,'color','Projection')
+%         d(2,3).set_names('x','Session','y',y,'color','Projection')
+        d(2,3).set_names('x','Session','y','Number of Lever Presses','color','Projection', 'column', '')
+
 
         d(2,3).set_title('Test- Active Proportion');
 
@@ -575,7 +590,7 @@ cmapGrand= cmapBlueGrayGrand;
         group= [];
 
         d(2,3).update('x',data3.typeLP,'y',data3.(y),'color',data3.typeLP, 'group', group)
-        d(2,3).stat_summary('type','sem','geom',{'black_errorbar'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+        d(2,3).stat_summary('type','sem','geom',{'black_errorbar'}, 'dodge', dodge, 'width', width)%,'bar' 'black_errorbar'});
 
         d(2,3).no_legend();
         
@@ -646,7 +661,8 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(3,1).set_text_options(text_options_DefaultStyle{:}); %apply default text sizes/styles
 
-        
+        d(3,1).set_names('x','Session','y','Proportion Active Lever Presses','color','Projection', 'column', '')
+
         d(3,1).draw()
            
 
@@ -656,8 +672,6 @@ cmapGrand= cmapBlueGrayGrand;
         d(3,1).update('x',data3.Session,'y',data3.(y),'color',data3.Projection, 'group', group)
 
         d(3,1).stat_summary('type','sem','geom','area');
-
-        d(3,1).set_names('x','Session','y','Proportion Active Lever Presses','color','Projection')
 
        
         d(3,1).set_line_options('base_size',linewidthGrand);
@@ -740,7 +754,7 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(3,2).stat_summary('type','sem','geom','area');
 
-        d(3,2).set_names('x','Session','y','Proportion Active Lever Presses','color','Projection')
+        d(3,2).set_names('x','Session','y','Proportion Active Lever Presses','color','Projection', 'column', '')
 
        
         d(3,2).set_line_options('base_size',linewidthGrand);
@@ -807,11 +821,12 @@ cmapGrand= cmapBlueGrayGrand;
 
         
 %         d(3,3).stat_summary('type','sem','geom','area');
-        d(3,3).stat_summary('type','sem','geom',{'bar'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+        d(3,3).stat_summary('type','sem','geom',{'bar'}, 'dodge', dodge, 'width', width)%,'bar' 'black_errorbar'});
 
 
 %         d(3,3).set_names('x','Session','y','Proportion Active Lever Presses','color','Projection')
-        d(3,3).set_names('x','Session','y',y,'color','Projection')
+%         d(3,3).set_names('x','Session','y',y,'color','Projection')
+        d(3,3).set_names('x','Session','y','Number of Lever Presses','color','Projection','column', '')
 
         d(3,3).set_title('Test- Active Proportion');
 
@@ -883,7 +898,7 @@ cmapGrand= cmapBlueGrayGrand;
         group= [];
 
         d(3,3).update('x',data3.Projection,'y',data3.(y),'color',data3.Projection, 'group', group)
-        d(3,3).stat_summary('type','sem','geom',{'black_errorbar'}, 'dodge', dodge)%,'bar' 'black_errorbar'});
+        d(3,3).stat_summary('type','sem','geom',{'black_errorbar'}, 'dodge', dodge, 'width', width)%,'bar' 'black_errorbar'});
 
         d(3,3).no_legend();
         

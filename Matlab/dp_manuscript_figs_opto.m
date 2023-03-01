@@ -29,4 +29,5 @@ dp_manuscript_figs_opto_Fig4();
 fig5_new();
 
 %% Fig 6 - ICSS 
-dp_manuscript_figs_opto_Fig6();
+% dp_manuscript_figs_opto_Fig6();
+fig6_new();

@@ -281,7 +281,7 @@ g2(1,1).set_color_options('map',cmapGrand);
 g2(1,1).set_line_options('base_size',linewidthGrand);
 
 
-g2(1,1).set_names('row','','x','Laser Duration (s)','y','PE Probability')
+g2(1,1).set_names('row','','x','Laser Duration (s)','y','PE Probability', 'column', '');
 
 figTitle= strcat('C');   
 g2(1,1).set_title(figTitle);
@@ -359,7 +359,7 @@ g(1,1).set_line_options('base_size',linewidthGrand);
 
 g(1,1).set_color_options('map',cmapGrand); 
 
-g(1,1).set_names('row','','x','Laser Duration (s)','y','PE Latency (s)')
+g(1,1).set_names('row','','x','Laser Duration (s)','y','PE Latency (s)', 'column','')
 
 
 figTitle= strcat('D');   

@@ -1,5 +1,84 @@
+% Load Opto ICSS data
+
+load("C:\Users\Dakota\Documents\GitHub\DS-Training\Matlab\_output\_ICSS\VP-OPTO-ICSS-06-Feb-2023-ICSStable.mat");
+
+data=[];
+data= ICSStable;
+
+%% Note that prior script excluded subjects based on behavioral criteria
+
+
+%% EXCLUDE data 
+%- Based on virusType
+include= [];
+include= 'stimulation';
+
+ind=[];
+ind= strcmp(data.virusType, include);
+
+data= data(ind, :);
+
+%- Based on laserDur (StimLength)
+
+
+%- Based on projection target
+exclude= [];
+exclude= 'PFC';
+
+ind=[];
+ind= strcmp(data.Projection, exclude);
+
+data= data(~ind,:);
+
+%- Based on Histology
+ind= [];
+ind= data.Expression==1;
+
+data= data(ind,:);
+
+%-overwrite stimTable
+ICSStable= data;
+
+
+%% Initialize Figure
+
+f= figure();
+% %cm not working on instantiation, try setting after
+% % set(f, 'Units', 'centimeters', 'Position', figSize);
+% 
+% %set outerposition as well
+% % set(f, 'Units', 'centimeters', 'Position', figSize);
+% % set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
+
+%- set size appropriately in cm
+set(f, 'Units', 'centimeters', 'Position', figSize);
+% outerpos makes it tighter, just in case UIpanels go over
+set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
+
+% % % works well for pdf, not SVG (SVG is larger for some reason)
+% % % but pdf still has big white space borders
+% % % https://stackoverflow.com/questions/5150802/how-to-save-a-plot-into-a-pdf-file-without-a-large-margin-around
+set(f, 'PaperPosition', [0, 0, figWidth, figHeight], 'PaperUnits', 'centimeters', 'Units', 'centimeters'); %Set the paper to have width 5 and height 5.
+
+set(f, 'PaperUnits', 'centimeters', 'PaperSize', [figWidth, figHeight]); %Set the paper to have width 5 and height 5.
+
+
+
+
+%----- Aesthetics 
+
 cmapSubj= cmapBlueGraySubj;
 cmapGrand= cmapBlueGrayGrand;
+
+% dodge/width for 2 categories
+dodge=  0.05;
+width= 1.9;
+
+
+ylimLP= [0,500];
+    
+yTickLP= [0:50:max(ylimLP)]; % ticks every 
+
 
 
 %---- Row 1: Pre-Reversal
@@ -24,7 +103,8 @@ y= 'countNP';
 
 
 %generate figure
-figure; clear d;
+% figure; clear d;
+clear d;
 
 %-- individual subj
 group= dataFig6A.Subject;
@@ -118,7 +198,8 @@ d(2,1).facet_grid([], dataFig6B.Projection, 'scale', 'free_x');
 
 
 % d(2,1).stat_summary('type','sem','geom','line');
-d(2,1).set_names('x','Session','y',y,'color','Nosepoke Side','column','');
+% d(2,1).set_names('x','Session','y','Number of Nose Pokes','color','Nosepoke Side','column','');
+d(2,1).set_names('x','Session (Reversal)','y','Number of Nose Pokes','color','Nosepoke Side','column','');
 
 d(2,1).set_line_options('base_size',linewidthSubj);
 d(2,1).set_color_options('map', cmapSubj);
@@ -231,7 +312,7 @@ d(1,2).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width
 d(1,2).set_color_options('map',cmapGrand); 
 
 % d(1,2).set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
-d(1,2).set_names('x','Projection','y',y,'color','Nosepoke Side', 'column', '');
+d(1,2).set_names('x','Nosepoke Side','y',y,'color','Nosepoke Side', 'column', '');
 
 figTitle= 'B) Final OGside session';
 
@@ -345,7 +426,7 @@ d(2,2).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width
 d(2,2).set_color_options('map',cmapGrand); 
 
 % d(2,2).set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
-d(2,2).set_names('x','Projection','y',y,'color','Nosepoke Side', 'column', '')
+d(2,2).set_names('x','Nosepoke Side','y',y,'color','Nosepoke Side', 'column', '')
 
 figTitle= 'E) Final Reversal session';
 
@@ -455,7 +536,8 @@ d(1,3).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width
 d(1,3).set_color_options('map',cmapGrand); 
 
 % d(1,3).set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
-d(1,3).set_names('x','Projection','y',y,'color','Nosepoke Side', 'column', '')
+% d(1,3).set_names('x','Projection','y',y,'color','Nosepoke Side', 'column', '')
+d(1,3).set_names('x','Projection','y', 'Proportion Active Nosepokes','color','Nosepoke Side', 'column', '')
 
 figTitle= 'C) Final OGside session ';
 
@@ -466,6 +548,8 @@ d(1,3).set_text_options(text_options_DefaultStyle{:});
 d(1,3).no_legend(); %prevent legend duplicates if you like
 
 % d(1,3).set_parent(p2);
+d(1,3).axe_property( 'YLim', [0,1]);
+d(1,3).axe_property( 'YTick', [0:0.1:1]);
 
 
 d(1,3).draw()
@@ -560,7 +644,9 @@ d(2,3).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width
 d(2,3).set_color_options('map',cmapGrand); 
 
 % d(2,3).set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
-d(2,3).set_names('x','Projection','y',y,'color','Nosepoke Side')
+% d(2,3).set_names('x','Projection','y',y,'color','Nosepoke Side')
+d(2,3).set_names('x','Projection','y', 'Proportion Active Nosepokes','color','Nosepoke Side', 'column', '')
+
 
 figTitle= 'F) Final Reversal session';
 
@@ -803,7 +889,33 @@ d(2,3).geom_hline('yintercept',0.5, 'style', 'k--', 'linewidth', linewidthRefere
 d.draw()
 
 %% -- Breakaway plots of high count NP (in VTA group >500)
-figure; clear d;
+%%Initialize Figure
+
+f2= figure();
+% %cm not working on instantiation, try setting after
+% % set(f, 'Units', 'centimeters', 'Position', figSize);
+% 
+% %set outerposition as well
+% % set(f, 'Units', 'centimeters', 'Position', figSize);
+% % set(f, 'Units', 'centimeters', 'OuterPosition', figSize);
+
+%- set size appropriately in cm
+set(f2, 'Units', 'centimeters', 'Position', figSize);
+% outerpos makes it tighter, just in case UIpanels go over
+set(f2, 'Units', 'centimeters', 'OuterPosition', figSize);
+
+% % % works well for pdf, not SVG (SVG is larger for some reason)
+% % % but pdf still has big white space borders
+% % % https://stackoverflow.com/questions/5150802/how-to-save-a-plot-into-a-pdf-file-without-a-large-margin-around
+set(f2, 'PaperPosition', [0, 0, figWidth, figHeight], 'PaperUnits', 'centimeters', 'Units', 'centimeters'); %Set the paper to have width 5 and height 5.
+
+set(f2, 'PaperUnits', 'centimeters', 'PaperSize', [figWidth, figHeight]); %Set the paper to have width 5 and height 5.
+
+
+% 
+% figure; clear d;
+
+clear d; 
 
 ylimLPfull= [500,1300];
     
@@ -874,7 +986,7 @@ d(1,2).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width
 d(1,2).set_color_options('map',cmapGrand); 
 
 % d(1,2).set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
-d(1,2).set_names('x','Projection','y',y,'color','Nosepoke Side', 'column', '');
+d(1,2).set_names('x','Nosepoke Side','y',y,'color','Nosepoke Side', 'column', '');
 
 figTitle= 'B) Final OGside session';
 
@@ -987,7 +1099,7 @@ d(2,2).stat_summary('type','sem', 'geom',{'bar'}, 'dodge', dodge, 'width', width
 d(2,2).set_color_options('map',cmapGrand); 
 
 % d(2,2).set_names('x','Nosepoke Side','y','Log(Number of Nose Pokes)','color','Nosepoke Side')
-d(2,2).set_names('x','Projection','y',y,'color','Nosepoke Side', 'column', '')
+d(2,2).set_names('x','Nosepoke Side','y',y,'color','Nosepoke Side', 'column', '')
 
 figTitle= 'E) Final Reversal session';
 
@@ -1074,4 +1186,27 @@ dataTableFig6.Box= [dataTableFig6.Box{:}]';
 parquetwrite(strcat('vp-vta-fp_stats_fig6Table'), dataTableFig6);
 
 
+%% SAVE FIGURE
+
+%-Save the figure
+titleFig='vp-vta_Figure6_mockup';
+
+%try export_fig fxn 
+% looks terrible, not vectorized
+% export_fig(f,strcat(titleFig,'.pdf'));
+
+% saveFig(gcf, figPath, titleFig, figFormats, figSize);
+saveFig(f, figPath, titleFig, figFormats);%, figSize);
+
+
+%-- save Breakout figure too
+%-Save the figure
+titleFig='vp-vta_Figure6_mockup_Breakout';
+
+%try export_fig fxn 
+% looks terrible, not vectorized
+% export_fig(f,strcat(titleFig,'.pdf'));
+
+% saveFig(gcf, figPath, titleFig, figFormats, figSize);
+saveFig(f2, figPath, titleFig, figFormats);%, figSize);
 
