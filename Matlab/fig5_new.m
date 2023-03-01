@@ -173,7 +173,7 @@ cmapGrand= cmapBlueGrayGrand;
 %         g2.axe_property('YTick',yTickProb);
 
            
-        d(1,2).set_title('Acquistion- VTA');
+%         d(1,2).set_title('Acquistion');
         
         d(1,2).draw()
            
@@ -241,7 +241,7 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(1,3).no_legend(); %avoid duplicate legend from other plots (e.g. subject & grand colors)
            
-        d(1,3).set_title('Acquisition- Licks per Reward');
+%         d(1,3).set_title('Acquisition- Licks per Reward');
         
         ylimLickcount1= [0,50];
                 
@@ -338,7 +338,7 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(2,1).no_legend(); %avoid duplicate legend from other plots (e.g. subject & grand colors)
            
-        d(2,1).set_title('Reversal- LP Count');
+%         d(2,1).set_title('Reversal- LP Count');
         
         
 %         ylimLPcount1= [0,100];
@@ -428,7 +428,7 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(2,2).no_legend(); %avoid duplicate legend from other plots (e.g. subject & grand colors)
            
-        d(2,2).set_title('Forced Choice- LP count');
+%         d(2,2).set_title('Forced Choice- LP count');
         
 %         ylimLPcount1= [0,100];
         yTickLPcount1= [ylimLPcount1(1):20:ylimLPcount1(2)]; %steps
@@ -519,10 +519,10 @@ cmapGrand= cmapBlueGrayGrand;
 
 %         d(2,3).set_names('x','Session','y','Proportion Active Lever Presses','color','Projection')
 %         d(2,3).set_names('x','Session','y',y,'color','Projection')
-        d(2,3).set_names('x','Session','y','Number of Lever Presses','color','Projection', 'column', '')
+        d(2,3).set_names('x','Lever Side','y','Number of Lever Presses','color','Projection', 'column', '')
 
 
-        d(2,3).set_title('Test- Active Proportion');
+%         d(2,3).set_title('Test- Active Proportion');
 
         d(2,3).set_line_options('base_size',linewidthGrand);
         d(2,3).set_color_options('map', cmapGrand);
@@ -647,7 +647,7 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(3,1).no_legend(); %avoid duplicate legend from other plots (e.g. subject & grand colors)
            
-        d(3,1).set_title('Reversal- Active Proportion');
+%         d(3,1).set_title('Reversal- Active Proportion');
         
 %         ylimLPproportion2= [0,1];
 %         yTickLPproportion2= [ylimLPproportion2(1):.2:ylimLPproportion2(2)]; %steps
@@ -733,7 +733,7 @@ cmapGrand= cmapBlueGrayGrand;
 
         d(3,2).no_legend(); %avoid duplicate legend from other plots (e.g. subject & grand colors)
            
-        d(3,2).set_title('Reversal- Active Proportion');
+%         d(3,2).set_title('Reversal- Active Proportion');
         
         ylimLPproportion2= [0.3,0.7];
         yTickLPproportion2= [ylimLPproportion2(1):.1:ylimLPproportion2(2)]; %steps
@@ -826,9 +826,9 @@ cmapGrand= cmapBlueGrayGrand;
 
 %         d(3,3).set_names('x','Session','y','Proportion Active Lever Presses','color','Projection')
 %         d(3,3).set_names('x','Session','y',y,'color','Projection')
-        d(3,3).set_names('x','Session','y','Number of Lever Presses','color','Projection','column', '')
+        d(3,3).set_names('x','Projection','y','Number of Lever Presses','color','Projection','column', '')
 
-        d(3,3).set_title('Test- Active Proportion');
+%         d(3,3).set_title('Test- Active Proportion');
 
         d(3,3).set_line_options('base_size',linewidthGrand);
         d(3,3).set_color_options('map', cmapGrand);
@@ -908,6 +908,8 @@ cmapGrand= cmapBlueGrayGrand;
     %% % FINAL DRAW
         d.draw()
         
+  
+%% Labeled version of above?
         
 
 %% EXPORT DATA FOR STATS ANALYSIS IN PYTHON/R
