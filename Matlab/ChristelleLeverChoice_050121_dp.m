@@ -32,6 +32,7 @@ cd(CurrentDir)
 [~,~,ratinfo] = xlsread('Christelle Opto Summary Record_dp.xlsx');
 
 VarNames = raw(1,:);
+
 Data = raw(2: end,:);
 
 LeverChoice = struct();

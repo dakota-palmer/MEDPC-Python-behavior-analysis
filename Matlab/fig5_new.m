@@ -1,5 +1,6 @@
 %% Manuscript fig 5 new iterations
 
+%% FULL FIGURE 5 SUPPLEMENT (original 9 panel)
 
 %% Load Opto choice task data
 
@@ -915,6 +916,84 @@ cmapGrand= cmapBlueGrayGrand;
 %% EXPORT DATA FOR STATS ANALYSIS IN PYTHON/R
 
 
+%subset data
+data= choiceTaskTable;
+
+data2= data;%(ind, :);
+
+%-stack() to make inactive/active NPtype a variable
+data2= stack(data, {'ActiveLeverPress', 'InactiveLeverPress'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'countLP');
+
+% test= stack(data, {'LicksPerReward', 'LicksPerRewardInactive'}, 'IndexVariableName', 'typeLP', 'NewDataVariableName', 'rewardLicks');
+
+
+
+%export as parquet for python
+dataTableFig5= data2;
+
+%remove columns not needed
+% dataTableFig5= removevars(dataTableFig5,{'Experiment', 'StartDate'});
+dataTableFig5= removevars(dataTableFig5,{'Experiment', 'StartDate', 'PortTimeNoChoice'});
+
+
+%changing dtypes, parquet doesn't like cells
+dataTableFig5.Box= [dataTableFig5.Box{:}]';
+dataTableFig5.TotalStimulations= [dataTableFig5.TotalStimulations{:}]';
+dataTableFig5.ActiveLeverPELatency= [dataTableFig5.ActiveLeverPELatency{:}]';
+dataTableFig5.InactiveLeverPELatency= [dataTableFig5.InactiveLeverPELatency{:}]';
+dataTableFig5.TotalPE= [dataTableFig5.TotalPE{:}]';
+
+dataTableFig5.TotalTimeinPort= [dataTableFig5.TotalTimeinPort{:}]';
+dataTableFig5.PortTimeActiveLever= [dataTableFig5.PortTimeActiveLever{:}]';
+dataTableFig5.PortTimeInactiveLever= [dataTableFig5.PortTimeInactiveLever{:}]';
+dataTableFig5.TotalLicks= [dataTableFig5.TotalLicks{:}]';
+
+
+% %2023-03-07 OV5 is missing observations? because of behavioral criteria
+% test= groupsummary(choiceTaskTable, 'Subject')
+
+% vars= dataTableFig5.Properties.VariableNames;
+
+% for i = 1 : numel(vars)
+% %     if any(cellfun(@ischar, dataTableFig5.(vars{i})))%any(ischar(Data{:,i}))
+% %     if any(cellfun(@ischar, dataTableFig5(1:end,i)))%any(ischar(Data{:,i}))
+% %     if ischar(dataTableFig5(1,i))%any(ischar(Data{:,i}))
+%        
+% %     test= dataTableFig5.(vars{i});
+%     test= dataTableFig5(:,vars{i});
+% 
+% 
+%     if ischar(test(1))
+% 
+%         dataTableFig5.(vars{i}) = (dataTableFig5(1:end,(i)));%cell2mat(Data(1:end,(i)));
+%     else
+%         dataTableFig5.(vars{i}) = cell2mat(dataTableFig5(1:end,(i)));
+%     end
+% end
+
+% vars= dataTableFig5.Properties.VariableNames;
+% 
+% for col = 1 : numel(vars)
+% %   fprintf('\nHere is column #%d, which is called %s\n', col, T.Properties.VariableNames{col})
+% %   thisColumn = T(:, col) % Extract this one column into its own variable.
+%   % Now do whatever you want with "thisColumn" variable.
+% %   if iscell(dataTableFig5(1,col))
+% %   if class(dataiTableFig5(:,col))== 'cell'
+% 
+%   if iscell(dataTableFig5.(vars{col}))
+%       
+%      dataTableFig5(:,vars{col})= [dataTableFig5.(vars{col}){:}];
+%       
+%   end
+%   
+% end
+
+
+
+% save table as Parquet file
+% % https://www.quora.com/When-should-I-use-parquet-file-to-store-data-instead-of-csv
+
+parquetwrite(strcat('vp-vta-fp_stats_fig5Table'), dataTableFig5);
 
 %% Save the figure
 
@@ -945,5 +1024,5 @@ titleFig='vp-vta_Figure5_uiPanels';
 saveFig(gcf, figPath, titleFig, figFormats, figSize);
 
         
-    
-        
+
+

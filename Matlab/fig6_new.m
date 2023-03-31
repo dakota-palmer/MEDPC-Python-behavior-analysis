@@ -917,9 +917,10 @@ set(f2, 'PaperUnits', 'centimeters', 'PaperSize', [figWidth, figHeight]); %Set t
 
 clear d; 
 
-ylimLPfull= [500,1300];
+ylimLPfull= [600,1300];
     
-yTickLPfull= [0:50:max(ylimLPfull)]; % ticks every 
+% yTickLPfull= [0:50:max(ylimLPfull)]; % ticks every 
+yTickLPfull= [0:200:max(ylimLPfull)]; % ticks every 
 
 
 %-- Row 1 col 2- last day OG side 

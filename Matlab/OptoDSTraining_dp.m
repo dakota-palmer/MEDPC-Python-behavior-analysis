@@ -21,16 +21,30 @@ criteriaDiscrimIndex= 1.5; %respond to DS 30% more than NS
 % %-- christelle opto data
 
 
-% %--christelle opto data
-CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
-SavingDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy\_output'; %'/Volumes/nsci_richard/Christelle/Codes/Matlab';
+% % %--christelle opto data
+% CurrentDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy';
+% SavingDir = 'C:\Users\Dakota\Desktop\_christelle_opto_copy\_output'; %'/Volumes/nsci_richard/Christelle/Codes/Matlab';
+% cd(CurrentDir)
+% 
+% [~,~,raw] = xlsread('MasterOptoDSTrainingData');
+% [~,~,ratinfo] =  xlsread('Christelle Opto Summary Record.xlsx');
+
+CurrentDir = 'C:\Users\Dakota\Desktop\_dp_christelle_opto_workingDir';
+
 cd(CurrentDir)
 
-[~,~,raw] = xlsread('MasterOptoDSTrainingData');
-[~,~,ratinfo] =  xlsread('Christelle Opto Summary Record.xlsx');
+SavingDir = 'C:\Users\Dakota\Desktop\_dp_christelle_opto_workingDir\_output\_DS_task';
+
+%dp reextracted data
+% [~,~,raw] = xlsread("F:\_Github\Richard Lab\data-vp-opto\_Excel_Sheets\VP-Opto_allSessions_FullExtract_Corrected.xlsx"); %dp reextracted data
+[~,~,raw] = xlsread("F:\_Github\Richard Lab\data-vp-opto\_Excel_Sheets\_dp_reextracted\dp_reextracted_DS_sessions_and_Opto_sessions.xlsx")
+% [~,~,ratinfo] = xlsread('Christelle Opto Summary Record.xlsx');
+[~,~,ratinfo] = xlsread('Christelle Opto Summary Record_dp.xlsx');
 
 
 VarNames = raw(1,:);
+%remove spaces in VarName (strip)
+VarNames= strrep(VarNames, ' ','');
 Data = raw(2: end,:);
 
 TrainingData = struct();

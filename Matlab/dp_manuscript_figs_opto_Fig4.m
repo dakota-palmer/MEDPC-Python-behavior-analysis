@@ -474,3 +474,8 @@ titleFig='vp-vta_Figure4_uiPanels';
 % saveFig(gcf, figPath, titleFig, figFormats, figSize);
 saveFig(f, figPath, titleFig, figFormats);%, figSize);
 
+
+%% Make Alternate version of Figure 4 with Acquisition phase Only
+
+
+
