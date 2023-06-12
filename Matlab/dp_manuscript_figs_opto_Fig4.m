@@ -262,6 +262,18 @@ data= stimTable;
 %dp make stimLength categorical
 data.StimLength= categorical(data.StimLength);
 
+% 
+% % ---- 2023-04-06
+% already good
+%  %Mean/SEM update
+%  %instead of all trials, simplify to mean observation per subject
+%  % "Grand" mean+SEM should reflect mean and SEM of subject means, not mean and SEM of pooled data?
+% data= groupsummary(data, ["Projection","Subject","StimLength", "CueTypeLabel"], "mean",["ResponseProb"]);
+% 
+% % making new field with original column name to work with rest of old code bc 'mean_' is added 
+% data.ResponseProb= data.mean_ResponseProb;
+
+
 clear g2;
 
 % -- 1 = subplot of stimulation PE latency
@@ -334,6 +346,16 @@ cmapSubj= cmapCueLaserSubj;
 
 %subsset data
 data= stimTable;
+
+% % ---- 2023-04-06
+% already good
+%  %Mean/SEM update
+%  %instead of all trials, simplify to mean observation per subject
+%  % "Grand" mean+SEM should reflect mean and SEM of subject means, not mean and SEM of pooled data?
+% data= groupsummary(data, ["Projection","Subject","StimLength", "CueTypeLabel"], "mean",["RelLatency"]);
+% 
+% % making new field with original column name to work with rest of old code bc 'mean_' is added 
+% data.RelLatency= data.mean_RelLatency;
 
 
 %%Stimulation Latency
