@@ -25,9 +25,7 @@ close all;
 dp_manuscript_figs_opto_Fig4();
 
 %% fig 5 - Lever choice task
-% dp_manuscript_figs_opto_Fig5();
-fig5_new();
+dp_manuscript_figs_opto_Fig5();
 
 %% Fig 6 - ICSS 
-% dp_manuscript_figs_opto_Fig6();
-fig6_new();
+dp_manuscript_figs_opto_Fig6();
