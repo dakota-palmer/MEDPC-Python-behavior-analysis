@@ -1,0 +1,202 @@
+﻿\Edited on 2.3.2021 by Ankit- shofted from PUMP1 to PUMP2, no need to open box and clean the port and tubing.
+\Edited on 28.2.2021 by Ankit
+\Removed the testing part, program directly starts, done so as to not disturb the animal in chamber
+\30 minutes free-access in chamber test
+\adapted from RG's free access test
+\changes- Pump response to port entry and not licks; houselight instead of boxlight; initial pump on for 5" instead of 10"; introduce TTL pulses. Edited on 12.23.19
+\Ankit Sood
+
+\20-minutes free-access drinking test
+\ The test begins with the first port entry and lasts for 20 minutes
+\ Last edited on 8/19/2019
+\ Runbo Gao
+
+
+\CONSTANTS
+\^leftLever = 1
+\^rightLever = 2
+\^leftStimLight = 4
+\^rightStimLight = 5
+\^DSTone = 6
+\^DSTone2 = 23
+\^NSwhiteNoise = 8
+\^Boxlight = 28
+\^Pump1 = 9
+^Pump2 = 10
+^Houselight = 7
+
+\Input
+^PortEntry = 6 \ sustained PortEntry sensor
+\Lick = 7
+\rightLeverPress = 3
+
+
+\Output
+\rightLever = 3
+\^Pump1 = 9
+^Pump2 = 10
+\greenLight = 26
+\redLight = 27
+\^Boxlight = 28
+\^BoxlightForBox3 = 29
+^Houselight = 7
+^portTTL=43    \sends signal to TTL, Plexon, etc.
+^PortExitTTL=45 \sends TTL signal for port exit
+
+Var_Alias total N of PEs                = B(1)
+Var_Alias total N of licks                = B(2)
+
+
+
+\ Working Variables
+DIM B = 14
+\ B(0) = task length
+\ B(1) = total number of PortEntry
+\ B(2) = total number of licks
+\ B(3) = counter of lick bout
+\ B(4) = counter of licks per bout
+\ B(5) = lick timestamp
+\ B(6) = timer in .01” units
+\ B(7) = Pump ON timestamp
+\ B(8) = PortEntry start timestamp
+\ B(9) = PortEntry end timestamp
+\ B(10) = Average PortEntry duration
+\ B(11) = Average N of licks per bout
+\ B(12) = Average lick bout duration
+\ B(13) = Pump-on duration
+\ B(14) = counter of pump-on
+
+
+
+\ Data Array
+DIM C = 999 \ Timestamps of each PortEntry
+DIM D = 999 \ Duration of each PortEntry
+DIM E = 999 \ Timestamps of each lick bout
+DIM F = 999 \ Number of licks per bout
+DIM G = 999 \ Licks bout duration
+DIM H = 999 \ pump ON duration
+DIM I = 9999 \ Lick timestamps
+
+
+
+
+\ Z signal (within box)
+\ Z1 = test completion
+\ Z2 = start timing (after first PortEntry)
+\ Z3 = enter port signal
+\ Z4 = leaving port signal
+\ Z5 = stopping licking signal
+\ Z6 = end signal
+
+
+
+
+
+S.S.1, \ test the boxes
+S1,
+  .01": SET B(0) = 180000; SHOW 1, Test, B(0) ---> S4
+\S2,
+  \#R^PortEntry: ON^Pump, ^Houselight ---> S3\ edited out this part so as to not disturb the animal in chamber
+\S3,
+  \1": OFF^Pump,^Houselight ---> S4
+S4,
+.01": SHOW 1 ,Ready, B(0); Z1---> S5
+S5,
+ 1": ---> SX
+
+
+
+S.S.2, \ timing
+S1,
+  #Z1: ---> S2
+S2,
+  .01": ON^Pump2 ---> S3
+S3,
+  5": OFF^Pump2; SET B(6) = 0; Z2 ---> S4
+S4,
+  .01": ADD B(6);
+IF B(6)  >= B(0) [@T1, @F1]
+        @T1: Z6 ---> S5
+        @F1: ---> S4
+S5,
+  .01": ---> SX
+
+
+
+
+S.S.3, \ main controller
+S1,
+  #Z2: ON ^Houselight ---> S2
+S2,
+  .01": SHOW 1, Current Time, B(6) ---> S2
+  #Z6: OFF ^Houselight ---> STOPABORTFLUSH
+
+
+
+
+
+
+S.S.4, \ counter for PortEntries
+S1,
+  #Z2: SET B(1) = 0 ---> S2
+S2,
+  #R^PortEntry: Z3; ADD B(1); SET B(8) = B(6), C(B(1) - 1) = B(6), C(B(1)) = -987.987;
+  SHOW 2, Total PEs, B(1); ON ^PortTTL; OFF ^PortExitTTL ---> S3
+S3,
+  #R^PortEntry: ---> S3
+  #Z6 ! .01": SET B(9) = B(6), D(B(1) - 1) = (B(9) - B(8)) / 100, D(B(1)) = -987.987; Z4; OFF ^PortTTL; ON ^PortExitTTL ---> S2
+
+
+
+
+
+\S.S.5, \ counter for licks and lick bouts
+\S1,
+\  #Z2: SET B(2) = 0, B(3) = 0 ---> S2
+\S2,
+\  #Z3: ---> S3
+\S3,
+ \ #Z4: ---> S2
+ \ #R^Lick: ADD B(2), B(3); SET B(4) = 1, B(5) = B(6), E(B(3) - 1) = B(6), E(B(3)) = -987.987, I(B(2) - 1) = B(5), I(B(2)) = -987.987; ON^redLight; SHOW 4, Total Licks, B(2) ---> S4
+\S4,
+ \ #Z4: SET F(B(3) - 1) = B(4), F(B(3)) = -987.987, G(B(3) - 1) = (B(5) - E(B(3) - 1)) /100, G(B(3)) = -987.987; OFF^redLight; Z5 ---> S2
+ \ #R^Lick: ADD B(2), B(4); SET B(5) = B(6), I(B(2) - 1) = B(5), I(B(2)) = -987.987; SHOW 4, Total Licks, B(2) ---> S4
+ \ #Z6 ! 0.3": SET F(B(3) - 1) = B(4), F(B(3)) = -987.987, G(B(3) - 1) = (B(5) - E(B(3) - 1)) /100, G(B(3)) = -987.987; OFF^redLight; Z5 ---> S3
+
+
+
+
+
+S.S.6, \ pump controller
+S1,
+  #Z2: SET B(14) = 0, H(0) = 10.00 ---> S2
+S2,
+  #Z3: ---> S3
+S3,
+  #Z4: ---> S2
+  #R^PortEntry: ON ^Pump2; SET B(7) = B(6); ADD B(14) ---> S4
+  #Z6:---> S5
+S4,
+  #Z4 : OFF ^Pump2; SET H(B(14)) = (B(6) - B(7)) / 100, H(B(14) + 1) = -987.987 ---> S2
+  \#R^Lick:--->S4
+  \0.3": OFF ^Pump; SET H(B(14)) = (B(6) - B(7)) / 100, H(B(14) + 1) = -987.987 ---> S3
+  \#Z6 : OFF ^Pump; SET H(B(14)) = (B(6) - B(7)) / 100, H(B(14) + 1) = -987.987 ---> S5
+S5,
+  1":--->SX
+
+
+
+
+S.S.7, \ calculating average PE duration
+S1,
+ #Z4 ! #Z6 : ARITHMETICMEAN B(10) = D, 0, (B(1)-1); SHOW 3, Mean PE Duration, B(10) ---> S1
+
+
+
+
+
+S.S.8, \ calculating average lick bout duration, N of licks per bout, and Pump-on duration
+S1,
+  #Z5 ! #Z6 : ARITHMETICMEAN B(11) = F, 0, (B(3)-1); SHOW 5, Mean of Licks per Bout, B(11);
+       ARITHMETICMEAN B(12) = G, 0, (B(3)-1); SHOW 6, Mean Lick Bout Duration, B(12);
+       SUMARRAY B(13) = H, 0, B(14); SHOW 7, Pump-on Duration, B(13) ---> S1

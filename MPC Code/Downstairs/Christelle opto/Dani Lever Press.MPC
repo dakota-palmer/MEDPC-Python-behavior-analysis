@@ -1,0 +1,314 @@
+\Christelle Cayton
+\Lever Press Choice Task
+\Both lever presses will trigger sucrose release in the port and retract levers until sucrose is consumed.
+\Left lever press will be paired with laser stimulation once animal starts to consume sucrose.
+\Last Edited 3.29.19-- animal needs to lick before levers are extended again. Fixed calculation errors.
+
+
+
+
+\CONSTANTS
+^ActiveLever =1 \left
+^InactiveLever=3 \right
+
+
+
+
+^Boxlight =28
+^Pump =9
+^Houselight =7
+^Laser = 33
+
+
+\INPUTS
+^PortEntry =6
+^Lick = 7
+^ActiveLeverPress =1
+^InactiveLeverPress=3
+
+
+
+
+DIM A= 4 \ User-editable values
+    \A(0)=
+    \A(1)=Pump Duration in sec
+    \A(2) = Lick Timer Delay —8 sec. ?
+    \A(3) = 1-active, 2-inactive
+
+
+
+
+
+
+\WORKING VARIABLES
+DIM B=18
+    \B(0)=1" = 1" in MED time units, used for time input calculations
+    \B(1) = Current trial #   \not in use.
+    \B(2) = Event timer in .01" units
+    \B(3) = Total stimulation presentations
+    \B(4) = Number of active lever presses
+    \B(5) = Number of inactive lever presses
+
+
+    \B(6) = ActiveLever PE Mean Latency
+    \B(7) = InactiveLever PE Mean Latency
+
+
+
+    \B(8) = Total Port Entry
+    \B(9) = not in use.
+    \B(10) =  Total Time in Port
+    \B(11) =  Port Time No Choice Made Yet
+    \B(12) = Port Time in ActiveLever
+    \B(13) = PortTime in InactiveLever
+
+
+    \B(14) = Total Licks
+    \B(15) = Licks During Active PE—no timestamps needed
+    \B(16) = Licks During Inactive PE—no timestamps needed
+
+
+     \B(17) = Total Sucrose Rewards = # Trials Completed
+
+
+
+
+
+
+\DATA ARRAYS
+
+
+DIM C = 9999         \Active Lever Press Timestamps
+DIM D = 9999          \Inactive Lever Press Timestamps
+DIM E = 9999          \Laser Stimulation Start Timestamps
+DIM F = 9999         \Laser Stimulation End Timestamps
+
+
+DIM G = 9999        \Lick Timestamps in sec
+DIM H = 9999        \PE Timestamps in sec
+DIM I = 9999         \PE Durations in sec
+
+
+DIM J =  9999         \Stimulation Length
+
+
+DIM K = 9999     \Active Lever PE Latency
+DIM M =  9999    \Inactive Lever PE Latency
+DIM N =   9999    \Time of First PE after active LP
+DIM O =  9999      \Time of First PE after inactive LP
+
+
+
+    \L= length of session
+
+
+
+
+\Z Signals (within box)
+        \Z1= Test Complete
+        \Z2 = Active Trial
+           \Z3 = Inactive Trial
+           \Z4 = Laser On
+           \Z5 = Laser Off
+        \Z6 = Calculate Average Stimulation Length
+        \Z7: End Session
+        \Z8: Calculate Mean Latency
+
+
+
+
+
+
+S.S.1, \ Session clock in .01" units
+S1,
+  #start:---> S2
+
+
+S2,
+  .01": ADD B(2)---> SX
+
+
+
+
+
+
+S.S.2, \Test the Boxes
+S1,
+  .1": SHOW 1, Test, A(0); ON ^HouseLight, ^Laser,^InactiveLever,^ActiveLever --->S2
+S2,
+    #R^PortEntry: ON ^Pump---> S3
+S3,
+    2": OFF ^Pump--->S4
+S4,
+    #R^ActiveLeverPress: OFF ^ActiveLever ---> S5
+S5,
+    #R^InactiveLeverPress: OFF ^Houselight, ^InactiveLever ---> S6
+S6,
+     .1": SHOW 1, TestLaser, A(0) ---> S7
+S7,
+  #K1: OFF ^Laser ; Z1  ---> S8
+S8,
+    5': --->SX
+
+
+
+
+
+
+
+
+S.S.3, \Records lever presses and timestamps. Controls pump delivery and lever availability.
+S1,
+    .01": SET A(1)= 2, A(2) = 8; SET B(0)=1"---> SX
+    #Z1: SHOW 1, Ready, A(0)---> S2
+
+
+S2,
+    #start: SHOW 1, Trial, B(17); ON ^Active Lever, ^Inactive Lever; SET A(3)=0  ---> S3
+
+
+S3,
+    #R^ActiveLeverPress: Z2; ON ^Pump; OFF ^Active Lever, ^Inactive Lever; ADD B(4); SET A(3)=1, C(B(4))=B(2)/100 ; SHOW 1, Active Lever, B(4)---> S4
+    #R^InactiveLeverPress: Z3; ON ^Pump; OFF ^Active Lever, ^Inactive Lever; ADD B(5); SET A(3)=2,  D(B(5))=B(2)/100 ; SHOW 2,  Inactive Lever, B(5)---> S4
+
+S4,
+    A(1)*B(0)#T: OFF ^Pump; ADD B(17)---> S5
+
+
+S5,
+     #R^Lick:--->S6
+S6,
+    8": ON ^Active Lever, ^Inactive Lever; SET A(3) = 0---> S3
+
+
+
+
+
+
+S.S.4, \Tracks all port entries, timestamps and duration
+S1,
+     #R^PortEntry: ADD B(8); SET H(B(8))= B(2)/100, H(B(8)+1)=-987.987 ---> S2
+
+
+S2,
+     #R^PortEntry: ADD B(11), B(11 + A(3))---> S2
+     #Z7 ! .01":  SET I(B(8))= (B(2)-1)/100-H(B(8)), I(B(8)+1)=-987.987 ---> S1
+
+
+
+
+S.S.5, \Tracks all licks and timestamps
+S1,
+    #R^Lick: ADD B(14); SET G(B(14))=B(2)/100, G(B(14)+1)=-987.987 ---> S1
+
+
+
+
+S.S.6, \Active Lever Trial and Laser Trigger. Tracks licks as well.
+S1,
+     #Z2 ---> S2
+
+
+S2, \Timestamps first PE after active LP
+    #R^PortEntry: SET N(B(4))= B(2)/100; SET K(B(4)) = N(B(4))-C(B(4))---> S3
+
+
+S3, \Triggers laser. Tracks total licks in active LP. Calculates active PE latency.
+    #R^Lick: Z4; ADD B(15) ---> S4
+
+
+S4,
+    #R^Lick: ADD B(15); SHOW 6, Active Licks, B(15) ---> S4
+    .5": Z5; Z8---> S1
+
+
+
+
+
+
+S.S.7, \Inactive Lever Trial
+S1,
+    #Z3: ---> S2
+
+
+S2, \Timestamps first PE after inactive LP
+    #R^PortEntry: SET O(B(5))= B(2)/100;SET M(B(5)) = O(B(5))-D(B(5))---> S3
+
+
+S3, \Tracks total licks in inactive LP. Calculates inactive PE latency.
+   #R^Lick: ADD B(16)---> S4
+
+
+S4, \Continues to track total licks w/timestamps and total licks in active LP
+    #R^Lick: ADD B(16); SHOW 7, Inactive Licks, B(16) ---> S4
+   .5":Z8---> S1
+
+
+
+
+
+
+S.S.8, \Total Time in Active Port
+S1,
+    #R^PortEntry: ADD B(10), B(11+A(3))---> S1
+
+
+
+
+S.S.9, \Laser Controller
+S1,
+    #start: ON ^Laser ---> S2
+
+
+S2,
+   #Z4: OFF ^Laser ; ADD B(3); SET E(B(3))= B(2)/100, E(B(3)+1)=987.987; SHOW 3, stimulations, B(3)---> S3
+
+S3, \
+    #Z5: ON ^Laser; SET F(B(3))=B(2)/100, F(B(3)+1)=987.987 ---> S4
+    A(2)*B(0)#T: ON ^Laser; SET F(B(3))=B(2)/100, F(B(3)+1)=987.987 ---> S4
+
+S4,
+    .01":Z6 ---> S2
+
+
+
+S.S.10 , \Calculate Stimulation Length
+S1,
+     #Z6: ---> S2
+S2,
+ .1": SET J(B(3))= F(B(3))-E(B(3)) ---> S1
+
+
+
+S.S.11, \Calculates Mean Latency for active and inactive PEs
+S1,
+     #Z8: ARITHMETICMEAN B(6) = K, 0, B(4); SHOW 4, Active PE Latency, B(6);
+             ARITHMETICMEAN B(7) = M, 0, B(5); SHOW 5, Inactive PE Latency, B(7) ---> SX
+
+
+
+S.S.12, \Ends Session
+S1,
+    #start: ON ^Houselight; SET L=60'--->S2
+
+S2,
+   L#T: ---> S3
+S3,
+   #R^Lick:---> S3
+   1": OFF ^Houselight; Z7 --->S4
+
+S4,
+  2":      SET C(B(4)+1) = -987.987;
+           SET D(B(5)+1) = --987.987;
+           SET E(B(3)+1) = -987.987;
+           SET F(B(3)+1) = -987.987;
+           SET G(B(14)+1) = -987.987;
+           SET H(B(8)+1) = -987.987;
+           SET I(B(8)+1) = -987.987;
+           SET J(B(3)+1) = -987.987;
+           SET K(B(4)+1) = -987.987;
+           SET M(B(5)+1)= -987.987;
+           SET N(B(4)+1)= -987.987;
+           SET O(B(5)+1)= -987.987 --->STOPABORTFLUSH
+
+
