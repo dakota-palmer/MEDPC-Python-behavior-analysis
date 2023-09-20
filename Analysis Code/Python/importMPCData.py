@@ -330,6 +330,9 @@ if  experimentType.__contains__('Opto'):
 #e.g. different trial types in addition to DS vs NS (e.g. laser ON vs laser OFF trials; TODO: variable reward outcome)
 #TODO: consider making cueType it's own trialVar... then can use for stats easy later on
 
+#Note as of 2023-09-20 focused on DS task analyses, so trialIDs are defined by DStime and NStime. Should be made generalizable
+
+
 trialVars= []
 
 #e.g. for Opto:
@@ -363,6 +366,10 @@ dfEventAll= dfEventAll[dfEventAll.eventTime.notna()]
 dfEventAll = dfEventAll[dfEventAll.eventTime != 0]
 
 #%% -add trialID and trialType (defined by cue onset) that matches trial 1-60 through each session 
+
+#Note as of 2023-09-20 focused on DS task analyses, so trialIDs are defined by DStime and NStime. Should be made generalizable
+
+
 # add trialID column by cumulative counting each DS or NS within each file
 # now we have ID for trials 0-59 matching DS or NS within each session, nan for other events
 dfEventAll['trialID'] = dfEventAll[(dfEventAll.eventType == 'DStime') | (
